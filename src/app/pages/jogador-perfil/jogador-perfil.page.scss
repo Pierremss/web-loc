@@ -1,0 +1,177 @@
+.jogador-perfil-page {
+  --background: transparent;
+  color: var(--ion-text-color);
+
+  .perfil-container {
+    background: linear-gradient(160deg, rgba(255, 255, 255, .04), rgba(255, 255, 255, .02));
+    border: 1px solid var(--ion-border-color);
+    border-radius: var(--app-radius);
+    padding: 28px 22px;
+    max-width: 860px;
+    margin: 8vh auto 0;
+    box-shadow: var(--app-shadow-lg);
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    backdrop-filter: saturate(1.1) blur(8px);
+  }
+
+  .hero {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .avatar-wrap {
+    width: 84px;
+    height: 84px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 3px solid var(--ion-color-primary);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, .35);
+  }
+
+  .avatar-wrap.lg {
+    width: 96px;
+    height: 96px;
+  }
+
+  .avatar-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .hero-texts h1 {
+    font-size: 1.8rem;
+    margin: 0 0 6px;
+  }
+
+  .hero-texts .muted {
+    color: var(--ion-color-medium);
+    margin: 0;
+  }
+
+  .quick-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .grad {
+    --background: linear-gradient(90deg, #8c2ce2, #3c88f7);
+  }
+
+  .card {
+    background: rgba(255, 255, 255, .03);
+    border: 1px solid var(--ion-border-color);
+    border-radius: 14px;
+    padding: 16px;
+  }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .card h2 {
+    margin: 0;
+    font-size: 1.2rem;
+  }
+
+  .add-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .add-row ion-item {
+    --background: transparent;
+    border: 1px solid var(--ion-border-color);
+    border-radius: 12px;
+    padding-inline: 6px;
+  }
+
+  .chips {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+  }
+
+  .fav-chip {
+    --background: rgba(255, 255, 255, .06);
+    --color: var(--ion-text-color);
+    border: 1px solid var(--ion-border-color);
+    border-radius: 18px;
+  transition: transform .15s ease, box-shadow .2s ease, opacity .3s ease;
+  animation: fadeUp .28s ease both;
+  }
+
+  .fav-chip:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 18px rgba(0, 0, 0, .25);
+  }
+
+  .fav-chip .remove {
+    margin-left: 6px;
+    cursor: pointer;
+  }
+
+  .empty {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--ion-color-medium);
+    padding: 10px 4px;
+  }
+
+  .danger-zone .row {
+    display: flex;
+    justify-content: flex-start;
+  }
+
+  .erro {
+    font-size: 0.8rem;
+    color: var(--ion-color-tertiary);
+    margin-left: 4px;
+  }
+
+  .quick-actions ion-button {
+    transition:
+      transform .12s ease,
+      filter .2s ease;
+  }
+
+  .quick-actions ion-button:active {
+    transform: scale(.98);
+    filter: brightness(.98);
+  }
+
+  .controls-skeleton {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Animações de entrada sutis */
+  .fadein {
+    animation: fadeSlide .32s ease both;
+  }
+
+  @keyframes fadeSlide {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}

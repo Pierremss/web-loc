@@ -1,0 +1,99 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-menu-button></ion-menu-button>
+    </ion-buttons>
+    <ion-title>Meu Perfil</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding jogador-perfil-page">
+  <div class="perfil-container">
+  <section class="hero fadein">
+      <div class="avatar-wrap lg">
+        <img [src]="normalizeAvatar(user?.avatar_url)" (error)="onImgError($event)" alt="Avatar" />
+      </div>
+      <div class="hero-texts">
+        <h1>{{ user?.nickname || user?.name || 'Meu Perfil' }}</h1>
+        <p class="muted">{{ user?.email }}</p>
+        <div class="quick-actions">
+          <ion-button size="small" class="grad" (click)="editarPerfil()">
+            <ion-icon name="create-outline" slot="start"></ion-icon>
+            Editar perfil
+          </ion-button>
+          <ion-button size="small" color="medium" (click)="sair()">
+            <ion-icon name="log-out-outline" slot="start"></ion-icon>
+            Sair
+          </ion-button>
+        </div>
+      </div>
+    </section>
+
+    <section class="favorites card fadein">
+      <div class="card-header">
+        <h2>Jogos favoritos</h2>
+        <div class="controls">
+          <ng-container *ngIf="!loading; else controlsSkeleton">
+            <ion-searchbar placeholder="Buscar" [(ngModel)]="filtro" (ionInput)="applyFiltro()" debounce="150"></ion-searchbar>
+            <ion-segment [(ngModel)]="ordenacao" (ionChange)="applyFiltro()">
+              <ion-segment-button value="az">A-Z</ion-segment-button>
+              <ion-segment-button value="recent">Recentes</ion-segment-button>
+            </ion-segment>
+          </ng-container>
+          <ng-template #controlsSkeleton>
+            <div class="controls-skeleton">
+              <ion-skeleton-text animated style="width: 220px; height: 44px; border-radius: 12px;"></ion-skeleton-text>
+              <ion-skeleton-text animated style="width: 160px; height: 44px; border-radius: 10px;"></ion-skeleton-text>
+            </div>
+          </ng-template>
+        </div>
+      </div>
+
+      <div class="add-row">
+        <ion-item lines="none">
+          <ion-label>Adicionar</ion-label>
+          <ion-select interface="popover" [(ngModel)]="novoFavorito" placeholder="Escolha um jogo">
+            <ion-select-option *ngFor="let jogo of todosJogos" [value]="jogo.id">{{jogo.name}}</ion-select-option>
+          </ion-select>
+        </ion-item>
+        <ion-button class="grad" [disabled]="novoFavorito === null" (click)="novoFavorito !== null && adicionarFavorito(novoFavorito)">
+          <ion-icon name="add-outline" slot="start"></ion-icon>
+          Adicionar
+        </ion-button>
+      </div>
+
+      <ng-container *ngIf="!loading; else chipsSkeleton">
+        <div class="chips" *ngIf="favoritosFiltrados?.length; else emptyFavs">
+          <ion-chip class="fav-chip" *ngFor="let jogo of favoritosFiltrados; let i = index" [style.animationDelay]="(i * 40) + 'ms'">
+            <ion-icon name="sparkles-outline"></ion-icon>
+            <ion-label>{{ jogo.name }}</ion-label>
+            <ion-icon name="close-circle" class="remove" (click)="removerFavorito(jogo.id)"></ion-icon>
+          </ion-chip>
+        </div>
+        <ng-template #emptyFavs>
+          <div class="empty">
+            <ion-icon name="game-controller-outline"></ion-icon>
+            <p>Sem favoritos ainda. Adicione alguns jogos que você curte!</p>
+          </div>
+        </ng-template>
+      </ng-container>
+      <ng-template #chipsSkeleton>
+        <div class="chips">
+          <ion-skeleton-text animated *ngFor="let _ of [0,1,2,3,4,5]" style="width: 120px; height: 36px; border-radius: 18px;"></ion-skeleton-text>
+        </div>
+      </ng-template>
+    </section>
+
+    <section class="danger-zone card fadein">
+      <h2>Zona de risco</h2>
+      <div class="row">
+        <ion-button expand="block" color="danger" fill="outline" (click)="excluirConta()">
+          <ion-icon name="trash-outline" slot="start"></ion-icon>
+          Excluir Conta
+        </ion-button>
+      </div>
+    </section>
+
+    <ion-text color="danger" *ngIf="error" class="erro">{{error}}</ion-text>
+  </div>
+</ion-content>

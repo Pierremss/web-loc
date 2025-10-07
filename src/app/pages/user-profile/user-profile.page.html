@@ -1,0 +1,48 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-menu-button></ion-menu-button>
+    </ion-buttons>
+    <ion-title>Perfil</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding user-profile-page">
+  <div class="profile-container">
+    <h1 class="logo">WebLoc</h1>
+
+    <div class="loading" *ngIf="loading">
+      <ion-spinner name="dots"></ion-spinner>
+    </div>
+
+    <ion-text color="danger" class="erro" *ngIf="!loading && error">{{ error }}</ion-text>
+
+    <ng-container *ngIf="!loading && user as u">
+      <ion-card class="card-section">
+        <ion-card-content class="profile-head">
+          <div class="avatar-xl">{{ (u.name || u.nickname || '?')[0] }}</div>
+          <div class="info">
+            <h2>{{ u.name }}</h2>
+            <p *ngIf="u.nickname" class="nickname">{{ '@' + u.nickname }}</p>
+          </div>
+        </ion-card-content>
+      </ion-card>
+
+      <ion-card class="card-section">
+        <ion-card-header>
+          <ion-card-title>Ações</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <ion-button expand="block" class="btn-primary" (click)="sendFriendRequest()" *ngIf="meId !== u.id">
+            <ion-icon name="person-add-outline" slot="start"></ion-icon>
+            Enviar pedido de amizade
+          </ion-button>
+          <ion-button expand="block" [routerLink]="['/chat', u.id]" *ngIf="meId !== u.id">
+            <ion-icon name="chatbubble-ellipses-outline" slot="start"></ion-icon>
+            Conversar
+          </ion-button>
+        </ion-card-content>
+      </ion-card>
+    </ng-container>
+  </div>
+</ion-content>

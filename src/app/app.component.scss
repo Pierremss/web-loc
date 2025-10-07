@@ -1,0 +1,25 @@
+/* Estilos do menu lateral para combinar com o tema */
+.menu-header {
+	--background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.01));
+	color: var(--ion-text-color);
+	border-bottom: 1px solid var(--ion-border-color);
+	backdrop-filter: blur(6px);
+}
+
+.menu-profile {
+	display: flex; align-items: center; gap: 12px; padding: 12px 16px 16px 16px;
+	border-top: 1px solid var(--ion-border-color);
+}
+.menu-profile img { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; box-shadow: 0 6px 16px rgba(0,0,0,.35); border: 3px solid var(--ion-color-primary); }
+.menu-profile .info { display: flex; flex-direction: column; }
+.menu-profile .name { font-weight: 700; }
+.menu-profile .email { opacity: .85; font-size: 12px; color: var(--ion-color-medium); }
+
+ion-item {
+	--background: transparent;
+	--color: var(--ion-text-color);
+}
+
+ion-icon {
+	color: var(--ion-color-primary);
+}

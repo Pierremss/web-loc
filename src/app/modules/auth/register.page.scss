@@ -1,0 +1,159 @@
+.chips-linha {
+  display: flex;
+  justify-content: space-between; // distribui igualmente
+  flex-wrap: nowrap; // mantém em uma linha
+  gap: 8px;
+}
+
+.select-chip {
+  flex: 1; // todos ocupam a mesma largura
+  text-align: center;
+  --background: #2a2a2f;
+  --color: #ccc;
+  --padding-start: 0;
+  --padding-end: 0;
+  --border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.25s ease-in-out;
+  min-width: 70px; // garante legibilidade
+}
+
+.select-chip:hover {
+  transform: scale(1.05);
+  opacity: 0.9;
+}
+
+.select-chip.selected {
+  --background: var(--ion-color-primary);
+  --color: #fff;
+  box-shadow: 0 0 12px rgba(138, 93, 255, 0.6);
+}
+
+/* Responsividade: em telas pequenas (mobile), pode quebrar em duas linhas */
+@media (max-width: 420px) {
+  .chips-linha {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .select-chip {
+    flex: unset;
+    min-width: 45%;
+  }
+}
+
+
+
+//ssssss
+.cadastro-page {
+  --background: linear-gradient(180deg, #161a39 0%, #0f1126 100%);
+  color: #e9ebff;
+
+  .cadastro-container {
+    background: linear-gradient(160deg, rgba(255, 255, 255, .05), rgba(255, 255, 255, .02));
+    border: 1px solid var(--ion-border-color);
+    border-radius: var(--app-radius);
+    padding: 32px 24px;
+    max-width: 520px;
+    margin: auto;
+    margin-top: 6vh;
+    box-shadow: var(--app-shadow-lg);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    backdrop-filter: saturate(1.1) blur(8px);
+    animation: fadeSlide .34s ease both;
+  }
+
+  .logo {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 2.2rem;
+    color: #7a7df5;
+    margin-bottom: 4px;
+  }
+
+  .subtitulo { font-size: 0.95rem; color: var(--ion-color-medium); margin-bottom: 12px; }
+
+  .etapas {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 12px;
+
+    .etapa {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-size: 0.75rem;
+      color: #888;
+
+      ion-icon {
+        font-size: 18px;
+        color: #666;
+      }
+    }
+
+    .etapa.ativa ion-icon {
+      color: #b674f5;
+    }
+
+    .linha {
+      width: 24px;
+      height: 2px;
+      background-color: #555;
+    }
+  }
+
+  .titulo-formulario {
+    font-size: 1rem;
+    color: #62aaff;
+    font-weight: bold;
+    margin-top: 8px;
+    margin-bottom: 8px;
+  }
+
+  .avatar-select {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin: 8px 0 16px;
+  }
+  .avatar-preview, .avatar-placeholder {
+    width: 110px; height: 110px;
+    border-radius: 50%;
+    background: #2a2d44;
+    border: 3px solid #7a7df5;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,.35);
+    font-size: 2.2rem; font-weight: 600; color: #7a7df5;
+  }
+  .avatar-preview img { width: 100%; height: 100%; object-fit: cover; display:block; }
+  .avatar-select ion-button { --border-radius: 20px; }
+  .avatar-select ion-text { font-size: 0.7rem; }
+
+  ion-item { --background: rgba(255,255,255,.06); --color: #e9ebff; border-radius: 12px; border: 1px solid var(--ion-border-color); }
+
+  ion-label { color: #b7bdff; }
+
+  ion-input { color: #fff; }
+
+  .btn-proximo { margin-top: 12px; font-weight: bold; font-size: 0.95rem; --background: linear-gradient(90deg, #8c2ce2, #3c88f7); --border-radius: 12px; --box-shadow: 0 4px 12px rgba(0,0,0,.3); }
+
+  .error-message {
+    color: #ff6b6b;
+    font-size: 0.85rem;
+    margin-top: 4px;
+    margin-bottom: 8px;
+    text-align: left;
+  }
+
+  .glass { background: rgba(255,255,255,.03); border: 1px solid var(--ion-border-color); border-radius: 14px; padding: 10px 12px; }
+  .card { animation: fadeSlide .32s ease both; }
+  .grad { --background: linear-gradient(90deg, #8c2ce2, #3c88f7); --border-radius: 12px; --box-shadow: 0 4px 12px rgba(0,0,0,.3); font-weight: 700; }
+  .fadein { animation: fadeSlide .34s ease both; }
+  @keyframes fadeSlide { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+}

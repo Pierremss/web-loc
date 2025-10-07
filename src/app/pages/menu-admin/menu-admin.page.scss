@@ -1,0 +1,74 @@
+.menu-admin-page {
+  --background: linear-gradient(180deg, #2f0147 0%, #1b1c2c 100%);
+  color: white;
+
+  .admin-container {
+    background-color: #1e1e2f;
+    border-radius: 16px;
+    padding: 32px 24px;
+    max-width: 420px;
+    margin: auto;
+    margin-top: 10vh;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.6);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .titulo {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 2.2rem;
+    color: #7a7df5;
+    margin-bottom: 4px;
+  }
+
+  .subtitulo {
+    font-size: 1rem;
+    color: #ccc;
+    margin-bottom: 24px;
+  }
+
+  .menu-opcoes {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .opcao-card {
+    --background: #2a2b3d;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  .opcao-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  }
+
+  .opcao-card ion-card-header {
+    --background: #2a2b3d;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .icone-opcao {
+    font-size: 2rem;
+    color: #7a7df5;
+  }
+
+  .opcao-card ion-card-title {
+    color: #fff;
+    font-weight: bold;
+    margin: 0;
+  }
+
+  .opcao-card ion-card-subtitle {
+    color: #ccc;
+    margin: 0;
+  }
+}

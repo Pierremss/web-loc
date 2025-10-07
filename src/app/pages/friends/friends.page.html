@@ -1,0 +1,142 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-menu-button></ion-menu-button>
+    </ion-buttons>
+    <ion-title>Amigos</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding friends-page">
+  <div class="friends-container fadein">
+    <h1 class="logo">WebLoc</h1>
+    <p class="subtitulo">Gerencie seus amigos e convites</p>
+
+    <!-- Busca de jogadores e enviar convite -->
+  <ion-card class="card-section fadein">
+      <ion-card-header>
+        <ion-card-title>Buscar jogadores</ion-card-title>
+        <ion-card-subtitle>Pesquise por nome ou &#64;apelido e envie convite</ion-card-subtitle>
+      </ion-card-header>
+      <ion-card-content>
+  <ion-item>
+          <ion-label position="floating">Nome ou apelido</ion-label>
+          <ion-input [(ngModel)]="q" (ionChange)="onSearch()"></ion-input>
+        </ion-item>
+  <ion-list lines="none" class="result-list" *ngIf="results.length">
+          <ion-item class="item-row" *ngFor="let u of results">
+            <ion-avatar slot="start" class="avatar">
+              <ng-container *ngIf="u.avatar_url; else initialsR">
+                <img [src]="normalizeAvatar(u.avatar_url)" (error)="onImgError($event)" />
+              </ng-container>
+              <ng-template #initialsR>
+                <div>{{ (u.name || u.nickname || '?')[0] }}</div>
+              </ng-template>
+            </ion-avatar>
+            <ion-label>
+              <h2>{{ u.name }}</h2>
+              <p *ngIf="u.nickname">{{ '@' + u.nickname }}</p>
+            </ion-label>
+            <ion-button slot="end" size="small" class="btn-primary" (click)="sendRequestTo(u.id)">
+              <ion-icon name="person-add-outline" slot="start"></ion-icon>
+              Convidar
+            </ion-button>
+          </ion-item>
+        </ion-list>
+        <ion-text color="medium" *ngIf="!results.length && ((q?.length ?? 0) >= 2)">
+          Nenhum resultado para "{{ q }}".
+        </ion-text>
+        <div *ngIf="loading" class="search-skeleton">
+          <ion-skeleton-text animated style="height:44px; border-radius:10px;"></ion-skeleton-text>
+          <ion-skeleton-text animated style="height:44px; border-radius:10px;"></ion-skeleton-text>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <ion-card class="card-section fadein">
+      <ion-card-header>
+        <ion-card-title>Pedidos recebidos</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ng-container *ngIf="!pageLoading; else pedidosSkeleton">
+          <ion-list lines="none" *ngIf="requests?.length; else semPedidos">
+          <ion-item class="item-row" *ngFor="let r of requests">
+            <ion-avatar slot="start" class="avatar">
+              <ng-container *ngIf="r.avatar_url; else initialsP">
+                <img [src]="normalizeAvatar(r.avatar_url)" (error)="onImgError($event)" />
+              </ng-container>
+              <ng-template #initialsP>
+                <div>{{ (r.name || r.nickname || '?')[0] }}</div>
+              </ng-template>
+            </ion-avatar>
+            <ion-label>
+              <h3>{{ r.name || ('@' + r.nickname) || ('ID ' + r.fromUserId) }}</h3>
+              <p>ID {{ r.fromUserId }}</p>
+            </ion-label>
+            <div class="actions" slot="end">
+              <ion-button size="small" color="success" (click)="accept(r.fromUserId)">
+                <ion-icon name="checkmark-outline" slot="start"></ion-icon>
+                Aceitar
+              </ion-button>
+              <ion-button size="small" color="medium" fill="outline" (click)="decline(r.fromUserId)">
+                <ion-icon name="close-outline" slot="start"></ion-icon>
+                Recusar
+              </ion-button>
+            </div>
+          </ion-item>
+          </ion-list>
+          <ng-template #semPedidos>
+          <ion-text color="medium">Nenhum pedido pendente.</ion-text>
+          </ng-template>
+        </ng-container>
+        <ng-template #pedidosSkeleton>
+          <ion-skeleton-text animated style="height:52px; border-radius:12px; margin:6px 0;"></ion-skeleton-text>
+          <ion-skeleton-text animated style="height:52px; border-radius:12px; margin:6px 0;"></ion-skeleton-text>
+        </ng-template>
+      </ion-card-content>
+    </ion-card>
+
+    <ion-card class="card-section fadein">
+      <ion-card-header>
+        <ion-card-title>Seus amigos</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ng-container *ngIf="!pageLoading; else amigosSkeleton">
+          <ion-list lines="none" *ngIf="friends?.length; else semAmigos">
+          <ion-item class="item-row" *ngFor="let f of friends">
+            <ion-avatar slot="start" class="avatar">
+              <ng-container *ngIf="f.avatar_url; else initialsF">
+                <img [src]="normalizeAvatar(f.avatar_url)" (error)="onImgError($event)" />
+              </ng-container>
+              <ng-template #initialsF>
+                <div>{{ (f.name || f.nickname || '?')[0] }}</div>
+              </ng-template>
+            </ion-avatar>
+            <ion-label>
+              <h3>{{ f.name || ('@' + f.nickname) }}</h3>
+              <p>ID {{ f.id }}</p>
+            </ion-label>
+            <div class="actions" slot="end">
+              <ion-button size="small" class="btn-primary" [routerLink]="['/chat', f.id]">
+                <ion-icon name="chatbubble-ellipses-outline" slot="start"></ion-icon>
+                Conversar
+              </ion-button>
+              <ion-button size="small" color="danger" fill="clear" (click)="remove(f.id)">
+                <ion-icon name="trash-outline"></ion-icon>
+              </ion-button>
+            </div>
+          </ion-item>
+          </ion-list>
+          <ng-template #semAmigos>
+          <ion-text color="medium">Você ainda não tem amigos adicionados.</ion-text>
+          </ng-template>
+        </ng-container>
+        <ng-template #amigosSkeleton>
+          <ion-skeleton-text animated style="height:52px; border-radius:12px; margin:6px 0;"></ion-skeleton-text>
+          <ion-skeleton-text animated style="height:52px; border-radius:12px; margin:6px 0;"></ion-skeleton-text>
+          <ion-skeleton-text animated style="height:52px; border-radius:12px; margin:6px 0;"></ion-skeleton-text>
+        </ng-template>
+      </ion-card-content>
+    </ion-card>
+  </div>
+</ion-content>

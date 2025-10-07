@@ -1,0 +1,46 @@
+// Ionic Theme Variables
+// Paleta sofisticada + ajustes de radius, sombras e tipografia
+
+:root {
+	/* Primary */
+	--ion-color-primary: #8a5dff;
+	--ion-color-primary-rgb: 138,93,255;
+	--ion-color-primary-contrast: #ffffff;
+	--ion-color-primary-contrast-rgb: 255,255,255;
+	--ion-color-primary-shade: #7a52e0;
+	--ion-color-primary-tint: #9a73ff;
+
+	/* Secondary */
+	--ion-color-secondary: #22d3ee;
+	--ion-color-secondary-rgb: 34,211,238;
+	--ion-color-secondary-contrast: #0b1220;
+	--ion-color-secondary-contrast-rgb: 11,18,32;
+	--ion-color-secondary-shade: #1db9d1;
+	--ion-color-secondary-tint: #3ad9f0;
+
+	/* Tertiary */
+	--ion-color-tertiary: #ef4444;
+	--ion-color-tertiary-rgb: 239,68,68;
+	--ion-color-tertiary-contrast: #ffffff;
+	--ion-color-tertiary-shade: #d53c3c;
+	--ion-color-tertiary-tint: #f05b5b;
+
+	/* Neutrals */
+	--ion-color-medium: #94a3b8;
+	--ion-color-light: #e2e8f0;
+	--ion-background-color: #0b1020;
+	--ion-text-color: #e5e7eb;
+	--ion-border-color: rgba(255,255,255,0.06);
+
+	/* Radius e elevação */
+	--app-radius: 18px;
+	--app-shadow-lg: 0 20px 50px rgba(0,0,0,.35);
+}
+
+@media (prefers-color-scheme: light) {
+	:root {
+		--ion-background-color: #f8fafc;
+		--ion-text-color: #0b1220;
+		--ion-border-color: rgba(0,0,0,0.08);
+	}
+}

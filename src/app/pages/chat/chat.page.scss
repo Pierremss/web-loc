@@ -1,0 +1,88 @@
+:host {
+	--ion-background-color: var(--ion-background-color);
+}
+
+.chat-page {
+	--background: transparent;
+}
+
+.chat-container {
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+}
+
+.messages {
+	padding: 16px 12px 100px;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.message-row {
+	display: flex;
+	align-items: flex-end;
+	gap: 8px;
+	max-width: 100%;
+}
+.message-row.mine {
+	justify-content: flex-end;
+}
+
+.avatar-col {
+	width: 36px;
+	display: flex;
+	justify-content: center;
+}
+.avatar-img {
+	width: 32px;
+	height: 32px;
+	border-radius: 50%;
+	object-fit: cover;
+	border: 2px solid rgba(var(--ion-color-primary-rgb), .35);
+	background: #222;
+}
+
+.bubble {
+	max-width: 72%;
+	padding: 10px 12px;
+	border-radius: 16px;
+	background: rgba(255,255,255,.04);
+	color: var(--ion-text-color);
+	align-self: flex-start;
+	box-shadow: 0 8px 18px rgba(0,0,0,0.3);
+	position: relative;
+	animation: pop 120ms ease-out;
+	border: 1px solid var(--ion-border-color);
+}
+	.bubble .header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+	.bubble .header .avatar { width: 24px; height: 24px; }
+	.bubble .header .name { font-size: 12px; color: var(--ion-color-medium); }
+
+.bubble.mine { background: linear-gradient(135deg, var(--ion-color-primary) 0%, var(--ion-color-secondary) 100%); color: #fff; }
+
+.message-row.mine .bubble { align-self: flex-end; }
+
+.bubble .text { white-space: pre-wrap; word-break: break-word; font-size: 15px; }
+.bubble .text.deleted { color: var(--ion-color-medium); font-style: italic; }
+
+.bubble .meta { margin-top: 6px; display: flex; gap: 8px; font-size: 11px; opacity: .85; }
+.bubble .actions { margin-top: 4px; display: flex; gap: 4px; }
+.bubble ion-button { --padding-start: 0; --padding-end: 6px; height: 24px; font-size: 12px; }
+
+.typing { color: var(--ion-color-medium); font-size: 12px; margin: 8px 16px; animation: pulse 1.4s infinite; }
+
+.scroll-bottom {
+	position: fixed;
+	right: 12px;
+	bottom: 84px;
+	z-index: 10;
+}
+
+.chat-input { --background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.01)); backdrop-filter: blur(6px); }
+.chat-input ion-item { --background: transparent; }
+.chat-input ion-input { color: var(--ion-text-color); }
+.chat-input ion-button { --background: linear-gradient(135deg, var(--ion-color-primary), var(--ion-color-secondary)); --box-shadow: 0 8px 18px rgba(60,136,247,.35); }
+
+@keyframes pop { from { transform: scale(.98); opacity: .6; } to { transform: scale(1); opacity: 1; } }
+@keyframes pulse { 0%{opacity:.5} 50%{opacity:1} 100%{opacity:.5} }

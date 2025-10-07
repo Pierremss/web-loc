@@ -1,0 +1,58 @@
+.user-profile-page {
+	--background: linear-gradient(180deg, #2f0147 0%, #1b1c2c 100%);
+	color: white;
+
+	.profile-container {
+		background-color: #1e1e2f;
+		border-radius: 16px;
+		padding: 24px 20px;
+		max-width: 720px;
+		margin: auto;
+		margin-top: 5vh;
+		box-shadow: 0 0 20px rgba(0, 0, 0, 0.6);
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+	}
+
+	.logo {
+		font-family: 'Orbitron', sans-serif;
+		font-size: 1.8rem;
+		color: #7a7df5;
+		margin: 0;
+		text-align: center;
+	}
+
+	.loading { display: flex; justify-content: center; }
+	.erro { text-align: center; }
+
+	.card-section { background: #23243a; border-radius: 12px; }
+
+	.profile-head {
+		display: flex;
+		align-items: center;
+		gap: 16px;
+	}
+
+	.avatar-xl {
+		width: 72px;
+		height: 72px;
+		background: #2a2b3d;
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-weight: bold;
+		color: #a18bff;
+		font-size: 1.4rem;
+	}
+
+	.nickname { color: #a18bff; }
+
+	.btn-primary {
+		--background: linear-gradient(90deg, #8c2ce2, #3c88f7);
+		--border-radius: 12px;
+		--box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+		font-weight: 600;
+	}
+}

@@ -1,0 +1,34 @@
+ion-header, ion-toolbar { --background: #0f1126; --color: #e9ebff; }
+ion-content { --background: linear-gradient(180deg, #161a39 0%, #0f1126 100%); }
+
+ion-item {
+	--background: rgba(255,255,255,0.02);
+	--color: #e9ebff;
+	margin: 6px 10px;
+	border-radius: 12px;
+}
+ion-item:hover { --background: rgba(255,255,255,0.06); }
+ion-badge { border-radius: 10px; }
+
+ion-item ion-toggle { margin-inline: 8px; }
+
+.conv-page { --background: transparent; }
+.container { max-width: 860px; margin: 16px auto; padding: 0 12px; display: flex; flex-direction: column; gap: 16px; }
+
+.card { background: rgba(255,255,255,.03); border: 1px solid var(--ion-border-color); border-radius: 14px; padding: 12px; box-shadow: var(--app-shadow-lg); animation: fadeSlide .32s ease both; }
+.grad { --background: linear-gradient(90deg, #8c2ce2, #3c88f7); }
+
+.create ion-item { --background: transparent; border: 1px solid var(--ion-border-color); border-radius: 12px; }
+.create .row { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+
+.list { background: transparent; }
+.room { --background: transparent; border: 1px solid var(--ion-border-color); border-radius: 12px; margin: 8px 0; animation: fadeSlide .28s ease both; }
+.room ion-avatar { width: 40px; height: 40px; border: 2px solid var(--ion-color-primary); }
+.room h2 { margin: 0; font-size: 1rem; }
+.room p { margin: 4px 0 0; color: var(--ion-color-medium); }
+
+.empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; }
+.empty ion-icon { font-size: 32px; color: var(--ion-color-medium); }
+
+.fadein { animation: fadeSlide .32s ease both; }
+@keyframes fadeSlide { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }

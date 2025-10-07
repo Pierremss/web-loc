@@ -1,0 +1,7 @@
+{
+  "name": "WebLoc",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular"
+}

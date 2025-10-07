@@ -1,0 +1,48 @@
+<ion-content class="ion-padding login-page">
+  <div class="login-container fadein">
+    <h1 class="logo">WebLoc</h1>
+    <p class="subtitle">Encontre jogadores como você</p>
+
+    <!-- Escolha do tipo de usuário -->
+    <!-- <div class="tipo-login">
+      <ion-segment [(ngModel)]="tipoUsuario" value="jogador" class="segmento-claro">
+        <ion-segment-button value="jogador">
+          Jogador
+        </ion-segment-button>
+        <ion-segment-button value="admin">
+          Admin
+        </ion-segment-button>
+      </ion-segment>
+    </div> -->
+
+    <div class="button-group" >
+      <ion-button expand="block" class="grad" fill="solid" routerLink="/register">
+        <ion-icon name="person-add-outline" slot="start"></ion-icon>
+        Criar Conta
+      </ion-button>
+    </div>
+
+    <div class="divider"><span>ou</span></div>
+
+    <ion-item>
+      <ion-label position="floating">E-mail</ion-label>
+      <ion-input type="email" [(ngModel)]="email" [disabled]="loading" required></ion-input>
+    </ion-item>
+
+    <ion-item>
+      <ion-label position="floating">Senha</ion-label>
+      <ion-input type="password" [(ngModel)]="password" [disabled]="loading" required></ion-input>
+    </ion-item>
+
+    <div class="error-inline" *ngIf="error">{{ error }}</div>
+
+    <div class="forgot-password" >
+      <a routerLink="/recuperarsenha">Esqueceu a senha?</a>
+    </div>
+
+    <ion-button class="grad" expand="block" (click)="submit()" [disabled]="loading">
+      Entrar
+      <ion-spinner *ngIf="loading" name="crescent" slot="end"></ion-spinner>
+    </ion-button>
+  </div>
+</ion-content>

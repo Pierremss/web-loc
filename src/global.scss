@@ -1,0 +1,74 @@
+/*
+ * App Global CSS
+ * ----------------------------------------------------------------------------
+ * Put style rules here that you want to apply globally. These styles are for
+ * the entire app and not just one component. Additionally, this file can be
+ * used as an entry point to import other CSS/Sass files to be included in the
+ * output CSS.
+ * For more information on global stylesheets, visit the documentation:
+ * https://ionicframework.com/docs/layout/global-stylesheets
+ */
+
+/* Core CSS required for Ionic components to work properly */
+@import "@ionic/angular/css/core.css";
+
+/* Basic CSS for apps built with Ionic */
+@import "@ionic/angular/css/normalize.css";
+@import "@ionic/angular/css/structure.css";
+@import "@ionic/angular/css/typography.css";
+@import "@ionic/angular/css/display.css";
+
+/* Optional CSS utils that can be commented out */
+@import "@ionic/angular/css/padding.css";
+@import "@ionic/angular/css/float-elements.css";
+@import "@ionic/angular/css/text-alignment.css";
+@import "@ionic/angular/css/text-transformation.css";
+@import "@ionic/angular/css/flex-utils.css";
+
+/**
+ * Ionic Dark Mode
+ * -----------------------------------------------------
+ * For more info, please see:
+ * https://ionicframework.com/docs/theming/dark-mode
+ */
+
+/* @import "@ionic/angular/css/palettes/dark.always.css"; */
+/* @import "@ionic/angular/css/palettes/dark.class.css"; */
+@import "@ionic/angular/css/palettes/dark.system.css";
+
+:root { --radius: var(--app-radius); }
+
+html, body, ion-app, ion-content, ion-router-outlet { height: 100%; }
+body {
+  margin: 0;
+  font-family: 'Poppins', 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  background: radial-gradient(1000px 1000px at 10% -80%, rgba(139, 93, 255, 0.562), transparent),
+              radial-gradient(1000px 1000px at -10% 120%, rgba(34,211,238,.2), transparent),
+              var(--ion-background-color);
+  color: var(--ion-text-color);
+}
+
+/* Cards globais elegantes */
+.card, ion-card {
+  border-radius: var(--radius) !important;
+  box-shadow: var(--app-shadow-lg) !important;
+  background: linear-gradient(160deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+  border: 1px solid var(--ion-border-color);
+  backdrop-filter: saturate(1.2) blur(8px);
+}
+
+/* Toolbar/menu refinados */
+ion-toolbar {
+  --background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.01));
+  --border-color: var(--ion-border-color);
+  backdrop-filter: blur(6px);
+}
+ion-menu::part(container) { border-radius: 0 16px 16px 0; border-right: 1px solid var(--ion-border-color); }
+ion-item { --border-color: var(--ion-border-color); border-radius: 12px; }
+
+/* Botões com leve elevação */
+ion-button { --border-radius: 14px; box-shadow: 0 10px 24px rgba(0,0,0,.22); }
+
+/* Responsividade básica para listas e painéis */
+.container, ion-list { max-width: 1080px; margin: 0 auto; padding: 0 16px; }
+

@@ -1,0 +1,31 @@
+import { NgModule } from '@angular/core';
+import { PreloadAllModules, RouterModule, Routes } from '@angular/router';
+import { LoginPage } from './modules/auth/login.page';
+import { RegisterPage } from './modules/auth/register.page';
+import { UsersListPage } from './modules/users/users-list.page';
+import { GamesListPage } from './modules/games/games-list.page';
+import { AuthGuard } from './modules/auth/auth.guard';
+import { HomePage } from './home.page';
+import { JogadorPerfilPage } from './pages/jogador-perfil/jogador-perfil.page';
+
+const routes: Routes = [
+  { path: '', redirectTo: 'home', pathMatch: 'full' },
+  { path: 'login', component: LoginPage },
+  { path: 'register', component: RegisterPage },
+  { path: 'users', component: UsersListPage, canActivate: [AuthGuard] },
+  { path: 'games', component: GamesListPage },
+  { path: 'home', component: HomePage },
+  { path: 'friends', loadChildren: () => import('./pages/friends/friends.module').then(m => m.FriendsPageModule) },
+  { path: 'chat/:id', loadChildren: () => import('./pages/chat/chat.module').then(m => m.ChatPageModule) },
+  { path: 'conversations', loadChildren: () => import('./pages/conversations/conversations.module').then(m => m.ConversationsModule) },
+  { path: 'user-profile/:id', loadChildren: () => import('./pages/user-profile/user-profile.module').then(m => m.UserProfilePageModule) },
+  { path: 'jogador-perfil', loadChildren: () => import('./pages/jogador-perfil/jogador-perfil.module').then(m => m.JogadorPerfilPageModule) },
+  { path: 'editar-perfil', loadChildren: () => import('./pages/editar-perfil/editar-perfil.module').then(m => m.EditarPerfilPageModule) }
+  ,{ path: 'swipe', loadChildren: () => import('./pages/swipe/swipe.module').then(m => m.SwipePageModule) }
+];
+
+@NgModule({
+  imports: [RouterModule.forRoot(routes, { preloadingStrategy: PreloadAllModules })],
+  exports: [RouterModule],
+})
+export class AppRoutingModule {}

@@ -1,0 +1,177 @@
+.games-list-page {
+  --background: linear-gradient(180deg, #2f0147 0%, #1b1c2c 100%);
+  color: white;
+
+  .games-container {
+    background-color: #1e1e2f;
+    border-radius: 16px;
+    padding: 32px 24px;
+    max-width: 440px;
+    margin: auto;
+    margin-top: 5vh;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.6);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .logo h1 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 2.2rem;
+    color: #7a7df5;
+    margin-bottom: 4px;
+  }
+
+  .subtitulo {
+    font-size: 1rem;
+    color: #ccc;
+    margin-bottom: 24px;
+  }
+
+  .btn-secondary {
+    --background: #555;
+    --border-radius: 12px;
+    --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    font-weight: bold;
+    font-size: 0.95rem;
+    margin-top: 8px;
+  }
+
+  .search-form {
+    margin-top: 16px;
+
+    ion-item {
+      --background: #2a2b3d;
+      --color: #fff;
+      border-radius: 8px;
+      margin-top: 8px;
+
+      ion-label {
+        color: #aaa;
+      }
+
+      ion-input {
+        color: white;
+      }
+    }
+  }
+
+  .add-game-section {
+    margin-top: 24px;
+
+    h3 {
+      color: #7a7df5;
+      font-size: 1.2rem;
+      margin-bottom: 16px;
+    }
+
+    ion-item {
+      --background: #2a2b3d;
+      --color: #fff;
+      border-radius: 8px;
+      margin-top: 8px;
+
+      ion-label {
+        color: #aaa;
+      }
+
+      ion-input, ion-select {
+        color: white;
+      }
+    }
+
+    .btn-primary {
+      --background: linear-gradient(90deg, #8c2ce2, #3c88f7);
+      --border-radius: 12px;
+      --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      font-weight: bold;
+      font-size: 0.95rem;
+      margin-top: 16px;
+    }
+  }
+
+  .games-list {
+    --background: transparent;
+    margin-top: 24px;
+
+    .game-item {
+      --background: #2a2b3d;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      --inner-padding-end: 8px;
+      flex-direction: column;
+      align-items: stretch;
+
+      ion-label {
+        color: #fff;
+        margin-bottom: 8px;
+
+        h2 {
+          color: #fff;
+          margin-bottom: 4px;
+        }
+
+        p {
+          color: #ccc;
+        }
+      }
+
+      .game-actions {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+
+        .btn-edit {
+          --background: #007bff;
+          --border-radius: 8px;
+          font-weight: bold;
+        }
+
+        .btn-remove {
+          --background: #dc3545;
+          --border-radius: 8px;
+          font-weight: bold;
+        }
+      }
+
+      .edit-form {
+        width: 100%;
+
+        ion-item {
+          --background: #333;
+          --color: #fff;
+          border-radius: 8px;
+          margin-top: 8px;
+
+          ion-label {
+            color: #aaa;
+          }
+
+          ion-input, ion-select {
+            color: white;
+          }
+        }
+
+        .edit-actions {
+          display: flex;
+          gap: 8px;
+          justify-content: flex-end;
+          margin-top: 12px;
+
+          .btn-save {
+            --background: #28a745;
+            --border-radius: 8px;
+            font-weight: bold;
+          }
+
+          .btn-cancel {
+            --background: #6c757d;
+            --border-radius: 8px;
+            font-weight: bold;
+          }
+        }
+      }
+    }
+  }
+}

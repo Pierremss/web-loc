@@ -1,0 +1,52 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Descobrir jogadores</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <div class="deck" *ngIf="!loading && top(); else skeleton">
+    <div
+      id="swipe-card"
+      class="card"
+      [style.transform]="'translate(' + dx + 'px,' + dy + 'px) rotate(' + angle + 'deg)'"
+      [class.dragging]="dragging"
+      (mousedown)="onDragStart($event)"
+      (mousemove)="onDragMove($event)"
+      (mouseup)="onDragEnd()"
+      (mouseleave)="onDragEnd()"
+      (touchstart)="onDragStart($event)"
+      (touchmove)="onDragMove($event)"
+      (touchend)="onDragEnd()">
+  <img [src]="normalizeAvatar(top()?.avatar_url)" (error)="onImgError($event)" alt="avatar" />
+
+  <div class="overlay like" [style.opacity]="Math.max(0, Math.min(1, dx/120))">LIKE</div>
+  <div class="overlay pass" [style.opacity]="Math.max(0, Math.min(1, -dx/120))">PASS</div>
+
+      <div class="gradient"></div>
+      <div class="info">
+        <h2>
+          {{ top()?.name }}
+          <small>{{ '@' + (top()?.nickname || '') }}</small>
+        </h2>
+        <p class="meta">{{ top()?.game_style }} • {{ top()?.platforms }}</p>
+      </div>
+    </div>
+
+    <div class="fab-actions">
+      <button class="btn pass" [disabled]="busy" (click)="onPass()">✕</button>
+      <button class="btn like" [disabled]="busy" (click)="onLike()">❤</button>
+    </div>
+  </div>
+  <ng-template #skeleton>
+    <ion-list>
+      <ion-item *ngFor="let i of [1,2,3,4,5]">
+        <ion-thumbnail slot="start"><ion-skeleton-text animated style="width: 64px; height: 64px;"></ion-skeleton-text></ion-thumbnail>
+        <ion-label>
+          <ion-skeleton-text animated style="width: 60%"></ion-skeleton-text>
+          <ion-skeleton-text animated style="width: 40%"></ion-skeleton-text>
+        </ion-label>
+      </ion-item>
+    </ion-list>
+  </ng-template>
+</ion-content>
