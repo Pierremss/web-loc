@@ -30,3 +30,77 @@
 .btn:active { transform: scale(.96); }
 .btn.pass { background: #1f2937; color: #fff; }
 .btn.like { background: #10b981; color: #fff; }
+
+.empty-state {
+	min-height: 100%;
+	padding: 32px 24px 120px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	text-align: center;
+	background: radial-gradient(120% 120% at 50% 10%, rgba(99,102,241,.18) 0%, rgba(14,15,18,0) 65%);
+}
+
+.empty-card {
+	max-width: 360px;
+	width: 100%;
+	padding: 40px 32px;
+	border-radius: 28px;
+	background: rgba(20,22,28,.85);
+	backdrop-filter: blur(22px);
+	-webkit-backdrop-filter: blur(22px);
+	box-shadow: 0 28px 70px rgba(0,0,0,.45);
+	border: 1px solid rgba(255,255,255,.06);
+	display: flex;
+	flex-direction: column;
+	gap: 18px;
+}
+
+.empty-card .icon-wrap {
+	width: 76px;
+	height: 76px;
+	margin: 0 auto;
+	border-radius: 50%;
+	background: linear-gradient(135deg, rgba(99,102,241,.18), rgba(59,130,246,.24));
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: #60a5fa;
+	box-shadow: 0 20px 30px rgba(59,130,246,.18);
+}
+
+.empty-card ion-icon[name="people-outline"] { font-size: 32px; }
+.empty-card h2 { margin: 0; font-size: 22px; font-weight: 700; color: #f9fafb; letter-spacing: .3px; }
+.empty-card p { margin: 0; font-size: 15px; line-height: 1.6; color: rgba(203,213,225,.85); }
+
+.empty-card ion-button {
+	margin-top: 4px;
+	align-self: center;
+	--border-radius: 999px;
+	--padding-start: 22px;
+	--padding-end: 22px;
+	--padding-top: 12px;
+	--padding-bottom: 12px;
+	--background: linear-gradient(135deg, #6366f1, #8b5cf6);
+	--background-hover: linear-gradient(135deg, #4f46e5, #7c3aed);
+	--background-activated: linear-gradient(135deg, #4f46e5, #7c3aed);
+	--box-shadow: 0 25px 40px rgba(99,102,241,.35);
+	font-weight: 600;
+	letter-spacing: .4px;
+}
+
+.empty-card ion-button[disabled] {
+	--background: rgba(99,102,241,.35);
+	--box-shadow: none;
+	opacity: .7;
+}
+
+.empty-card ion-spinner { --color: #fff; }
+
+@media (max-width: 480px) {
+	.card { height: 62vh; }
+	.fab-actions { bottom: 20px; gap: 18px; }
+	.btn { width: 58px; height: 58px; font-size: 22px; }
+	.empty-state { padding: 24px 20px 100px; }
+	.empty-card { padding: 32px 24px; border-radius: 22px; }
+}

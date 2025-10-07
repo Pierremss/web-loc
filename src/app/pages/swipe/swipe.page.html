@@ -5,7 +5,17 @@
 </ion-header>
 
 <ion-content [fullscreen]="true">
-  <div class="deck" *ngIf="!loading && top(); else skeleton">
+  <ion-refresher slot="fixed" (ionRefresh)="handlePullRefresh($event)">
+    <ion-refresher-content
+      pullingIcon="chevron-down-circle-outline"
+      refreshingSpinner="crescent"
+      pullingText="Puxe para atualizar"
+      refreshingText="Buscando jogadores...">
+    </ion-refresher-content>
+  </ion-refresher>
+
+  <ng-container *ngIf="items.length > 0; else fallback">
+    <div class="deck">
     <div
       id="swipe-card"
       class="card"
@@ -38,6 +48,34 @@
       <button class="btn like" [disabled]="busy" (click)="onLike()">❤</button>
     </div>
   </div>
+  </ng-container>
+
+  <ng-template #fallback>
+    <ng-container *ngIf="loading; else emptyState">
+      <ng-container *ngTemplateOutlet="skeleton"></ng-container>
+    </ng-container>
+  </ng-template>
+
+  <ng-template #emptyState>
+    <div class="empty-state">
+      <div class="empty-card">
+        <div class="icon-wrap">
+          <ion-icon name="people-outline"></ion-icon>
+        </div>
+        <h2>Nenhum jogador encontrado</h2>
+        <p>
+          Assim que novos jogadores se cadastrarem eles aparecem por aqui.
+          Atualize para ver se já temos alguém compatível com você.
+        </p>
+        <ion-button shape="round" color="primary" (click)="onRefresh()" [disabled]="loading">
+          <ion-icon slot="start" name="refresh-outline"></ion-icon>
+          Atualizar
+          <ion-spinner slot="end" *ngIf="loading" name="dots"></ion-spinner>
+        </ion-button>
+      </div>
+    </div>
+  </ng-template>
+
   <ng-template #skeleton>
     <ion-list>
       <ion-item *ngFor="let i of [1,2,3,4,5]">
