@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 
@@ -13,7 +13,7 @@ export interface UserSummary {
 @Injectable({ providedIn: 'root' })
 export class UsersService {
   private base = `${environment.apiBase}/users`;
-  constructor(private http: HttpClient) {}
+  private readonly http = inject(HttpClient);
 
   search(q: string) {
     const params = new HttpParams().set('q', q);

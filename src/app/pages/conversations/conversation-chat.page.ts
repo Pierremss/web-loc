@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { ConversationsService } from '../../services/conversations.service';
 import { SocketService } from '../../services/socket.service';
@@ -17,12 +17,10 @@ export class ConversationChatPage implements OnInit, OnDestroy {
   typingUsers = new Set<number>();
   private handlers: { [k: string]: (...args: any[]) => void } = {};
 
-  constructor(
-    private route: ActivatedRoute,
-    private convSvc: ConversationsService,
-    private socketSvc: SocketService,
-    public auth: AuthService
-  ) {}
+  private readonly route = inject(ActivatedRoute);
+  private readonly convSvc = inject(ConversationsService);
+  private readonly socketSvc = inject(SocketService);
+  readonly auth = inject(AuthService);
 
   ngOnInit() {
     this.convId = Number(this.route.snapshot.paramMap.get('id'));

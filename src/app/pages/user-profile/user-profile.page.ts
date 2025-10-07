@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { UsersService, UserSummary } from '../../services/users.service';
 import { FriendsService } from '../../services/friends.service';
@@ -15,13 +15,10 @@ export class UserProfilePage implements OnInit {
   meId: number | null = null;
   loading = true;
   error: string | null = null;
-
-  constructor(
-    private route: ActivatedRoute,
-    private users: UsersService,
-    private friends: FriendsService,
-    private auth: AuthService
-  ) {}
+  private readonly route = inject(ActivatedRoute);
+  private readonly users = inject(UsersService);
+  private readonly friends = inject(FriendsService);
+  private readonly auth = inject(AuthService);
 
   ngOnInit() {
     const id = Number(this.route.snapshot.paramMap.get('id'));

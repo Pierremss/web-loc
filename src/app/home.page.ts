@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { AuthService } from './modules/auth/auth.service';
 import { environment } from '../environments/environment';
 
@@ -8,9 +8,9 @@ import { environment } from '../environments/environment';
   templateUrl: './home.page.html',
   styleUrls: ['./home.page.scss']
 })
-export class HomePage {
+export class HomePage implements OnInit {
   loading = true;
-  constructor(public auth: AuthService) {}
+  readonly auth = inject(AuthService);
 
   ngOnInit() {
     // Breve skeleton na abertura

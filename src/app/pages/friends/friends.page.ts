@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { FriendsService } from '../../services/friends.service';
 import { SocketService } from '../../services/socket.service';
 import { AuthService } from '../../modules/auth/auth.service';
@@ -19,12 +19,10 @@ export class FriendsPage implements OnInit {
   loading = false; // loading da busca
   pageLoading = true; // skeleton inicial da página
 
-  constructor(
-    private friendsSvc: FriendsService,
-    private socketSvc: SocketService,
-    private auth: AuthService,
-    private users: UsersService
-  ) {}
+  private readonly friendsSvc = inject(FriendsService);
+  private readonly socketSvc = inject(SocketService);
+  readonly auth = inject(AuthService);
+  private readonly users = inject(UsersService);
 
   ngOnInit() {
   this.reload();

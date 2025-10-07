@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { tap } from 'rxjs/operators';
 
@@ -20,8 +20,9 @@ export class AuthService {
   private base = '/api/auth';
   user: User | null = null;
   token: string | null = null;
+  private readonly http = inject(HttpClient);
 
-  constructor(private http: HttpClient) {
+  constructor() {
     this.token = localStorage.getItem('token');
     const u = localStorage.getItem('user');
     this.user = u ? JSON.parse(u) : null;

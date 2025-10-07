@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from './auth.service';
 
@@ -13,8 +13,8 @@ export class LoginPage {
   password = '';
   loading = false;
   error = '';
-
-  constructor(private auth: AuthService, private router: Router) {}
+  private readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
 
   submit() {
     this.loading = true;

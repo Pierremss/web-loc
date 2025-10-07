@@ -1,11 +1,12 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { AuthService } from '../auth/auth.service';
 
 @Injectable({ providedIn: 'root' })
 export class UsersService {
   private base = '/api/users';
-  constructor(private http: HttpClient, private auth: AuthService) {}
+  private readonly http = inject(HttpClient);
+  private readonly auth = inject(AuthService);
 
   private headers() {
     return { headers: new HttpHeaders({ Authorization: `Bearer ${this.auth.token}` }) };

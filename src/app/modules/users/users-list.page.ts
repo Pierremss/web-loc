@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { UsersService } from './users.service';
 
 @Component({
@@ -12,7 +12,7 @@ export class UsersListPage implements OnInit {
   searchTerm: string = '';
   filteredUsers: any[] = [];
 
-  constructor(private usersService: UsersService) {}
+  private readonly usersService = inject(UsersService);
 
   ngOnInit() { this.load(); }
   ionViewWillEnter() { this.load(); }

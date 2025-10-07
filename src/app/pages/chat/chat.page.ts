@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { MessagesService } from '../../services/messages.service';
 import { SocketService } from '../../services/socket.service';
@@ -32,13 +32,11 @@ export class ChatPage implements OnInit, OnDestroy {
   private handlerDelivered: any;
   private handlerRead: any;
 
-  constructor(
-    private route: ActivatedRoute,
-    private msgSvc: MessagesService,
-    private socketSvc: SocketService,
-    public auth: AuthService,
-    private users: UsersService
-  ) {}
+  private readonly route = inject(ActivatedRoute);
+  private readonly msgSvc = inject(MessagesService);
+  private readonly socketSvc = inject(SocketService);
+  readonly auth = inject(AuthService);
+  private readonly users = inject(UsersService);
 
   ngOnInit() {
     this.otherId = Number(this.route.snapshot.paramMap.get('id'));

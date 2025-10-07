@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { GamesService } from './games.service';
 import { AuthService } from '../auth/auth.service';
 
@@ -20,7 +20,8 @@ export class GamesListPage implements OnInit {
   editName: string = '';
   editPlatforms: string[] = [];
 
-  constructor(private gamesService: GamesService, public auth: AuthService) {}
+  private readonly gamesService = inject(GamesService);
+  readonly auth = inject(AuthService);
   ngOnInit() { this.load(); }
   ionViewWillEnter() { this.load(); }
   load() {

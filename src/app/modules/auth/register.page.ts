@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from './auth.service';
 import { GamesService } from '../games/games.service';
@@ -47,11 +47,11 @@ export class RegisterPage implements OnInit {
   error: string = '';
   ok: boolean = false;
 
-  constructor(
-    private auth: AuthService,
-    private router: Router,
-    private gamesService: GamesService
-  ) {
+  private readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
+  private readonly gamesService = inject(GamesService);
+
+  constructor() {
     // Inicializa todos os dias com array vazio
     this.diasSemana.forEach((dia) => this.horariosSelecionados[dia] = []);
   }

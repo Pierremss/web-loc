@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { AuthService } from '../../modules/auth/auth.service';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
@@ -16,15 +16,12 @@ export class EditarPerfilPage implements OnInit {
   form: any = {};
   loading = true;
   error = '';
-
-  constructor(
-    public auth: AuthService,
-    private http: HttpClient,
-    private router: Router,
-    private users: UsersService,
-    private toastCtrl: ToastController,
-    private loadingCtrl: LoadingController
-  ) {}
+  readonly auth = inject(AuthService);
+  private readonly http = inject(HttpClient);
+  private readonly router = inject(Router);
+  private readonly users = inject(UsersService);
+  private readonly toastCtrl = inject(ToastController);
+  private readonly loadingCtrl = inject(LoadingController);
 
   private headers() {
     return this.auth.token ? { headers: new HttpHeaders({ Authorization: `Bearer ${this.auth.token}` }) } : {};

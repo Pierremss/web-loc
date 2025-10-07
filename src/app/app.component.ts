@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { AuthService } from './modules/auth/auth.service';
 import { FriendsService } from './services/friends.service';
 import { ConversationsService } from './services/conversations.service';
@@ -27,13 +27,13 @@ export class AppComponent {
   showMenu = true;
   unreadRooms = 0;
 
-  constructor(
-    public auth: AuthService,
-    private friends: FriendsService,
-    private sockets: SocketService,
-    private convs: ConversationsService,
-    private router: Router,
-  ) {
+  readonly auth = inject(AuthService);
+  private readonly friends = inject(FriendsService);
+  private readonly sockets = inject(SocketService);
+  private readonly convs = inject(ConversationsService);
+  private readonly router = inject(Router);
+
+  constructor() {
     this.refreshPending();
     this.refreshUnreadRooms();
     // Atualiza em tempo real via socket, se logado

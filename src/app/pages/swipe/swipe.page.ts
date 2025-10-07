@@ -2,6 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { SwipeService } from '../../services/swipe.service';
 import { environment } from '../../../environments/environment';
 import { firstValueFrom } from 'rxjs';
+import { ToastController } from '@ionic/angular';
 
 @Component({
   selector: 'app-swipe',
@@ -19,18 +20,25 @@ export class SwipePage implements OnInit {
   angle = 0;
   Math = Math;
   private readonly swipe = inject(SwipeService);
+  private readonly toast = inject(ToastController);
 
   ngOnInit() {
-    void this.load();
+    void this.load('initial');
   }
 
-  async load() {
+  async load(reason: 'initial' | 'refresh' | 'auto' = 'initial') {
     if (this.loading) return;
     this.loading = true;
     try {
       const res = await firstValueFrom(this.swipe.deck(20));
       this.items = res?.items || [];
+      if (!this.items.length && reason === 'refresh') {
+        await this.presentToast('Nenhum jogador disponível no momento. Tente novamente em instantes.');
+      }
     } catch {
+      if (reason !== 'auto') {
+        await this.presentToast('Não foi possível atualizar os jogadores.', 'danger');
+      }
       this.items = this.items || [];
     } finally {
       this.loading = false;
@@ -47,7 +55,7 @@ export class SwipePage implements OnInit {
       next: () => {
         this.items.shift();
         this.busy = false;
-        if (this.items.length < 5) void this.load();
+        if (this.items.length < 5) void this.load('auto');
       },
       error: () => { this.busy = false; }
     });
@@ -61,7 +69,7 @@ export class SwipePage implements OnInit {
       next: () => {
         this.items.shift();
         this.busy = false;
-        if (this.items.length < 5) void this.load();
+        if (this.items.length < 5) void this.load('auto');
       },
       error: () => { this.busy = false; }
     });
@@ -109,14 +117,28 @@ export class SwipePage implements OnInit {
   }
 
   async onRefresh() {
-    await this.load();
+    await this.load('refresh');
   }
 
   async handlePullRefresh(event: CustomEvent) {
-    await this.load();
+    await this.load('refresh');
     const refresher = event.target as any;
     if (refresher && typeof refresher.complete === 'function') {
       refresher.complete();
     }
+  }
+
+  private async presentToast(message: string, color: 'dark' | 'danger' = 'dark') {
+    try {
+      const toast = await this.toast.create({
+        message,
+        duration: 2600,
+        color,
+        position: 'bottom',
+        translucent: true,
+        keyboardClose: true,
+      });
+      await toast.present();
+    } catch {}
   }
 }

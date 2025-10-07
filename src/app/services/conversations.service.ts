@@ -1,11 +1,11 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class ConversationsService {
   private base = `${environment.apiBase}/conversations`;
-  constructor(private http: HttpClient) {}
+  private readonly http = inject(HttpClient);
 
   list() {
     return this.http.get<any[]>(`${this.base}`);

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../modules/auth/auth.service';
 import { GamesService } from '../../modules/games/games.service';
@@ -16,21 +16,16 @@ export class JogadorPerfilPage implements OnInit {
   favoritos: FavoriteGame[] = [];
   favoritosFiltrados: FavoriteGame[] = [];
   todosJogos: any[] = [];
-  user: any;
+  readonly auth = inject(AuthService);
+  private readonly gamesService = inject(GamesService);
+  private readonly http = inject(HttpClient);
+  private readonly router = inject(Router);
+  user: any = this.auth.user;
   novoFavorito: number | null = null;
   loading = false;
   error = '';
   filtro = '';
   ordenacao: 'az' | 'recent' = 'az';
-
-  constructor(
-    private auth: AuthService,
-    private gamesService: GamesService,
-    private http: HttpClient,
-    private router: Router
-  ) {
-    this.user = this.auth.user;
-  }
 
   private headers() {
     return this.auth.token ? { headers: new HttpHeaders({ Authorization: `Bearer ${this.auth.token}` }) } : {};

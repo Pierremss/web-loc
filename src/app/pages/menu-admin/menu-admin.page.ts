@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../modules/auth/auth.service';
 
@@ -8,12 +8,9 @@ import { AuthService } from '../../modules/auth/auth.service';
   styleUrls: ['./menu-admin.page.scss'],
   standalone: false,
 })
-export class MenuAdminPage implements OnInit {
-
-  constructor(private router: Router, private auth: AuthService) { }
-
-  ngOnInit() {
-  }
+export class MenuAdminPage {
+  private readonly router = inject(Router);
+  private readonly auth = inject(AuthService);
 
   logout() {
     this.auth.logout();

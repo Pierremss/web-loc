@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { ConversationsService } from '../../services/conversations.service';
 import { SocketService } from '../../services/socket.service';
@@ -21,7 +21,10 @@ export class ConversationsListPage implements OnInit {
     if (typing) this.typing[conversationId].add(userId); else this.typing[conversationId].delete(userId);
   };
 
-  constructor(private convSvc: ConversationsService, private router: Router, private sockets: SocketService, public auth: AuthService) {}
+  private readonly convSvc = inject(ConversationsService);
+  private readonly router = inject(Router);
+  private readonly sockets = inject(SocketService);
+  readonly auth = inject(AuthService);
 
   ngOnInit() {
     this.load();
