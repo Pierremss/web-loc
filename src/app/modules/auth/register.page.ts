@@ -2,6 +2,8 @@ import { Component, OnInit, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from './auth.service';
 import { GamesService } from '../games/games.service';
+import { Platform } from '../../model/platform';
+import { PlatformsService } from '../../services/platforms.service';
 
 @Component({
   selector: 'app-register',
@@ -40,6 +42,7 @@ export class RegisterPage implements OnInit {
     profile: ''
   };
   jogos: any[] = [];
+  platformOptions: Platform[] = [];
   diasSemana: string[] = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
   periodos: string[] = ['Manha', 'Tarde', 'Noite', 'Madrugada'];
   horariosSelecionados: { [dia: string]: string[] } = {};
@@ -50,6 +53,7 @@ export class RegisterPage implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly gamesService = inject(GamesService);
+  private readonly platformsService = inject(PlatformsService);
 
   constructor() {
     // Inicializa todos os dias com array vazio
@@ -58,6 +62,9 @@ export class RegisterPage implements OnInit {
 
   ngOnInit(): void {
     this.gamesService.list().subscribe((jogos) => this.jogos = jogos);
+    this.platformsService.list().subscribe(platforms => {
+      this.platformOptions = platforms.sort((a, b) => a.name.localeCompare(b.name));
+    });
   }
 
   erros: { [key: string]: string } = {};
@@ -84,10 +91,14 @@ export class RegisterPage implements OnInit {
         this.etapaAtual = 2;
       }
     } else if (this.etapaAtual === 2) {
-      if (!this.form.jogos_favoritos || this.form.jogos_favoritos.length === 0) {
+      const jogosSelecionados = this.normalizeIdArray(this.form.jogos_favoritos);
+      this.form.jogos_favoritos = jogosSelecionados;
+      if (!jogosSelecionados.length) {
         this.erros['jogos_favoritos'] = 'Selecione pelo menos um jogo favorito.';
       }
-      if (!this.form.platforms || this.form.platforms.length === 0) {
+      const plataformasSelecionadas = this.normalizeIdArray(this.form.platforms);
+      this.form.platforms = plataformasSelecionadas;
+      if (!plataformasSelecionadas.length) {
         this.erros['platforms'] = 'Selecione pelo menos uma plataforma.';
       }
       if (!this.form.game_style || this.form.game_style.trim() === '') {
@@ -124,11 +135,20 @@ export class RegisterPage implements OnInit {
     this.loading = true;
     this.error = '';
     this.errorDetails = '';
+    const platformIds = this.normalizeIdArray(this.form.platforms);
+    const favoriteIds = this.normalizeIdArray(this.form.jogos_favoritos);
+    if (!platformIds.length) {
+      this.loading = false;
+      this.error = 'Selecione pelo menos uma plataforma válida.';
+      return;
+    }
+    this.form.platforms = platformIds;
+    this.form.jogos_favoritos = favoriteIds;
     console.log('[REGISTER] Enviando cadastro...', {
       name: this.form.name,
       email: this.form.email,
-      jogos_favoritos: this.form.jogos_favoritos,
-      platforms: this.form.platforms,
+      jogos_favoritos: favoriteIds,
+      platforms: platformIds,
       hasAvatar: !!this.avatarFile
     });
 
@@ -142,8 +162,8 @@ export class RegisterPage implements OnInit {
     fd.append('available_times', this.form.available_times || '');
     fd.append('profile', this.form.profile || '');
     // Arrays como JSON para o backend parsear
-    fd.append('platforms', JSON.stringify(this.form.platforms || []));
-    fd.append('jogos_favoritos', JSON.stringify(this.form.jogos_favoritos || []));
+  fd.append('platforms', JSON.stringify(platformIds));
+  fd.append('jogos_favoritos', JSON.stringify(favoriteIds));
     if (this.avatarFile) {
       fd.append('avatar', this.avatarFile, this.avatarFile.name);
     }
@@ -200,5 +220,18 @@ export class RegisterPage implements OnInit {
     const reader = new FileReader();
     reader.onload = () => this.avatarPreview = reader.result as string;
     reader.readAsDataURL(file);
+  }
+
+  private normalizeIdArray(value: any): number[] {
+    if (!Array.isArray(value)) return [];
+    const ids = value
+      .map((item: any) => {
+        if (typeof item === 'number') return item;
+        if (typeof item === 'string' && item.trim() !== '') return Number(item);
+        if (item && typeof item === 'object' && 'id' in item) return Number(item.id);
+        return NaN;
+      })
+      .filter((id: number) => Number.isInteger(id) && id > 0);
+    return Array.from(new Set(ids));
   }
 }

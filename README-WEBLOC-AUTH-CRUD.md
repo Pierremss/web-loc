@@ -39,7 +39,11 @@ src/app/modules/
    ```sql
    SOURCE server/sql/schema.sql;
    ```
-3. O banco padrão é `webloc`. Ajuste conforme desejar no `.env`.
+3. (Opcional, para bancos já populados) execute a migração que converte o campo antigo de plataformas em registros na nova tabela relacional:
+  ```sql
+  SOURCE server/sql/migrations/20251009_migrate_platforms.sql;
+  ```
+4. O banco padrão é `webloc`. Ajuste conforme desejar no `.env`.
 
 ## Backend (Express)
 
@@ -87,7 +91,7 @@ src/app/modules/
 
 - As telas são **mínimas** e podem ser refinadas (validações, UX, feedbacks).
 - Os serviços são isolados e prontos para ampliar para mais casos de uso.
-- O campo `platforms` dos jogos usa `SET('PlayStation','Xbox','Nintendo','PC')` no MySQL.
+- Plataformas de jogos agora são guardadas em tabelas normalizadas (`platforms` e `game_platforms`) e podem ser cadastradas/renomeadas pelo admin diretamente no painel de jogos.
 
 ---
 Feito para cumprir: **login/cadastro**, **CRUD usuários e jogos**, **módulos separados**, e **persistência MySQL**.

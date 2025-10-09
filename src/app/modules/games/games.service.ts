@@ -1,6 +1,15 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { Platform } from '../../model/platform';
 import { AuthService } from '../auth/auth.service';
+
+export interface Game {
+  id: number;
+  name: string;
+  created_at?: string;
+  platforms: Platform[];
+}
 
 @Injectable({ providedIn: 'root' })
 export class GamesService {
@@ -11,9 +20,9 @@ export class GamesService {
     return this.auth.token ? { headers: new HttpHeaders({ Authorization: `Bearer ${this.auth.token}` }) } : {};
   }
 
-  list() { return this.http.get<any[]>(this.base); }
-  get(id: number) { return this.http.get<any>(`${this.base}/${id}`); }
-  create(dto: any) { return this.http.post(this.base, dto, this.headers()); }
-  update(id: number, dto: any) { return this.http.put(`${this.base}/${id}`, dto, this.headers()); }
-  delete(id: number) { return this.http.delete(`${this.base}/${id}`, this.headers()); }
+  list(): Observable<Game[]> { return this.http.get<Game[]>(this.base); }
+  get(id: number): Observable<Game> { return this.http.get<Game>(`${this.base}/${id}`); }
+  create(dto: any) { return this.http.post<Game>(this.base, dto, this.headers()); }
+  update(id: number, dto: any) { return this.http.put<Game>(`${this.base}/${id}`, dto, this.headers()); }
+  delete(id: number) { return this.http.delete<void>(`${this.base}/${id}`, this.headers()); }
 }

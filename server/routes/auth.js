@@ -9,6 +9,43 @@ import { pool } from '../db.js';
 
 const router = Router();
 
+function coerceArray(value) {
+  if (Array.isArray(value)) return value;
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return [];
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) return parsed;
+    } catch {}
+    if (trimmed.includes(',')) {
+      return trimmed.split(',').map((item) => item.trim()).filter(Boolean);
+    }
+    return [trimmed];
+  }
+  if (value && typeof value === 'object' && !('length' in value)) {
+    return [value];
+  }
+  return [];
+}
+
+function normalizeNumericIds(value) {
+  const arr = coerceArray(value);
+  const ids = arr.map((item) => {
+    if (typeof item === 'number') return item;
+    if (typeof item === 'string' && item.trim() !== '') return Number(item);
+    if (item && typeof item === 'object' && 'id' in item) return Number(item.id);
+    return NaN;
+  }).filter((id) => Number.isInteger(id) && id > 0);
+  return Array.from(new Set(ids));
+}
+
+async function fetchPlatformsByIds(ids) {
+  if (!ids.length) return [];
+  const [rows] = await pool.query('SELECT id, name FROM platforms WHERE id IN (?)', [ids]);
+  return rows;
+}
+
 // Configuração de upload para avatar no cadastro
 const regUploadDir = path.resolve(process.cwd(), 'uploads', 'avatars');
 if (!fs.existsSync(regUploadDir)) fs.mkdirSync(regUploadDir, { recursive: true });
@@ -62,17 +99,12 @@ router.post('/register',
     }
 
   let { name, nickname, email, password, platforms, game_style, available_times, profile, jogos_favoritos } = req.body;
-  // Se campos vierem JSON em string (por causa de multipart) tentar parse
-  try { if (typeof jogos_favoritos === 'string' && jogos_favoritos.startsWith('[')) jogos_favoritos = JSON.parse(jogos_favoritos); } catch {}
-  try { if (typeof platforms === 'string' && platforms.startsWith('[')) platforms = JSON.parse(platforms); } catch {}
-    // Garante que platforms seja string separada por vírgula
-    if (Array.isArray(platforms)) {
-      platforms = platforms.join(',');
-    } else if (typeof platforms === 'string') {
-      // mantém como está
-    } else {
-      platforms = '';
-    }
+  const platformIds = normalizeNumericIds(platforms);
+  const favoriteGameIds = normalizeNumericIds(jogos_favoritos);
+  if (!platformIds.length) {
+    return res.status(400).json({ error: 'Selecione ao menos uma plataforma válida' });
+  }
+  let platformsString = '';
     // Garante que os demais campos não sejam undefined
   nickname = typeof nickname === 'string' ? nickname : '';
   game_style = typeof game_style === 'string' ? game_style : '';
@@ -80,6 +112,17 @@ router.post('/register',
   profile = typeof profile === 'string' ? profile : '';
 
     try {
+      const platformRows = await fetchPlatformsByIds(platformIds);
+      const foundIds = new Set(platformRows.map((row) => row.id));
+      const missingPlatforms = platformIds.filter((id) => !foundIds.has(id));
+      if (missingPlatforms.length) {
+        return res.status(400).json({ error: 'Plataformas inválidas', missing: missingPlatforms });
+      }
+      const platformNames = platformRows
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map((row) => row.name);
+      platformsString = platformNames.join(',');
+
       const [exists] = await pool.query('SELECT id FROM users WHERE email = ?', [email]);
       if (exists.length) return res.status(409).json({ error: 'E-mail já cadastrado' });
       const password_hash = await bcrypt.hash(password, 10);
@@ -89,12 +132,12 @@ router.post('/register',
       }
       const [result] = await pool.query(
         'INSERT INTO users (name, nickname, email, password_hash, is_admin, platforms, game_style, available_times, profile, avatar_url) VALUES (?,?,?,?,0,?,?,?,?,?)',
-        [name, nickname, email, password_hash, platforms, game_style, available_times, profile, avatar_url]
+        [name, nickname, email, password_hash, platformsString, game_style, available_times, profile, avatar_url]
       );
       const userId = result.insertId;
       // Salvar jogos favoritos na tabela user_games
-      if (Array.isArray(jogos_favoritos) && jogos_favoritos.length > 0) {
-        for (const gameId of jogos_favoritos) {
+      if (favoriteGameIds.length > 0) {
+        for (const gameId of favoriteGameIds) {
           await pool.query('INSERT INTO user_games (user_id, game_id) VALUES (?,?)', [userId, gameId]);
         }
       }

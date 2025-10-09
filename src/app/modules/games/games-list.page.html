@@ -17,7 +17,7 @@
       </ion-item>
     </div>
 
-    <div class="add-game-section">
+  <div class="add-game-section" *ngIf="auth.isAdmin()">
       <h3>Adicionar Novo Jogo</h3>
       <ion-item>
         <ion-label position="floating">Nome do jogo</ion-label>
@@ -25,8 +25,8 @@
       </ion-item>
       <ion-item>
         <ion-label>Plataformas</ion-label>
-        <ion-select multiple="true" [(ngModel)]="platforms">
-          <ion-select-option *ngFor="let p of allPlatforms" [value]="p">{{p}}</ion-select-option>
+        <ion-select multiple="true" [(ngModel)]="selectedPlatformIds">
+          <ion-select-option *ngFor="let p of platformOptions" [value]="p.id">{{p.name}}</ion-select-option>
         </ion-select>
       </ion-item>
       <ion-button expand="block" (click)="create()" class="btn-primary">
@@ -35,11 +35,56 @@
       </ion-button>
     </div>
 
+    <div class="manage-platforms" *ngIf="auth.isAdmin()">
+      <h3>Gerenciar Plataformas</h3>
+      <div class="platform-form" *ngIf="platformEditId === null; else editPlatform">
+        <ion-item>
+          <ion-label position="floating">Nova plataforma</ion-label>
+          <ion-input [(ngModel)]="platformFormName"></ion-input>
+        </ion-item>
+        <ion-button expand="block" (click)="createPlatform()" class="btn-primary">
+          <ion-icon name="add-circle-outline" slot="start"></ion-icon>
+          Adicionar Plataforma
+        </ion-button>
+      </div>
+      <ng-template #editPlatform>
+        <ion-item>
+          <ion-label position="floating">Renomear plataforma</ion-label>
+          <ion-input [(ngModel)]="platformEditName"></ion-input>
+        </ion-item>
+        <div class="edit-actions">
+          <ion-button color="success" (click)="savePlatformEdit()" class="btn-save">
+            <ion-icon name="checkmark-outline" slot="start"></ion-icon>
+            Salvar
+          </ion-button>
+          <ion-button color="medium" (click)="cancelPlatformEdit()" class="btn-cancel">
+            <ion-icon name="close-outline" slot="start"></ion-icon>
+            Cancelar
+          </ion-button>
+        </div>
+      </ng-template>
+      <ion-list>
+        <ion-item *ngFor="let p of platformOptions">
+          <ion-label>{{ p.name }}</ion-label>
+          <div class="game-actions">
+            <ion-button color="primary" (click)="startPlatformEdit(p)" class="btn-edit">
+              <ion-icon name="create-outline" slot="start"></ion-icon>
+              Editar
+            </ion-button>
+            <ion-button color="danger" (click)="removePlatform(p.id)" class="btn-remove">
+              <ion-icon name="trash-outline" slot="start"></ion-icon>
+              Remover
+            </ion-button>
+          </div>
+        </ion-item>
+      </ion-list>
+    </div>
+
     <ion-list class="games-list">
       <ion-item *ngFor="let g of filteredGames" class="game-item">
         <ion-label *ngIf="editId !== g.id">
           <h2>{{g.name}}</h2>
-          <p>{{g.platforms}}</p>
+          <p>{{ formatPlatforms(g.platforms) }}</p>
         </ion-label>
         <div *ngIf="editId !== g.id" class="game-actions">
           <ion-button *ngIf="auth.isAdmin()" color="primary" (click)="startEdit(g)" class="btn-edit">
@@ -60,8 +105,8 @@
           </ion-item>
           <ion-item>
             <ion-label>Plataformas</ion-label>
-            <ion-select multiple="true" [(ngModel)]="editPlatforms">
-              <ion-select-option *ngFor="let p of allPlatforms" [value]="p">{{p}}</ion-select-option>
+            <ion-select multiple="true" [(ngModel)]="editPlatformIds">
+              <ion-select-option *ngFor="let p of platformOptions" [value]="p.id">{{p.name}}</ion-select-option>
             </ion-select>
           </ion-item>
           <div class="edit-actions">

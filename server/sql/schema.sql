@@ -103,12 +103,32 @@ CREATE TABLE IF NOT EXISTS conversation_invites (
 
 -- Garante que os campos existam mesmo em bancos antigos
 
+CREATE TABLE IF NOT EXISTS platforms (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(80) NOT NULL UNIQUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
 CREATE TABLE IF NOT EXISTS games (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(160) NOT NULL UNIQUE,
-  platforms SET('PlayStation','Xbox','Nintendo','PC') NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS game_platforms (
+  game_id INT NOT NULL,
+  platform_id INT NOT NULL,
+  PRIMARY KEY (game_id, platform_id),
+  CONSTRAINT fk_gp_game FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE,
+  CONSTRAINT fk_gp_platform FOREIGN KEY (platform_id) REFERENCES platforms(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+INSERT IGNORE INTO platforms (name) VALUES
+  ('PlayStation'),
+  ('Xbox'),
+  ('Nintendo'),
+  ('PC'),
+  ('Mobile');
 
 CREATE TABLE IF NOT EXISTS user_games (
   user_id INT NOT NULL,

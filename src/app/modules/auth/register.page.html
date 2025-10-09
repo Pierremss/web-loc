@@ -75,10 +75,7 @@
       <ion-item>
         <ion-label>Plataformas</ion-label>
         <ion-select multiple="true" [(ngModel)]="form.platforms" name="platforms">
-          <ion-select-option value="PC">PC</ion-select-option>
-          <ion-select-option value="Xbox">Xbox</ion-select-option>
-          <ion-select-option value="PS">PS</ion-select-option>
-          <ion-select-option value="Mobile">Mobile</ion-select-option>
+          <ion-select-option *ngFor="let p of platformOptions" [value]="p.id">{{ p.name }}</ion-select-option>
         </ion-select>
       </ion-item>
       <div *ngIf="erros['platforms']" class="error-message">{{ erros['platforms'] }}</div>

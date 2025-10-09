@@ -13,6 +13,7 @@ import friendRoutes from './routes/friends.js';
 import messageRoutes from './routes/messages.js';
 import conversationRoutes from './routes/conversations.js';
 import swipeRoutes from './routes/swipe.js';
+import platformRoutes from './routes/platforms.js';
 import { attachRealtime } from './realtime.js';
 import { createServer } from 'http';
 
@@ -40,6 +41,7 @@ app.use('/api/friends', friendRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/conversations', conversationRoutes);
 app.use('/api/swipe', swipeRoutes);
+app.use('/api/platforms', platformRoutes);
 
 const port = process.env.PORT || 3333;
 // Criar HTTP server e anexar Socket.IO

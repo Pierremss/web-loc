@@ -1,6 +1,8 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { GamesService } from './games.service';
+import { GamesService, Game } from './games.service';
 import { AuthService } from '../auth/auth.service';
+import { Platform } from '../../model/platform';
+import { PlatformsService } from '../../services/platforms.service';
 
 @Component({
   selector: 'app-games-list',
@@ -9,26 +11,61 @@ import { AuthService } from '../auth/auth.service';
   standalone: false,
 })
 export class GamesListPage implements OnInit {
-  games: any[] = [];
+  games: Game[] = [];
+  filteredGames: Game[] = [];
   name = '';
-  platforms: string[] = [];
-  allPlatforms = ['PlayStation','Xbox','Nintendo','PC'];
-  searchTerm: string = '';
-  filteredGames: any[] = [];
+  selectedPlatformIds: number[] = [];
+  platformOptions: Platform[] = [];
+  searchTerm = '';
 
-  editId: number|null = null;
-  editName: string = '';
-  editPlatforms: string[] = [];
+  editId: number | null = null;
+  editName = '';
+  editPlatformIds: number[] = [];
+
+  platformFormName = '';
+  platformEditId: number | null = null;
+  platformEditName = '';
 
   private readonly gamesService = inject(GamesService);
+  private readonly platformsService = inject(PlatformsService);
   readonly auth = inject(AuthService);
-  ngOnInit() { this.load(); }
-  ionViewWillEnter() { this.load(); }
-  load() {
-    this.gamesService.list().subscribe(g => {
-      this.games = g;
+
+  ngOnInit() {
+    this.refreshData();
+  }
+
+  ionViewWillEnter() {
+    this.refreshData();
+  }
+
+  private refreshData() {
+    this.refreshPlatforms();
+    this.loadGames();
+  }
+
+  private loadGames() {
+    this.gamesService.list().subscribe(games => {
+      this.games = games;
       this.searchGames();
     });
+  }
+
+  private refreshPlatforms() {
+    this.platformsService.list().subscribe(list => {
+      this.platformOptions = [...list].sort((a, b) => a.name.localeCompare(b.name));
+      this.syncSelectedPlatforms();
+    });
+  }
+
+  private syncSelectedPlatforms() {
+    const availableIds = new Set(this.platformOptions.map(p => p.id));
+    this.selectedPlatformIds = this.selectedPlatformIds.filter(id => availableIds.has(id));
+    this.editPlatformIds = this.editPlatformIds.filter(id => availableIds.has(id));
+  }
+
+  formatPlatforms(platforms: Platform[] = []): string {
+    if (!platforms.length) return '—';
+    return platforms.map(p => p.name).join(', ');
   }
 
   searchGames() {
@@ -41,38 +78,107 @@ export class GamesListPage implements OnInit {
       );
     }
   }
+
   create() {
     if (!this.auth.isAdmin()) return alert('Apenas admin');
-    this.gamesService.create({ name: this.name, platforms: this.platforms }).subscribe(() => {
-      this.name = '';
-      this.platforms = [];
-      this.load();
+    if (!this.name.trim() || this.selectedPlatformIds.length === 0) {
+      return alert('Informe um nome e ao menos uma plataforma');
+    }
+    this.gamesService.create({ name: this.name.trim(), platforms: this.selectedPlatformIds }).subscribe({
+      next: () => {
+        this.name = '';
+        this.selectedPlatformIds = [];
+        this.loadGames();
+      },
+      error: err => alert(err?.error?.error || 'Erro ao criar jogo')
     });
   }
-  remove(id: number) { 
+
+  remove(id: number) {
     if (!this.auth.isAdmin()) return alert('Apenas admin');
-    this.gamesService.delete(id).subscribe(() => this.load()); 
+    if (!confirm('Deseja realmente excluir este jogo?')) return;
+    this.gamesService.delete(id).subscribe({
+      next: () => this.loadGames(),
+      error: err => alert(err?.error?.error || 'Erro ao excluir jogo')
+    });
   }
 
-  startEdit(game: any) {
+  startEdit(game: Game) {
     if (!this.auth.isAdmin()) return alert('Apenas admin');
     this.editId = game.id;
     this.editName = game.name;
-    this.editPlatforms = Array.isArray(game.platforms) ? [...game.platforms] : String(game.platforms).split(',');
+    this.editPlatformIds = (game.platforms || []).map(p => p.id);
   }
 
   cancelEdit() {
     this.editId = null;
     this.editName = '';
-    this.editPlatforms = [];
+    this.editPlatformIds = [];
   }
 
   saveEdit() {
     if (!this.auth.isAdmin()) return alert('Apenas admin');
-    if (!this.editName || this.editPlatforms.length === 0) return alert('Preencha todos os campos');
-    this.gamesService.update(this.editId!, { name: this.editName, platforms: this.editPlatforms }).subscribe(() => {
-      this.cancelEdit();
-      this.load();
+    if (!this.editName.trim() || this.editPlatformIds.length === 0) {
+      return alert('Preencha todos os campos');
+    }
+    this.gamesService.update(this.editId!, { name: this.editName.trim(), platforms: this.editPlatformIds }).subscribe({
+      next: () => {
+        this.cancelEdit();
+        this.loadGames();
+      },
+      error: err => alert(err?.error?.error || 'Erro ao atualizar jogo')
+    });
+  }
+
+  createPlatform() {
+    if (!this.auth.isAdmin()) return alert('Apenas admin');
+    const name = this.platformFormName.trim();
+    if (!name) return alert('Informe o nome da plataforma');
+    this.platformsService.create({ name }).subscribe({
+      next: () => {
+        this.platformFormName = '';
+        this.refreshPlatforms();
+        this.loadGames();
+      },
+      error: err => alert(err?.error?.error || 'Erro ao criar plataforma')
+    });
+  }
+
+  startPlatformEdit(platform: Platform) {
+    if (!this.auth.isAdmin()) return alert('Apenas admin');
+    this.platformEditId = platform.id;
+    this.platformEditName = platform.name;
+  }
+
+  cancelPlatformEdit() {
+    this.platformEditId = null;
+    this.platformEditName = '';
+  }
+
+  savePlatformEdit() {
+    if (!this.auth.isAdmin()) return alert('Apenas admin');
+    if (!this.platformEditId) return;
+    const name = this.platformEditName.trim();
+    if (!name) return alert('Informe o nome da plataforma');
+    this.platformsService.update(this.platformEditId, { name }).subscribe({
+      next: () => {
+        this.cancelPlatformEdit();
+        this.refreshPlatforms();
+        this.loadGames();
+      },
+      error: err => alert(err?.error?.error || 'Erro ao atualizar plataforma')
+    });
+  }
+
+  removePlatform(id: number) {
+    if (!this.auth.isAdmin()) return alert('Apenas admin');
+    if (!confirm('Remover esta plataforma? Jogos perderão esta associação.')) return;
+    this.platformsService.delete(id).subscribe({
+      next: () => {
+        this.refreshPlatforms();
+        this.loadGames();
+      },
+      error: err => alert(err?.error?.error || 'Erro ao remover plataforma')
     });
   }
 }
