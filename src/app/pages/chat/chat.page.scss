@@ -1,88 +1,220 @@
-:host {
-	--ion-background-color: var(--ion-background-color);
-}
-
 .chat-page {
-	--background: transparent;
+	--background: linear-gradient(190deg, #151b36 0%, #0b0f1f 100%);
 }
 
-.chat-container {
+.chat-wrapper {
 	height: 100%;
 	display: flex;
 	flex-direction: column;
+	justify-content: stretch;
+	padding-top: clamp(20px, 6vh, 48px);
+	padding-bottom: clamp(24px, 8vh, 72px);
+	min-height: 0;
+}
+
+.chat-container {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	padding: clamp(20px, 5vw, 32px);
+	gap: var(--space-4);
+	background: var(--app-surface-base);
+	border-radius: var(--app-radius-lg);
+	border: 1px solid rgba(255,255,255,0.05);
+	box-shadow: var(--app-shadow-sm);
+	min-height: 0;
 }
 
 .messages {
-	padding: 16px 12px 100px;
+	flex: 1;
+	padding-bottom: 96px;
 	display: flex;
 	flex-direction: column;
-	gap: 10px;
+	gap: var(--space-3);
+	overflow-y: auto;
+	scrollbar-width: thin;
+	scrollbar-color: rgba(132,144,188,0.4) transparent;
 }
 
 .message-row {
 	display: flex;
 	align-items: flex-end;
-	gap: 8px;
+	gap: 10px;
 	max-width: 100%;
 }
+
 .message-row.mine {
 	justify-content: flex-end;
 }
 
 .avatar-col {
-	width: 36px;
+	width: 40px;
 	display: flex;
 	justify-content: center;
+	align-items: flex-end;
 }
+
 .avatar-img {
-	width: 32px;
-	height: 32px;
+	width: 36px;
+	height: 36px;
 	border-radius: 50%;
 	object-fit: cover;
-	border: 2px solid rgba(var(--ion-color-primary-rgb), .35);
-	background: #222;
+	border: 2px solid rgba(var(--ion-color-primary-rgb), 0.38);
+	background: rgba(24,29,52,0.8);
 }
 
 .bubble {
-	max-width: 72%;
-	padding: 10px 12px;
-	border-radius: 16px;
-	background: rgba(255,255,255,.04);
+	max-width: min(68%, 460px);
+	padding: 14px 16px;
+	border-radius: 18px;
+	background: rgba(255,255,255,0.06);
 	color: var(--ion-text-color);
 	align-self: flex-start;
-	box-shadow: 0 8px 18px rgba(0,0,0,0.3);
+	box-shadow: 0 18px 36px rgba(12,16,34,0.32);
 	position: relative;
-	animation: pop 120ms ease-out;
-	border: 1px solid var(--ion-border-color);
+	border: 1px solid rgba(146,163,206,0.18);
+	animation: pop 140ms ease-out;
 }
-	.bubble .header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-	.bubble .header .avatar { width: 24px; height: 24px; }
-	.bubble .header .name { font-size: 12px; color: var(--ion-color-medium); }
 
-.bubble.mine { background: linear-gradient(135deg, var(--ion-color-primary) 0%, var(--ion-color-secondary) 100%); color: #fff; }
+.bubble.mine {
+	background: linear-gradient(120deg, #8a5dff, #5c7bff);
+	color: #fff;
+	border: 1px solid rgba(138,93,255,0.45);
+	box-shadow: 0 20px 36px rgba(86,108,255,0.28);
+}
 
-.message-row.mine .bubble { align-self: flex-end; }
+.message-row.mine .bubble {
+	align-self: flex-end;
+}
 
-.bubble .text { white-space: pre-wrap; word-break: break-word; font-size: 15px; }
-.bubble .text.deleted { color: var(--ion-color-medium); font-style: italic; }
+.bubble .header {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 6px;
+	font-size: 0.75rem;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: rgba(193,205,243,0.7);
+}
 
-.bubble .meta { margin-top: 6px; display: flex; gap: 8px; font-size: 11px; opacity: .85; }
-.bubble .actions { margin-top: 4px; display: flex; gap: 4px; }
-.bubble ion-button { --padding-start: 0; --padding-end: 6px; height: 24px; font-size: 12px; }
+.bubble.mine .header {
+	color: rgba(255,255,255,0.8);
+}
 
-.typing { color: var(--ion-color-medium); font-size: 12px; margin: 8px 16px; animation: pulse 1.4s infinite; }
+.bubble .text {
+	white-space: pre-wrap;
+	word-break: break-word;
+	font-size: 0.96rem;
+	line-height: 1.5;
+}
+
+.bubble .text.deleted {
+	color: rgba(193,205,243,0.5);
+	font-style: italic;
+}
+
+.bubble .meta {
+	margin-top: 8px;
+	display: flex;
+	gap: 10px;
+	font-size: 0.7rem;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	opacity: 0.75;
+}
+
+.bubble .actions {
+	margin-top: 4px;
+	display: flex;
+	gap: 6px;
+}
+
+.bubble ion-button {
+	--padding-start: 0;
+	--padding-end: 6px;
+	--background: transparent;
+	color: inherit;
+	height: 26px;
+	font-size: 0.78rem;
+}
 
 .scroll-bottom {
 	position: fixed;
-	right: 12px;
-	bottom: 84px;
-	z-index: 10;
+	right: clamp(12px, 4vw, 28px);
+	bottom: 100px;
+	z-index: 15;
 }
 
-.chat-input { --background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.01)); backdrop-filter: blur(6px); }
-.chat-input ion-item { --background: transparent; }
-.chat-input ion-input { color: var(--ion-text-color); }
-.chat-input ion-button { --background: linear-gradient(135deg, var(--ion-color-primary), var(--ion-color-secondary)); --box-shadow: 0 8px 18px rgba(60,136,247,.35); }
+.scroll-bottom ion-button {
+	--border-radius: 999px;
+	--background: rgba(138,93,255,0.24);
+	--color: #fff;
+	--backdrop-filter: blur(6px);
+	font-weight: 500;
+}
 
-@keyframes pop { from { transform: scale(.98); opacity: .6; } to { transform: scale(1); opacity: 1; } }
-@keyframes pulse { 0%{opacity:.5} 50%{opacity:1} 100%{opacity:.5} }
+.chat-input {
+	--background: rgba(17,22,40,0.88);
+	backdrop-filter: blur(12px);
+	border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.chat-input ion-item {
+	--background: transparent;
+	border-radius: var(--app-radius);
+	padding: 0 4px;
+}
+
+.chat-input ion-input {
+	color: var(--ion-text-color);
+	--padding-start: 12px;
+	--padding-end: 12px;
+}
+
+.chat-input ion-button {
+	--background: linear-gradient(120deg, #8a5dff, #5c7bff);
+	--border-radius: 999px;
+	--box-shadow: 0 12px 28px rgba(86,108,255,0.32);
+	width: 48px;
+	height: 48px;
+}
+
+.typing {
+	color: rgba(193,205,243,0.7);
+	font-size: 0.75rem;
+	letter-spacing: 0.1em;
+	margin: 0 16px 12px;
+	animation: pulse 1.4s infinite;
+}
+
+@keyframes pop {
+	from {
+		transform: translateY(4px) scale(0.98);
+		opacity: 0.6;
+	}
+	to {
+		transform: translateY(0) scale(1);
+		opacity: 1;
+	}
+}
+
+@keyframes pulse {
+	0% { opacity: 0.5; }
+	50% { opacity: 1; }
+	100% { opacity: 0.5; }
+}
+
+@media (max-width: 640px) {
+	.chat-container {
+		padding: clamp(16px, 6vw, 24px);
+	}
+
+	.bubble {
+		max-width: 88%;
+	}
+
+	.scroll-bottom {
+		right: 16px;
+	}
+}

@@ -25,6 +25,9 @@
 @import "@ionic/angular/css/text-transformation.css";
 @import "@ionic/angular/css/flex-utils.css";
 
+/* Design system helpers */
+@import "theme/design-system.scss";
+
 /**
  * Ionic Dark Mode
  * -----------------------------------------------------
@@ -41,34 +44,88 @@
 html, body, ion-app, ion-content, ion-router-outlet { height: 100%; }
 body {
   margin: 0;
-  font-family: 'Poppins', 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-  background: radial-gradient(1000px 1000px at 10% -80%, rgba(139, 93, 255, 0.562), transparent),
-              radial-gradient(1000px 1000px at -10% 120%, rgba(34,211,238,.2), transparent),
-              var(--ion-background-color);
+  font-family: var(--ion-font-family);
+  background:
+    radial-gradient(110% 110% at 10% -60%, rgba(138,93,255,0.32), transparent 65%),
+    radial-gradient(120% 120% at 90% 130%, rgba(34,211,238,0.16), transparent 70%),
+    var(--ion-background-color);
   color: var(--ion-text-color);
 }
 
-/* Cards globais elegantes */
-.card, ion-card {
-  border-radius: var(--radius) !important;
-  box-shadow: var(--app-shadow-lg) !important;
-  background: linear-gradient(160deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
-  border: 1px solid var(--ion-border-color);
-  backdrop-filter: saturate(1.2) blur(8px);
+a {
+  color: var(--ion-color-secondary);
+  text-decoration: none;
+  transition: color 0.2s ease;
 }
 
-/* Toolbar/menu refinados */
+a:hover {
+  color: var(--ion-color-primary);
+}
+
+/* Cartões */
+.card,
+ion-card {
+  border-radius: var(--app-radius) !important;
+  border: 1px solid var(--app-glass-border);
+  background: var(--app-surface-base);
+  box-shadow: var(--app-shadow-sm);
+  backdrop-filter: var(--app-glass-blur);
+  -webkit-backdrop-filter: var(--app-glass-blur);
+}
+
+ion-card-header {
+  --background: transparent;
+}
+
+/* Toolbar e menus */
 ion-toolbar {
-  --background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.01));
+  --background: rgba(16,22,40,0.78);
   --border-color: var(--ion-border-color);
-  backdrop-filter: blur(6px);
+  --color: var(--ion-text-color);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
-ion-menu::part(container) { border-radius: 0 16px 16px 0; border-right: 1px solid var(--ion-border-color); }
-ion-item { --border-color: var(--ion-border-color); border-radius: 12px; }
 
-/* Botões com leve elevação */
-ion-button { --border-radius: 14px; box-shadow: 0 10px 24px rgba(0,0,0,.22); }
+ion-menu::part(container) {
+  border-radius: 0 var(--app-radius-lg) var(--app-radius-lg) 0;
+  border-right: 1px solid var(--app-glass-border);
+  background: var(--app-surface-alt);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.35);
+}
 
-/* Responsividade básica para listas e painéis */
-.container, ion-list { max-width: 1080px; margin: 0 auto; padding: 0 16px; }
+ion-item {
+  --border-color: var(--ion-border-color);
+  border-radius: var(--app-radius-sm);
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+ion-item:hover {
+  --background: rgba(146,163,206,0.08);
+  transform: translateY(-1px);
+}
+
+/* Botões */
+ion-button {
+  --border-radius: var(--app-radius-sm);
+  box-shadow: var(--app-shadow-sm);
+  font-weight: 600;
+}
+
+ion-button.ion-color-primary {
+  --background: linear-gradient(135deg, var(--ion-color-primary), #704af2);
+  --background-hover: linear-gradient(135deg, #7a52e0, #6345d4);
+}
+
+ion-fab-button {
+  --border-radius: 50%;
+  --box-shadow: var(--app-shadow-md);
+}
+
+/* Containers */
+.container,
+ion-list {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 clamp(16px, 4vw, 32px);
+}
 

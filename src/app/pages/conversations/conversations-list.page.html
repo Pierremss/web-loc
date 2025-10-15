@@ -4,47 +4,58 @@
   </ion-toolbar>
 </ion-header>
 
-<ion-content class="conv-page">
-  <div class="container">
-  <div class="create card fadein">
-      <ion-item lines="none">
-        <ion-label position="floating">Nome da sala</ion-label>
-        <ion-input placeholder="Nome da sala" [(ngModel)]="name"></ion-input>
-      </ion-item>
-      <div class="row">
-        <ion-toggle [(ngModel)]="is_public">Pública</ion-toggle>
-        <ion-button class="grad" (click)="create()" [disabled]="!name.trim()">
-          <ion-icon name="add-outline" slot="start"></ion-icon>
-          Criar
-        </ion-button>
-      </div>
-    </div>
+<ion-content class="conversations-page" fullscreen>
+  <div class="layout-container conversations-wrapper stack stack-lg fadein">
+    <header class="conversations-hero">
+      <h1>Salas de conversa</h1>
+      <p>Crie novas salas, acompanhe atividades e retome diálogos onde parou.</p>
+    </header>
 
-    <ion-list class="list fadein" *ngIf="rooms?.length; else empty">
-      <ion-item class="room" lines="none" *ngFor="let room of rooms; let i = index" (click)="open(room)" [style.animationDelay]="(i * 30) + 'ms'">
-        <ion-avatar slot="start">
-          <img src="assets/icon/favicon.png" alt="room" />
-        </ion-avatar>
-        <ion-label>
-          <h2>{{ room.name || 'Sala sem nome' }}</h2>
-          <p>
-            <ng-container *ngIf="typing[room.id]?.size; else lastmsg">{{ typing[room.id]?.size }} digitando…</ng-container>
-            <ng-template #lastmsg>{{ room.last_message || '—' }}</ng-template>
-          </p>
-        </ion-label>
-        <ion-badge *ngIf="room.unread_count" color="primary">{{ room.unread_count }}</ion-badge>
-      </ion-item>
-    </ion-list>
-
-    <ng-template #empty>
-      <div class="empty card fadein">
-        <ion-icon name="chatbubbles-outline"></ion-icon>
-        <p>Sem salas ainda. Crie uma sala ou descubra perfis para iniciar conversas.</p>
-        <ion-button routerLink="/swipe" class="grad">
-          <ion-icon name="sparkles-outline" slot="start"></ion-icon>
-          Ir para Swipe
-        </ion-button>
+    <section class="conversations-section surface-card stack stack-lg">
+      <div class="create-block surface-ghost">
+        <div class="create-header">
+          <h2>Nova sala</h2>
+          <p>Defina um nome e escolha se a sala será pública.</p>
+        </div>
+        <ion-item lines="none" class="input-row">
+          <ion-label position="floating">Nome da sala</ion-label>
+          <ion-input placeholder="Nome da sala" [(ngModel)]="name"></ion-input>
+        </ion-item>
+        <div class="create-actions">
+          <ion-toggle [(ngModel)]="is_public">Pública</ion-toggle>
+          <ion-button class="btn-pill" (click)="create()" [disabled]="!name.trim()">
+            <ion-icon name="add-outline" slot="start"></ion-icon>
+            Criar
+          </ion-button>
+        </div>
       </div>
-    </ng-template>
+
+      <ion-list lines="none" class="rooms-list" *ngIf="rooms?.length; else empty">
+        <ion-item class="room-item fadein" lines="none" *ngFor="let room of rooms; let i = index" (click)="open(room)" [style.animationDelay]="(i * 30) + 'ms'">
+          <div class="avatar-ring avatar-ring--sm" slot="start">
+            <img src="assets/icon/favicon.png" alt="room" />
+          </div>
+          <ion-label>
+            <h3>{{ room.name || 'Sala sem nome' }}</h3>
+            <p>
+              <ng-container *ngIf="typing[room.id]?.size; else lastmsg">{{ typing[room.id]?.size }} digitando…</ng-container>
+              <ng-template #lastmsg>{{ room.last_message || '—' }}</ng-template>
+            </p>
+          </ion-label>
+          <ion-badge *ngIf="room.unread_count" color="primary">{{ room.unread_count }}</ion-badge>
+        </ion-item>
+      </ion-list>
+
+      <ng-template #empty>
+        <div class="empty-state surface-ghost fadein">
+          <ion-icon name="chatbubbles-outline"></ion-icon>
+          <p>Sem salas ainda. Crie uma sala ou descubra perfis para iniciar conversas.</p>
+          <ion-button routerLink="/swipe" class="btn-pill">
+            <ion-icon name="sparkles-outline" slot="start"></ion-icon>
+            Ir para Swipe
+          </ion-button>
+        </div>
+      </ng-template>
+    </section>
   </div>
 </ion-content>

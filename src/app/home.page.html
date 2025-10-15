@@ -8,77 +8,88 @@
 </ion-header>
 
 <ion-content class="ion-padding home-page">
-  <div class="home-container fadein">
-    <div class="logo">
-      <h1>WebLoc</h1>
-    </div>
-    <p class="subtitulo">Bem-vindo ao sistema</p>
-
-    <div *ngIf="!auth.isLogged()" class="form-section">
-      <p class="mensagem">Você não está logado.</p>
-      <ion-button expand="block" routerLink="/login" class="btn-primary">
-        <ion-icon name="log-in-outline" slot="start"></ion-icon>
-        Fazer Login
-      </ion-button>
-    </div>
-
-    <div *ngIf="auth.isLogged()" class="form-section">
-      <div class="user-info with-avatar">
-        <ng-container *ngIf="!loading; else homeSkeletonHeader">
-          <div class="avatar-wrapper" *ngIf="auth.user?.avatar_url; else noAvatar">
-            <img [src]="normalizeAvatar(auth.user?.avatar_url)" (error)="onImgError($event)" alt="Avatar" class="avatar-img" />
-          </div>
-          <ng-template #noAvatar>
-            <div class="avatar-placeholder">{{ (auth.user?.name || auth.user?.nickname || '?')?.charAt(0) }}</div>
-          </ng-template>
-          <div class="texts">
-            <h2>Olá, {{auth.user?.name}}</h2>
-            <p class="tipo-usuario">{{auth.isAdmin() ? 'Administrador' : 'Jogador'}}</p>
-          </div>
-        </ng-container>
-        <ng-template #homeSkeletonHeader>
-          <ion-skeleton-text animated style="width:72px; height:72px; border-radius:36px;"></ion-skeleton-text>
-          <div class="texts" style="flex:1">
-            <ion-skeleton-text animated style="width:60%; height:18px; border-radius:6px; margin-bottom:8px;"></ion-skeleton-text>
-            <ion-skeleton-text animated style="width:40%; height:14px; border-radius:6px;"></ion-skeleton-text>
-          </div>
-        </ng-template>
+  <div class="home-wrapper layout-container">
+    <div class="home-container surface-card stack fadein">
+      <div class="logo">
+        <h1 class="heading-highlight">WebLoc</h1>
+        <span class="tagline text-soft">Bem-vindo ao sistema</span>
       </div>
 
-      <ion-button *ngIf="!auth.isAdmin() && !loading" expand="block" routerLink="/swipe" class="btn-primary">
-        <ion-icon name="sparkles-outline" slot="start"></ion-icon>
-        Descobrir perfis
-      </ion-button>
+      <div *ngIf="!auth.isLogged()" class="form-section stack">
+        <p class="mensagem text-soft">Você não está logado.</p>
+        <ion-button expand="block" routerLink="/login" class="btn-primary pill">
+          <ion-icon name="log-in-outline" slot="start"></ion-icon>
+          Fazer Login
+        </ion-button>
+        <ion-button expand="block" fill="clear" routerLink="/register" class="btn-secondary pill btn-outline">
+          <ion-icon name="person-add-outline" slot="start"></ion-icon>
+          Criar conta
+        </ion-button>
+      </div>
 
-      <ion-button *ngIf="auth.isAdmin() && !loading" expand="block" routerLink="/games" class="btn-primary">
-        <ion-icon name="game-controller-outline" slot="start"></ion-icon>
-        Gerenciar Jogos
-      </ion-button>
+      <div *ngIf="auth.isLogged()" class="form-section stack">
+        <div class="user-info with-avatar">
+          <ng-container *ngIf="!loading; else homeSkeletonHeader">
+            <div class="avatar-wrapper avatar-ring" *ngIf="auth.user?.avatar_url; else noAvatar">
+              <img [src]="normalizeAvatar(auth.user?.avatar_url)" (error)="onImgError($event)" alt="Avatar" class="avatar-img" />
+            </div>
+            <ng-template #noAvatar>
+              <div class="avatar-placeholder avatar-ring">
+                <div class="initials">{{ (auth.user?.name || auth.user?.nickname || '?')?.charAt(0) }}</div>
+              </div>
+            </ng-template>
+            <div class="texts">
+              <h2 class="heading-highlight">Olá, {{auth.user?.name}}</h2>
+              <p class="tipo-usuario">
+                <ion-icon [name]="auth.isAdmin() ? 'shield-half-outline' : 'game-controller-outline'"></ion-icon>
+                {{auth.isAdmin() ? 'Administrador' : 'Jogador'}}
+              </p>
+            </div>
+          </ng-container>
+          <ng-template #homeSkeletonHeader>
+            <ion-skeleton-text animated style="width:72px; height:72px; border-radius:36px;"></ion-skeleton-text>
+            <div class="texts" style="flex:1">
+              <ion-skeleton-text animated style="width:60%; height:18px; border-radius:6px; margin-bottom:8px;"></ion-skeleton-text>
+              <ion-skeleton-text animated style="width:40%; height:14px; border-radius:6px;"></ion-skeleton-text>
+            </div>
+          </ng-template>
+        </div>
 
-      <ion-button *ngIf="auth.isAdmin() && !loading" expand="block" routerLink="/users" class="btn-primary">
-        <ion-icon name="people-outline" slot="start"></ion-icon>
-        Gerenciar Usuários
-      </ion-button>
+        <ion-button *ngIf="!auth.isAdmin() && !loading" expand="block" routerLink="/swipe" class="btn-primary pill">
+          <ion-icon name="sparkles-outline" slot="start"></ion-icon>
+          Descobrir perfis
+        </ion-button>
 
-      <ion-button *ngIf="!auth.isAdmin() && !loading" expand="block" routerLink="/jogador-perfil" class="btn-primary">
-        <ion-icon name="person-outline" slot="start"></ion-icon>
-        Meu Perfil
-      </ion-button>
+        <ion-button *ngIf="auth.isAdmin() && !loading" expand="block" routerLink="/games" class="btn-primary pill">
+          <ion-icon name="game-controller-outline" slot="start"></ion-icon>
+          Gerenciar Jogos
+        </ion-button>
 
-      <ion-button *ngIf="!auth.isAdmin() && !loading" expand="block" routerLink="/friends" class="btn-primary">
-        <ion-icon name="people-circle-outline" slot="start"></ion-icon>
-        Amigos
-      </ion-button>
+        <ion-button *ngIf="auth.isAdmin() && !loading" expand="block" routerLink="/users" class="btn-primary pill">
+          <ion-icon name="people-outline" slot="start"></ion-icon>
+          Gerenciar Usuários
+        </ion-button>
 
-      <ion-button *ngIf="!loading" expand="block" color="medium" (click)="auth.logout(); navigateToLogin()" class="btn-secondary">
-        <ion-icon name="log-out-outline" slot="start"></ion-icon>
-        Sair
-      </ion-button>
+        <ion-button *ngIf="!auth.isAdmin() && !loading" expand="block" routerLink="/jogador-perfil" class="btn-primary pill">
+          <ion-icon name="person-outline" slot="start"></ion-icon>
+          Meu Perfil
+        </ion-button>
 
-      <div *ngIf="loading" class="btns-skeleton">
-        <ion-skeleton-text animated style="height:44px; border-radius:12px;"></ion-skeleton-text>
-        <ion-skeleton-text animated style="height:44px; border-radius:12px;"></ion-skeleton-text>
-        <ion-skeleton-text animated style="height:44px; border-radius:12px;"></ion-skeleton-text>
+        <ion-button *ngIf="!auth.isAdmin() && !loading" expand="block" routerLink="/friends" class="btn-primary pill">
+          <ion-icon name="people-circle-outline" slot="start"></ion-icon>
+          Amigos
+        </ion-button>
+
+        <ion-button *ngIf="!loading" expand="block" color="medium" (click)="auth.logout(); navigateToLogin()" class="btn-secondary pill btn-outline">
+          <ion-icon name="log-out-outline" slot="start"></ion-icon>
+          Sair
+        </ion-button>
+
+        <div *ngIf="loading" class="btns-skeleton">
+          <ion-skeleton-text animated style="height:44px; border-radius:12px;"></ion-skeleton-text>
+          <ion-skeleton-text animated style="height:44px; border-radius:12px;"></ion-skeleton-text>
+          <ion-skeleton-text animated style="height:44px; border-radius:12px;"></ion-skeleton-text>
+        </div>
       </div>
     </div>
   </div>

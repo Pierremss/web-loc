@@ -31,6 +31,7 @@ export class ConversationChatPage implements OnInit, OnDestroy {
       if (msg.conversation_id === this.convId) {
         this.messages.push(msg);
         this.markRead(msg.id);
+        this.scrollToBottom();
       }
     };
     this.handlers['typing'] = ({ userId, typing }: any) => {
@@ -50,7 +51,10 @@ export class ConversationChatPage implements OnInit, OnDestroy {
   }
 
   load() {
-    this.convSvc.getMessages(this.convId).subscribe((list) => (this.messages = list));
+    this.convSvc.getMessages(this.convId).subscribe((list) => {
+      this.messages = list;
+      setTimeout(() => this.scrollToBottom(true), 0);
+    });
   }
 
   send() {
@@ -61,6 +65,7 @@ export class ConversationChatPage implements OnInit, OnDestroy {
       this.messages.push(msg);
       this.content = '';
       this.markRead(msg.id);
+      setTimeout(() => this.scrollToBottom(), 0);
     });
   }
 
@@ -70,5 +75,14 @@ export class ConversationChatPage implements OnInit, OnDestroy {
 
   markRead(lastId: number) {
     this.convSvc.markRead(this.convId, lastId).subscribe();
+  }
+
+  private scrollToBottom(force = false) {
+    requestAnimationFrame(() => {
+      const container = document.querySelector<HTMLElement>('.conversation-chat .messages');
+      if (!container) return;
+      const behavior: ScrollBehavior = force ? 'auto' : 'smooth';
+      container.scrollTo({ top: container.scrollHeight, behavior });
+    });
   }
 }

@@ -5,27 +5,34 @@
     </ion-buttons>
     <ion-title>Sala #{{ convId }}</ion-title>
   </ion-toolbar>
-  <ion-toolbar *ngIf="typingUsers.size">
-    <ion-text color="medium" style="margin-left:12px">{{ typingUsers.size }} digitando…</ion-text>
-  </ion-toolbar>
 </ion-header>
 
-<ion-content>
-  <ion-list>
-    <ion-item *ngFor="let m of messages">
-      <ion-label>
-        <h3>#{{ m.id }} • {{ m.sender_id }}</h3>
-        <p>{{ m.content }}</p>
-      </ion-label>
-    </ion-item>
-  </ion-list>
+<ion-content class="chat-page conversation-chat" fullscreen>
+  <div class="layout-container chat-wrapper">
+    <div class="chat-container surface-card">
+      <div class="messages">
+        <div *ngFor="let m of messages" class="message-row" [class.mine]="m.sender_id === auth.user?.id">
+          <div class="avatar-col" *ngIf="m.sender_id !== auth.user?.id">
+            <div class="avatar-fallback">{{ m.sender_name || ('#' + m.sender_id) }}</div>
+          </div>
+          <div class="bubble" [class.mine]="m.sender_id === auth.user?.id">
+            <div class="header">
+              <span class="name">{{ m.sender_name || ('Jogador #' + m.sender_id) }}</span>
+            </div>
+            <div class="text">{{ m.content }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="typing" *ngIf="typingUsers.size">{{ typingUsers.size }} digitando…</div>
+    </div>
+  </div>
 </ion-content>
 
 <ion-footer class="chat-input">
   <ion-toolbar>
     <ion-input placeholder="Mensagem" [(ngModel)]="content" (ionInput)="onTyping()"></ion-input>
     <ion-buttons slot="end">
-      <ion-button (click)="send()">Enviar</ion-button>
+      <ion-button (click)="send()" [disabled]="!content.trim()">Enviar</ion-button>
     </ion-buttons>
   </ion-toolbar>
 </ion-footer>

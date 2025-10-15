@@ -1,1 +1,26 @@
 @import '../../pages/chat/chat.page.scss';
+
+.conversation-chat {
+	.avatar-fallback {
+		width: 40px;
+		height: 40px;
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: rgba(26,33,58,0.8);
+		border: 1px solid rgba(146,163,206,0.25);
+		font-size: 0.75rem;
+		font-weight: 600;
+		color: rgba(193,205,243,0.82);
+		padding: 0 6px;
+	}
+
+	.bubble .header {
+		margin-bottom: 4px;
+	}
+
+	.bubble .text {
+		font-size: 0.95rem;
+	}
+}
