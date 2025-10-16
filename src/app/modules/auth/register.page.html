@@ -124,14 +124,14 @@
           <table style="width:100%;text-align:center;">
             <tr>
               <th></th>
-              <th *ngFor="let periodo of periodos">{{periodo}}</th>
+              <th *ngFor="let periodo of periodos">{{ periodo.label }}</th>
             </tr>
             <tr *ngFor="let dia of diasSemana">
               <td>{{dia}}</td>
               <td *ngFor="let periodo of periodos">
                 <ion-checkbox
-                  [checked]="isArray(horariosSelecionados[dia]) && horariosSelecionados[dia].includes(periodo)"
-                  (ionChange)="onHorarioChange(dia, periodo, $event.detail.checked)">
+                  [checked]="isArray(horariosSelecionados[dia]) && horariosSelecionados[dia].includes(periodo.value)"
+                  (ionChange)="onHorarioChange(dia, periodo.value, $event.detail.checked)">
                 </ion-checkbox>
               </td>
             </tr>
@@ -148,9 +148,9 @@
             <h4>{{ dia }}</h4>
             <div class="chips-row">
               <ion-chip *ngFor="let periodo of periodos" class="select-chip"
-                [class.selected]="isArray(horariosSelecionados[dia]) && horariosSelecionados[dia].includes(periodo)"
-                (click)="onHorarioChange(dia, periodo, !(isArray(horariosSelecionados[dia]) && horariosSelecionados[dia].includes(periodo)))">
-                <ion-label>{{ periodo }}</ion-label>
+                [class.selected]="isArray(horariosSelecionados[dia]) && horariosSelecionados[dia].includes(periodo.value)"
+                (click)="onHorarioChange(dia, periodo.value, !(isArray(horariosSelecionados[dia]) && horariosSelecionados[dia].includes(periodo.value)))">
+                <ion-label>{{ periodo.label }}</ion-label>
               </ion-chip>
             </div>
           </div>

@@ -32,6 +32,28 @@ export class SwipePage implements OnInit {
   styleOptions = ['Casual', 'Competitivo', 'Cooperativo'];
   periodOptions = ['Manha', 'Tarde', 'Noite', 'Madrugada'];
   compatibilityFloor = 0;
+  private readonly dayOrder = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
+  private readonly dayLabels: Record<string, string> = {
+    Segunda: 'Seg.',
+    'Segunda-feira': 'Seg.',
+    Terça: 'Ter.',
+    'Terça-feira': 'Ter.',
+    Quarta: 'Qua.',
+    'Quarta-feira': 'Qua.',
+    Quinta: 'Qui.',
+    'Quinta-feira': 'Qui.',
+    Sexta: 'Sex.',
+    'Sexta-feira': 'Sex.',
+    'Sábado': 'Sáb.',
+    Domingo: 'Dom.'
+  };
+  private readonly periodLabels: Record<string, string> = {
+    manha: 'Manhã',
+    manhã: 'Manhã',
+    tarde: 'Tarde',
+    noite: 'Noite',
+    madrugada: 'Madrugada'
+  };
 
   profileDetails: SwipeProfile | null = null;
   profileLoading = false;
@@ -162,6 +184,17 @@ export class SwipePage implements OnInit {
     return `${environment.socketUrl}${url}`;
   }
 
+  availabilitySummary(raw?: string | null): string {
+    const value = typeof raw === 'string' ? raw.trim() : '';
+    if (!value) return '';
+    const schedule = this.parseScheduleObject(value);
+    if (schedule) {
+      const summary = this.buildScheduleSummary(schedule);
+      if (summary) return summary;
+    }
+    return this.formatFallbackSchedule(value);
+  }
+
   platformList(item?: SwipeDeckItem) {
     if (!item) return '';
     return item.platforms.map((p) => p.name).join(', ');
@@ -279,5 +312,181 @@ export class SwipePage implements OnInit {
       });
       await toast.present();
     } catch {}
+  }
+
+  private parseScheduleObject(raw: string): Record<string, string[]> | null {
+    const first = raw.trim()[0];
+    if (first !== '{' && first !== '[') return null;
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        const result: Record<string, string[]> = {};
+        parsed.forEach((entry) => {
+          if (!entry || typeof entry !== 'object') return;
+          const day = 'day' in entry ? String((entry as any).day) : '';
+          const periods = Array.isArray((entry as any).periods)
+            ? (entry as any).periods.map((p: unknown) => String(p))
+            : [];
+          if (day && periods.length) {
+            result[day] = periods;
+          }
+        });
+        return Object.keys(result).length ? result : null;
+      }
+      if (parsed && typeof parsed === 'object') {
+        const result: Record<string, string[]> = {};
+        Object.entries(parsed as Record<string, unknown>).forEach(([day, periods]) => {
+          if (Array.isArray(periods) && periods.length) {
+            result[day] = periods.map((p) => String(p));
+          }
+        });
+        return Object.keys(result).length ? result : null;
+      }
+    } catch {}
+    return null;
+  }
+
+  private buildScheduleSummary(schedule: Record<string, string[]>): string {
+    const segments: string[] = [];
+    this.dayOrder.forEach((day) => {
+      const formatted = this.formatPeriods(schedule[day]);
+      if (!formatted.length) return;
+      const label = this.dayLabels[day] || this.normalizeDayLabel(day);
+      segments.push(`${label}: ${formatted.join(', ')}`);
+    });
+    if (!segments.length) {
+      Object.entries(schedule).forEach(([day, periods]) => {
+        const formatted = this.formatPeriods(periods);
+        if (!formatted.length) return;
+        const label = this.dayLabels[day] || this.normalizeDayLabel(day);
+        segments.push(`${label}: ${formatted.join(', ')}`);
+      });
+    }
+    return segments.join(' • ').trim();
+  }
+
+  private formatFallbackSchedule(text: string): string {
+    const cleaned = text
+      .replace(/[{}\[\]"]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!cleaned) return '';
+    const normalizedSeparators = cleaned.replace(/,\s*(?=[^:]+:)/g, '; ');
+    const segments = normalizedSeparators.split(/;|\||•/).map((segment) => segment.trim()).filter(Boolean);
+    if (!segments.length) {
+      return this.normalizeDayAndPeriod(cleaned);
+    }
+    const formatted = segments.map((segment) => {
+      const [dayPart, rest] = segment.split(':');
+      if (!rest) {
+        return this.normalizeDayAndPeriod(segment);
+      }
+      const dayLabel = this.normalizeDayLabel(dayPart);
+      const periods = this.uniqueSequence(
+        rest.split(/,|\//)
+          .map((value) => this.normalizePeriodLabel(value))
+          .filter(Boolean)
+      );
+      return periods.length ? `${dayLabel}: ${periods.join(', ')}` : dayLabel;
+    });
+    return formatted.join(' • ');
+  }
+
+  private formatPeriods(periods: unknown): string[] {
+    if (!Array.isArray(periods)) return [];
+    const formatted = periods
+      .map((period) => this.normalizePeriodLabel(String(period)))
+      .filter(Boolean);
+    return this.uniqueSequence(formatted);
+  }
+
+  private normalizePeriodLabel(period: string): string {
+    const trimmed = period.trim();
+    if (!trimmed) return '';
+    const normalized = trimmed
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+    return this.periodLabels[normalized] || this.titleize(trimmed);
+  }
+
+  private normalizeDayLabel(day: string | undefined): string {
+    if (!day) return '';
+    const trimmed = day.trim();
+    if (!trimmed) return '';
+    const normalized = trimmed
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+    const map: Record<string, string> = {
+      segunda: 'Segunda',
+      'segunda-feira': 'Segunda',
+      seg: 'Segunda',
+      terca: 'Terça',
+      'terca-feira': 'Terça',
+      ter: 'Terça',
+      quarta: 'Quarta',
+      'quarta-feira': 'Quarta',
+      qua: 'Quarta',
+      quinta: 'Quinta',
+      'quinta-feira': 'Quinta',
+      qui: 'Quinta',
+      sexta: 'Sexta',
+      'sexta-feira': 'Sexta',
+      sex: 'Sexta',
+      sabado: 'Sábado',
+      sab: 'Sábado',
+      domingo: 'Domingo',
+      dom: 'Domingo'
+    };
+    return map[normalized] || this.titleize(trimmed);
+  }
+
+  private normalizeDayAndPeriod(fragment: string): string {
+    if (!fragment.includes(':')) {
+      return this.uniqueSequence(
+        fragment
+          .split(/,|\//)
+          .map((piece) => this.normalizePeriodLabel(piece))
+          .filter(Boolean)
+      ).join(', ');
+    }
+    return fragment
+      .split(/\s*•\s*|;\s*|\|\s*/)
+      .map((segment) => {
+        const [dayPart, rest] = segment.split(':');
+        if (!dayPart) return '';
+        const dayLabel = this.normalizeDayLabel(dayPart);
+        if (!rest) return dayLabel;
+        const periods = this.uniqueSequence(
+          rest.split(/,|\//)
+            .map((piece) => this.normalizePeriodLabel(piece))
+            .filter(Boolean)
+        );
+        return periods.length ? `${dayLabel}: ${periods.join(', ')}` : dayLabel;
+      })
+      .filter(Boolean)
+      .join(' • ');
+  }
+
+  private titleize(value: string): string {
+    const trimmed = value.trim().toLowerCase();
+    if (!trimmed) return '';
+    return trimmed.replace(/(^|\s|\-)([a-zá-ú])/g, (_match: string, prefix: string, letter: string) => {
+      const safePrefix = prefix ?? '';
+      const safeLetter = letter ?? '';
+      return `${safePrefix}${safeLetter.toUpperCase()}`;
+    });
+  }
+
+  private uniqueSequence(values: string[]): string[] {
+    const seen = new Set<string>();
+    const result: string[] = [];
+    values.forEach((value) => {
+      if (!value || seen.has(value)) return;
+      seen.add(value);
+      result.push(value);
+    });
+    return result;
   }
 }

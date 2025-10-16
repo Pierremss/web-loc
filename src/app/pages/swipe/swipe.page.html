@@ -106,9 +106,9 @@
               </ion-chip>
             </div>
             <p class="bio" *ngIf="current.summary?.bio">{{ current.summary.bio }}</p>
-            <div class="availability" *ngIf="current.summary?.availableTimes">
+            <div class="availability" *ngIf="availabilitySummary(current.summary?.availableTimes) as availability">
               <ion-icon name="time-outline"></ion-icon>
-              <span>{{ current.summary.availableTimes }}</span>
+              <span>{{ availability }}</span>
             </div>
           </div>
         </div>

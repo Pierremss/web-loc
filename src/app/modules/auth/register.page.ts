@@ -21,16 +21,18 @@ export class RegisterPage implements OnInit {
   }
 
   onHorarioChange(dia: string, periodo: string, checked: boolean): void {
-    if (!Array.isArray(this.horariosSelecionados[dia])) {
-      this.horariosSelecionados[dia] = [];
-    }
+    const normalizedValue = this.normalizePeriodValue(periodo);
+    if (!normalizedValue) return;
+    const current = Array.isArray(this.horariosSelecionados[dia])
+      ? this.normalizePeriodList(this.horariosSelecionados[dia])
+      : [];
     if (checked) {
-      if (!this.horariosSelecionados[dia].includes(periodo)) {
-        this.horariosSelecionados[dia].push(periodo);
-      }
+      if (!current.includes(normalizedValue)) current.push(normalizedValue);
     } else {
-      this.horariosSelecionados[dia] = this.horariosSelecionados[dia].filter(p => p !== periodo);
+      const index = current.indexOf(normalizedValue);
+      if (index !== -1) current.splice(index, 1);
     }
+    this.horariosSelecionados[dia] = this.normalizePeriodList(current);
   }
   form: any = {
     name: '',
@@ -48,7 +50,12 @@ export class RegisterPage implements OnInit {
   genreOptions: any[] = [];
   typeOptions: any[] = [];
   diasSemana: string[] = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
-  periodos: string[] = ['Manha', 'Tarde', 'Noite', 'Madrugada'];
+  periodos: { label: string; value: string }[] = [
+    { label: 'Manhã', value: 'Manha' },
+    { label: 'Tarde', value: 'Tarde' },
+    { label: 'Noite', value: 'Noite' },
+    { label: 'Madrugada', value: 'Madrugada' },
+  ];
   horariosSelecionados: { [dia: string]: string[] } = {};
   loading: boolean = false;
   error: string = '';
@@ -64,6 +71,7 @@ export class RegisterPage implements OnInit {
   constructor() {
     // Inicializa todos os dias com array vazio
     this.diasSemana.forEach((dia) => this.horariosSelecionados[dia] = []);
+    this.horariosSelecionados = this.normalizeScheduleMap(this.horariosSelecionados);
   }
 
   ngOnInit(): void {
@@ -134,7 +142,9 @@ export class RegisterPage implements OnInit {
   }
 
   getAvailableTimes(): string {
-    return JSON.stringify(this.horariosSelecionados);
+    const normalized = this.normalizeScheduleMap(this.horariosSelecionados);
+    this.horariosSelecionados = normalized;
+    return JSON.stringify(normalized);
   }
 
   submit(): void {
@@ -210,6 +220,64 @@ export class RegisterPage implements OnInit {
         console.warn('Erro ao cadastrar', { err, payload, mapped: this.error });
       }
     });
+  }
+
+  private readonly periodMap: Record<string, string> = {
+    manha: 'Manha',
+    tarde: 'Tarde',
+    noite: 'Noite',
+    madrugada: 'Madrugada',
+  };
+
+  private normalizePeriodValue(value: string): string {
+    const trimmed = String(value ?? '').trim();
+    if (!trimmed) return '';
+    const key = trimmed
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+    return this.periodMap[key] || trimmed;
+  }
+
+  private normalizePeriodList(values: string[]): string[] {
+    const seen = new Set<string>();
+    const result: string[] = [];
+    values.forEach((value) => {
+      const normalized = this.normalizePeriodValue(value);
+      if (!normalized || seen.has(normalized)) return;
+      seen.add(normalized);
+      result.push(normalized);
+    });
+    const order = new Map(this.periodos.map((option, index) => [option.value, index]));
+    result.sort((a, b) => (order.get(a) ?? 100) - (order.get(b) ?? 100));
+    return result;
+  }
+
+  private normalizeScheduleMap(source: { [dia: string]: string[] }): { [dia: string]: string[] } {
+    const normalized: { [dia: string]: string[] } = {};
+    const byDayKey = new Map<string, string[]>();
+    Object.entries(source || {}).forEach(([dia, periods]) => {
+      const key = this.normalizeDayKey(dia);
+      if (!Array.isArray(periods)) return;
+      const list = this.normalizePeriodList(periods);
+      if (!byDayKey.has(key)) {
+        byDayKey.set(key, list);
+      } else {
+        byDayKey.set(key, this.normalizePeriodList([...(byDayKey.get(key) ?? []), ...list]));
+      }
+    });
+    this.diasSemana.forEach((dia) => {
+      const key = this.normalizeDayKey(dia);
+      normalized[dia] = this.normalizePeriodList(byDayKey.get(key) ?? []);
+    });
+    return normalized;
+  }
+
+  private normalizeDayKey(value: string): string {
+    return String(value ?? '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
   }
 
   avatarFile: File | null = null;

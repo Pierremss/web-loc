@@ -94,9 +94,9 @@
               <h3>{{ dia }}</h3>
               <div class="chips-linha">
                 <ion-chip *ngFor="let periodo of periodos" class="select-chip"
-                  [class.selected]="isArray(horariosSelecionados[dia]) && horariosSelecionados[dia].includes(periodo)"
-                  (click)="onHorarioChange(dia, periodo, !(isArray(horariosSelecionados[dia]) && horariosSelecionados[dia].includes(periodo)))">
-                  <ion-label>{{ periodo }}</ion-label>
+                  [class.selected]="isArray(horariosSelecionados[dia]) && horariosSelecionados[dia].includes(periodo.value)"
+                  (click)="onHorarioChange(dia, periodo.value, !(isArray(horariosSelecionados[dia]) && horariosSelecionados[dia].includes(periodo.value)))">
+                  <ion-label>{{ periodo.label }}</ion-label>
                 </ion-chip>
               </div>
             </div>
