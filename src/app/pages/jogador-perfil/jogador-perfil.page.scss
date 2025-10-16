@@ -3,39 +3,45 @@
   color: var(--ion-text-color);
 
   .perfil-container {
-    background: linear-gradient(160deg, rgba(255, 255, 255, .04), rgba(255, 255, 255, .02));
+    background: linear-gradient(160deg, rgba(255,255,255,0.02), rgba(255,255,255,0.008));
     border: 1px solid var(--ion-border-color);
     border-radius: var(--app-radius);
-    padding: 28px 22px;
-    max-width: 860px;
-    margin: 8vh auto 0;
+    padding: 28px 24px;
+    max-width: 980px;
+    margin: 6vh auto 0;
     box-shadow: var(--app-shadow-lg);
     text-align: left;
     display: flex;
     flex-direction: column;
-    gap: 20px;
-    backdrop-filter: saturate(1.1) blur(8px);
+    gap: 18px;
+    backdrop-filter: saturate(1.03) blur(6px);
   }
 
   .hero {
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: 18px;
     flex-wrap: wrap;
+    justify-content: space-between;
+    padding: 6px 4px;
   }
 
   .avatar-wrap {
-    width: 84px;
-    height: 84px;
+    width: 108px;
+    height: 108px;
     border-radius: 50%;
     overflow: hidden;
     border: 3px solid var(--ion-color-primary);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, .35);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, .28);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .avatar-wrap.lg {
-    width: 96px;
-    height: 96px;
+    width: 120px;
+    height: 120px;
   }
 
   .avatar-wrap img {
@@ -48,6 +54,15 @@
   .hero-texts h1 {
     font-size: 1.8rem;
     margin: 0 0 6px;
+    word-break: break-word;
+  }
+
+  .hero-meta {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    color: var(--ion-color-medium);
+    font-size: 0.95rem;
   }
 
   .hero-texts .muted {
@@ -58,18 +73,27 @@
   .quick-actions {
     display: flex;
     gap: 8px;
-    margin-top: 10px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+  }
+
+  /* Right-aligned quick actions on wide screens */
+  .hero-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
 
   .grad {
-    --background: linear-gradient(90deg, #8c2ce2, #3c88f7);
+    --background: linear-gradient(90deg, var(--ion-color-primary), var(--ion-color-secondary));
   }
 
   .card {
-    background: rgba(255, 255, 255, .03);
+    background: var(--ion-surface-color, rgba(255,255,255,0.02));
     border: 1px solid var(--ion-border-color);
     border-radius: 14px;
     padding: 16px;
+    transition: box-shadow .12s ease, transform .12s ease;
   }
 
   .card-header {
@@ -78,6 +102,12 @@
     align-items: center;
     gap: 12px;
     flex-wrap: wrap;
+  }
+
+  .card-header .controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
   }
 
   .card h2 {
@@ -89,6 +119,7 @@
     display: flex;
     align-items: center;
     gap: 10px;
+    flex-wrap: wrap;
   }
 
   .add-row ion-item {
@@ -98,25 +129,62 @@
     padding-inline: 6px;
   }
 
+  /* Favorites area: present as compact pills with optional horizontal scroll */
   .chips {
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
     margin-top: 10px;
+    align-items: center;
+    max-width: 100%;
+    overflow-x: auto;
+    padding-bottom: 4px;
   }
 
   .fav-chip {
-    --background: rgba(255, 255, 255, .06);
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    min-height: 40px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
     --color: var(--ion-text-color);
     border: 1px solid var(--ion-border-color);
-    border-radius: 18px;
-  transition: transform .15s ease, box-shadow .2s ease, opacity .3s ease;
-  animation: fadeUp .28s ease both;
+    border-radius: 12px;
+    transition: transform .16s cubic-bezier(.2,.9,.3,1), box-shadow .18s ease, opacity .2s ease;
+    animation: fadeUp .28s ease both;
+    white-space: nowrap;
+    padding-right: 8px;
   }
 
   .fav-chip:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 8px 18px rgba(0, 0, 0, .25);
+    transform: translateY(-3px);
+    box-shadow: 0 14px 30px rgba(0,0,0,0.22);
+  }
+
+  /* Remove icon styled as small button */
+  .fav-chip .remove {
+    margin-left: 6px;
+    cursor: pointer;
+    color: var(--ion-color-medium);
+    font-size: 18px;
+    transition: color .12s ease, transform .12s ease;
+  }
+  .fav-chip .remove:hover { color: var(--ion-color-danger); transform: scale(1.05); }
+
+  /* Truncate long game names inside chips and leave space for remove icon */
+  .fav-chip .chip-label {
+    display: inline-block;
+    max-width: 180px; /* limit width so chips are compact */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+
+  /* On very small screens, allow chip label to shrink a bit */
+  @media (max-width: 420px) {
+    .fav-chip .chip-label { max-width: 120px; }
   }
 
   .fav-chip .remove {
@@ -130,6 +198,108 @@
     gap: 10px;
     color: var(--ion-color-medium);
     padding: 10px 4px;
+  }
+
+  /* Theme-specific tweaks to ensure contrast in light/dark */
+  :host-context(body:not(.dark)) {
+    .perfil-container { background: linear-gradient(160deg, rgba(255,255,255,0.995), rgba(255,255,255,0.98)); }
+    .card { background: linear-gradient(180deg, #ffffff, #fbfdff); color: #0b1220; border: 1px solid rgba(11,18,32,0.06); }
+    .fav-chip { background: #fff; color: #0b1220; border: 1px solid rgba(11,18,32,0.06); }
+    .hero-texts .muted { color: rgba(17,24,39,0.72); }
+  }
+
+  :host-context(body.dark) {
+    .perfil-container { 
+      background: linear-gradient(160deg, rgba(17,17,17,0.03), rgba(17,17,17,0.01)); 
+    }
+    
+    .card { 
+      background: rgba(255,255,255,0.02); 
+      color: var(--ion-text-color); 
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    
+    .fav-chip { 
+      --background: #2b2b3c; 
+      color: #f1f1f1; 
+      border: 1px solid rgba(255,255,255,0.06); 
+    }
+    
+    .hero-texts {
+      h1, h2, h3, h4 {
+        color: #ffffff;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+      }
+      
+      .muted { 
+        color: var(--ion-color-medium); 
+      }
+    }
+
+    /* Melhor legibilidade para títulos e textos */
+    h2, h3, h4 {
+      color: #ffffff;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    }
+
+    .section-title {
+      color: #ffffff;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+
+    ion-label {
+      color: #ffffff !important;
+    }
+
+    /* Fix segment text colors in dark theme */
+    ion-segment {
+      --background: rgba(255,255,255,0.03);
+      --color: #f1f1f1;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+    }
+
+    ion-segment-button {
+      --color: #f1f1f1;
+      --color-checked: #ffffff;
+      --indicator-color: var(--ion-color-primary);
+      --background-checked: rgba(140,44,226,0.15);
+      font-weight: 600;
+      min-height: 44px;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+
+    /* Melhoria nos cards e elementos do perfil */
+    .info-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      
+      h3 {
+        color: #ffffff;
+        margin-bottom: 12px;
+      }
+    }
+  }
+
+  /* Mobile: stack hero contents */
+  @media (max-width: 720px) {
+    .hero { flex-direction: column; align-items: center; text-align: center; }
+    .hero-texts { width: 100%; }
+    .quick-actions { justify-content: center; }
+  }
+
+  @media (max-width: 420px) {
+    .avatar-wrap.lg { width: 96px; height: 96px; }
+    .hero-texts h1 { font-size: 1.4rem; }
+    .chips { gap: 6px; }
+  }
+
+  /* Accessibility: focus style for interactive chips */
+  .fav-chip:focus, .fav-chip:focus-within {
+    outline: 3px solid rgba(140,44,226,0.18);
+    outline-offset: 2px;
   }
 
   .danger-zone .row {

@@ -53,6 +53,20 @@ export class ConversationChatPage implements OnInit, OnDestroy {
     this.convSvc.getMessages(this.convId).subscribe((list) => (this.messages = list));
   }
 
+  isRoomMessage(content: string) {
+    if (!content) return false;
+    try {
+      const parsed = JSON.parse(content);
+      return parsed && parsed.type === 'room';
+    } catch {
+      return false;
+    }
+  }
+
+  parseRoom(content: string) {
+    try { const parsed = JSON.parse(content); return parsed; } catch { return null; }
+  }
+
   send() {
     const text = this.content.trim();
     if (!text) return;

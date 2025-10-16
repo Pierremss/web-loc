@@ -27,6 +27,10 @@
 
       <ion-list *ngIf="auth.isLogged()">
         <ion-list-header>Conta</ion-list-header>
+        <ion-item>
+          <ion-label>Tema escuro</ion-label>
+          <ion-toggle [checked]="theme.isDark" (ionChange)="theme.toggle()"></ion-toggle>
+        </ion-item>
         <ion-menu-toggle auto-hide="true">
           <ion-item (click)="auth.logout(); pendingRequests = 0" lines="none">
             <ion-icon name="log-out-outline" slot="start"></ion-icon>

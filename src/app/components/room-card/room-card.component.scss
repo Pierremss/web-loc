@@ -1,0 +1,17 @@
+.room-card {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  padding:8px;
+  border-radius:8px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border: 1px solid rgba(255,255,255,0.03);
+
+  .meta h4 { margin:0; color:#7a7df5; }
+  .meta .desc { margin:4px 0 0 0; color:#cfcfcf; font-size:0.9rem; }
+
+  .actions { display:flex; gap:8px; }
+  .actions .open { padding:6px 10px; background:#3c88f7; color:white; border-radius:6px; text-decoration:none; }
+  .actions .copy { padding:6px 10px; background:#6c757d; color:white; border-radius:6px; border:none; }
+}

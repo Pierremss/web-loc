@@ -1,9 +1,11 @@
 .login-page {
-  --background: linear-gradient(180deg, #161a39 0%, #0f1126 100%);
-  color: #e9ebff;
+  /* Use theme variables so this page respects light/dark */
+  background: linear-gradient(180deg, rgba(0,0,0,0.0), rgba(0,0,0,0.0));
+  color: var(--ion-text-color);
 
   .login-container {
-    background: linear-gradient(160deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.006));
+    background-color: var(--ion-surface-color, rgba(255,255,255,0.02));
     border: 1px solid var(--ion-border-color);
     border-radius: var(--app-radius);
     padding: 32px 24px;
@@ -14,14 +16,14 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
-    backdrop-filter: saturate(1.1) blur(8px);
+    backdrop-filter: saturate(1.05) blur(6px);
     animation: fadeSlide .34s ease both;
   }
 
   .logo {
     font-family: 'Orbitron', sans-serif;
     font-size: 2.2rem;
-    color: #7a7df5;
+    color: var(--ion-color-primary);
     margin-bottom: 4px;
   }
 
@@ -38,7 +40,7 @@
   .divider {
     position: relative;
     text-align: center;
-    color: #777;
+    color: var(--ion-color-medium);
     margin: 16px 0;
     font-size: 0.85rem;
   }
@@ -50,22 +52,17 @@
     top: 50%;
     width: 40%;
     height: 1px;
-    background: #444;
+    background: var(--ion-border-color);
   }
 
-  .divider::before {
-    left: 0;
-  }
+  .divider::before { left: 0; }
+  .divider::after { right: 0; }
 
-  .divider::after {
-    right: 0;
-  }
+  ion-item { --background: var(--webloc-input-bg); --color: var(--webloc-input-color); border-radius: 12px; margin-top: 8px; border: 1px solid var(--ion-border-color); }
 
-  ion-item { --background: rgba(255,255,255,.06); --color: #e9ebff; border-radius: 12px; margin-top: 8px; border: 1px solid var(--ion-border-color); }
+  ion-label { color: var(--ion-color-medium); }
 
-  ion-label { color: #b7bdff; }
-
-  ion-input { color: #fff; }
+  ion-input { color: var(--webloc-input-color); }
 
   .forgot-password {
     text-align: right;
@@ -73,27 +70,21 @@
     font-size: 0.8rem;
 
     a {
-      color: #a18bff;
+      color: var(--ion-color-primary);
       text-decoration: none;
 
-      &:hover {
-        text-decoration: underline;
-      }
+      &:hover { text-decoration: underline; }
     }
   }
 
-  .grad { --background: linear-gradient(90deg, #8c2ce2, #3c88f7); --border-radius: 12px; --box-shadow: 0 4px 12px rgba(0,0,0,.3); font-weight: 700; font-size: .95rem; margin-top: 8px; }
+  .grad { --background: linear-gradient(90deg, var(--ion-color-primary), var(--ion-color-primary-tint)); --border-radius: 12px; --box-shadow: 0 4px 12px rgba(0,0,0,.3); font-weight: 700; font-size: .95rem; margin-top: 8px; }
 
   .segmento-claro {
-  ion-segment-button {
-    color: white !important;
-
-    &.segment-button-checked {
-      font-weight: bold;
-      background-color: #3c88f730;
+    ion-segment-button {
+      color: var(--ion-text-color) !important;
+      &.segment-button-checked { font-weight: bold; background-color: rgba(255,255,255,0.02); }
     }
   }
-}
 
   .erro { font-size: 0.75rem; color: #ff6666; margin-left: 4px; }
   .error-inline { color: #ff7474; font-size: .85rem; text-align: left; margin-top: 6px; margin-left: 4px; }

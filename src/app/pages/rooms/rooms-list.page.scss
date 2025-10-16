@@ -1,0 +1,21 @@
+.rooms-page {
+  .rooms-container {
+    max-width: 1000px;
+    margin: 4vh auto;
+  }
+
+  .header h1 { color: #7a7df5; margin: 0 0 6px 0; }
+  .header .sub { color: #ccc; margin: 0 0 12px 0; }
+
+  .rooms-grid { display: grid; grid-template-columns: 1fr 320px; gap: 18px; }
+
+  .card { background: #121225; padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.03); }
+
+  .muted { color: #bdbdbd; font-size: 0.9rem; }
+
+  .actions { display:flex; gap:8px; align-items:center; }
+
+  .info-card ul { margin: 8px 0 0 16px; color: #ccc; }
+
+  @media (max-width: 900px) { .rooms-grid { grid-template-columns: 1fr; } }
+}

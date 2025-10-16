@@ -1,7 +1,7 @@
 <ion-header>
   <ion-toolbar>
     <ion-buttons slot="start">
-      <ion-menu-button></ion-menu-button>
+      <ion-back-button defaultHref="/home" text="Voltar"></ion-back-button>
     </ion-buttons>
     <ion-title>Meu Perfil</ion-title>
   </ion-toolbar>
@@ -66,7 +66,8 @@
         <div class="chips" *ngIf="favoritosFiltrados?.length; else emptyFavs">
           <ion-chip class="fav-chip" *ngFor="let jogo of favoritosFiltrados; let i = index" [style.animationDelay]="(i * 40) + 'ms'">
             <ion-icon name="sparkles-outline"></ion-icon>
-            <ion-label>{{ jogo.name }}</ion-label>
+            <!-- wrap label in span for truncation and provide full title for tooltip -->
+            <span class="chip-label" title="{{ jogo.name }}">{{ jogo.name }}</span>
             <ion-icon name="close-circle" class="remove" (click)="removerFavorito(jogo.id)"></ion-icon>
           </ion-chip>
         </div>

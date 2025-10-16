@@ -15,7 +15,12 @@
     <ion-item *ngFor="let m of messages">
       <ion-label>
         <h3>#{{ m.id }} • {{ m.sender_id }}</h3>
-        <p>{{ m.content }}</p>
+        <ng-container *ngIf="isRoomMessage(m.content); else plain">
+          <app-room-card [room]="parseRoom(m.content)"></app-room-card>
+        </ng-container>
+        <ng-template #plain>
+          <p>{{ m.content }}</p>
+        </ng-template>
       </ion-label>
     </ion-item>
   </ion-list>

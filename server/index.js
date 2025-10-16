@@ -14,6 +14,9 @@ import messageRoutes from './routes/messages.js';
 import conversationRoutes from './routes/conversations.js';
 import swipeRoutes from './routes/swipe.js';
 import platformRoutes from './routes/platforms.js';
+import roomsRoutes from './routes/rooms.js';
+import genresRoutes from './routes/genres.js';
+import gameTypesRoutes from './routes/game-types.js';
 import { attachRealtime } from './realtime.js';
 import { createServer } from 'http';
 
@@ -42,6 +45,9 @@ app.use('/api/messages', messageRoutes);
 app.use('/api/conversations', conversationRoutes);
 app.use('/api/swipe', swipeRoutes);
 app.use('/api/platforms', platformRoutes);
+app.use('/api/rooms', roomsRoutes);
+app.use('/api/genres', genresRoutes);
+app.use('/api/game-types', gameTypesRoutes);
 
 const port = process.env.PORT || 3333;
 // Criar HTTP server e anexar Socket.IO

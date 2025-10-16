@@ -1,0 +1,56 @@
+<ion-content class="ion-padding rooms-page">
+  <div class="rooms-container">
+    <div class="header">
+      <h1>Minhas Salas</h1>
+      <p class="sub">Crie e compartilhe salas com outros jogadores</p>
+    </div>
+
+    <div class="rooms-grid">
+      <div class="left">
+        <div class="card">
+          <h3>Criar Sala</h3>
+          <ion-item>
+            <ion-label position="floating">Nome</ion-label>
+            <ion-input [(ngModel)]="name"></ion-input>
+          </ion-item>
+          <ion-item>
+            <ion-label position="floating">Link (opcional)</ion-label>
+            <ion-input [(ngModel)]="link"></ion-input>
+          </ion-item>
+          <ion-item>
+            <ion-label position="floating">Descrição (opcional)</ion-label>
+            <ion-input [(ngModel)]="description"></ion-input>
+          </ion-item>
+          <ion-button expand="block" (click)="create()" class="btn-primary">Criar Sala</ion-button>
+        </div>
+
+        <div class="card">
+          <h3>Salas Criadas ({{ rooms.length }})</h3>
+          <ion-list>
+            <ion-item *ngFor="let r of rooms">
+              <ion-label>
+                <h2>{{ r.name }}</h2>
+                <p class="muted">{{ r.description || (r.link ? r.link : '—') }}</p>
+              </ion-label>
+              <div class="actions">
+                <ion-button size="small" (click)="shareToConversation(r.id)" color="primary">Compartilhar</ion-button>
+                <ion-button size="small" (click)="startEdit(r)" color="medium">Editar</ion-button>
+                <ion-button size="small" (click)="remove(r.id)" color="danger">Remover</ion-button>
+              </div>
+            </ion-item>
+          </ion-list>
+        </div>
+      </div>
+
+      <aside class="right">
+        <div class="card info-card">
+          <h3>Dicas</h3>
+          <ul>
+            <li>Use links de salas do seu provedor de voz/chat (Discord, Google Meet, etc.)</li>
+            <li>Ao compartilhar, a sala aparecerá com preview no chat</li>
+          </ul>
+        </div>
+      </aside>
+    </div>
+  </div>
+</ion-content>

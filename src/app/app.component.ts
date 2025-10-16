@@ -1,5 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { AuthService } from './modules/auth/auth.service';
+import { ThemeService } from './services/theme.service';
 import { FriendsService } from './services/friends.service';
 import { ConversationsService } from './services/conversations.service';
 import { SocketService } from './services/socket.service';
@@ -15,10 +16,12 @@ import { environment } from '../environments/environment';
 export class AppComponent {
   appPages = [
     { title: 'Home', url: '/home', icon: 'home-outline', show: () => true },
-    { title: 'Amigos', url: '/friends', icon: 'people-outline', show: () => this.auth.isLogged() },
-    { title: 'Descobrir (Swipe)', url: '/swipe', icon: 'sparkles-outline', show: () => this.auth.isLogged() },
-    { title: 'Salas', url: '/conversations', icon: 'chatbubbles-outline', show: () => this.auth.isLogged() },
+    // Itens visíveis apenas para jogadores (não para administradores)
+    { title: 'Descobrir Perfis', url: '/swipe', icon: 'sparkles-outline', show: () => this.auth.isLogged() && !this.auth.isAdmin() },
     { title: 'Meu Perfil', url: '/jogador-perfil', icon: 'person-outline', show: () => this.auth.isLogged() && !this.auth.isAdmin() },
+    { title: 'Amigos', url: '/friends', icon: 'people-outline', show: () => this.auth.isLogged() && !this.auth.isAdmin() },
+    { title: 'Salas', url: '/conversations', icon: 'chatbubbles-outline', show: () => this.auth.isLogged() && !this.auth.isAdmin() },
+    // Itens do admin
     { title: 'Gerenciar Jogos', url: '/games', icon: 'game-controller-outline', show: () => this.auth.isAdmin() },
     { title: 'Usuários', url: '/users', icon: 'people-outline', show: () => this.auth.isAdmin() },
   ];
@@ -28,12 +31,15 @@ export class AppComponent {
   unreadRooms = 0;
 
   readonly auth = inject(AuthService);
+  readonly theme = inject(ThemeService);
   private readonly friends = inject(FriendsService);
   private readonly sockets = inject(SocketService);
   private readonly convs = inject(ConversationsService);
   private readonly router = inject(Router);
 
   constructor() {
+    // garante que o tema seja aplicado o mais cedo possível
+    try { /* instância criada via inject */ } catch {}
     this.refreshPending();
     this.refreshUnreadRooms();
     // Atualiza em tempo real via socket, se logado

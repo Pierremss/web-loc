@@ -81,7 +81,7 @@
 
 .chat-input { --background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.01)); backdrop-filter: blur(6px); }
 .chat-input ion-item { --background: transparent; }
-.chat-input ion-input { color: var(--ion-text-color); }
+.chat-input ion-input { color: var(--ion-text-color); background: rgba(255,255,255,0.02); border-radius: 8px; padding: 8px; }
 .chat-input ion-button { --background: linear-gradient(135deg, var(--ion-color-primary), var(--ion-color-secondary)); --box-shadow: 0 8px 18px rgba(60,136,247,.35); }
 
 @keyframes pop { from { transform: scale(.98); opacity: .6; } to { transform: scale(1); opacity: 1; } }

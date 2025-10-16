@@ -4,6 +4,8 @@ import { AuthService } from './auth.service';
 import { GamesService } from '../games/games.service';
 import { Platform } from '../../model/platform';
 import { PlatformsService } from '../../services/platforms.service';
+import { GenresService } from '../../services/genres.service';
+import { GameTypesService } from '../../services/game-types.service';
 
 @Component({
   selector: 'app-register',
@@ -43,6 +45,8 @@ export class RegisterPage implements OnInit {
   };
   jogos: any[] = [];
   platformOptions: Platform[] = [];
+  genreOptions: any[] = [];
+  typeOptions: any[] = [];
   diasSemana: string[] = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
   periodos: string[] = ['Manha', 'Tarde', 'Noite', 'Madrugada'];
   horariosSelecionados: { [dia: string]: string[] } = {};
@@ -54,6 +58,8 @@ export class RegisterPage implements OnInit {
   private readonly router = inject(Router);
   private readonly gamesService = inject(GamesService);
   private readonly platformsService = inject(PlatformsService);
+  private readonly genresService = inject(GenresService);
+  private readonly typesService = inject(GameTypesService);
 
   constructor() {
     // Inicializa todos os dias com array vazio
@@ -65,6 +71,8 @@ export class RegisterPage implements OnInit {
     this.platformsService.list().subscribe(platforms => {
       this.platformOptions = platforms.sort((a, b) => a.name.localeCompare(b.name));
     });
+    this.genresService.list().subscribe(list => this.genreOptions = list.sort((a: any,b:any)=>a.name.localeCompare(b.name)));
+    this.typesService.list().subscribe(list => this.typeOptions = list.sort((a: any,b:any)=>a.name.localeCompare(b.name)));
   }
 
   erros: { [key: string]: string } = {};
@@ -164,6 +172,11 @@ export class RegisterPage implements OnInit {
     // Arrays como JSON para o backend parsear
   fd.append('platforms', JSON.stringify(platformIds));
   fd.append('jogos_favoritos', JSON.stringify(favoriteIds));
+  // anexar gêneros e tipos selecionados (se existirem)
+  const genres = this.normalizeIdArray(this.form.genres || []);
+  const types = this.normalizeIdArray(this.form.types || []);
+  if (genres.length) fd.append('genres', JSON.stringify(genres));
+  if (types.length) fd.append('types', JSON.stringify(types));
     if (this.avatarFile) {
       fd.append('avatar', this.avatarFile, this.avatarFile.name);
     }

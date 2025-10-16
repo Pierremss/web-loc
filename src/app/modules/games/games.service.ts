@@ -9,6 +9,8 @@ export interface Game {
   name: string;
   created_at?: string;
   platforms: Platform[];
+  genres?: { id: number; name: string }[];
+  types?: { id: number; name: string }[];
 }
 
 @Injectable({ providedIn: 'root' })

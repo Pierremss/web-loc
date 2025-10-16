@@ -16,6 +16,7 @@ const routes: Routes = [
   { path: 'games', component: GamesListPage },
   { path: 'home', component: HomePage },
   { path: 'friends', loadChildren: () => import('./pages/friends/friends.module').then(m => m.FriendsPageModule) },
+  { path: 'rooms', loadChildren: () => import('./pages/rooms/rooms.module').then(m => m.RoomsListPageModule) },
   { path: 'chat/:id', loadChildren: () => import('./pages/chat/chat.module').then(m => m.ChatPageModule) },
   { path: 'conversations', loadChildren: () => import('./pages/conversations/conversations.module').then(m => m.ConversationsModule) },
   { path: 'user-profile/:id', loadChildren: () => import('./pages/user-profile/user-profile.module').then(m => m.UserProfilePageModule) },

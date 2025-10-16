@@ -3,6 +3,8 @@ import { AuthService } from '../../modules/auth/auth.service';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { UsersService } from '../../services/users.service';
+import { GenresService } from '../../services/genres.service';
+import { GameTypesService } from '../../services/game-types.service';
 import { environment } from '../../../environments/environment';
 import { ToastController, LoadingController } from '@ionic/angular';
 
@@ -20,6 +22,8 @@ export class EditarPerfilPage implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
   private readonly users = inject(UsersService);
+  private readonly genresService = inject(GenresService);
+  private readonly typesService = inject(GameTypesService);
   private readonly toastCtrl = inject(ToastController);
   private readonly loadingCtrl = inject(LoadingController);
 
@@ -33,6 +37,8 @@ export class EditarPerfilPage implements OnInit {
 
   ngOnInit() {
     this.form = { ...this.auth.user };
+    this.genresService.list().subscribe(list => this.form.genreOptions = list);
+    this.typesService.list().subscribe(list => this.form.typeOptions = list);
     this.inicializarHorarios();
   // Exibe skeleton brevemente e libera a UI
   setTimeout(() => { this.loading = false; }, 300);

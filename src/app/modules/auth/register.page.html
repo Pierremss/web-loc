@@ -80,11 +80,15 @@
       </ion-item>
       <div *ngIf="erros['platforms']" class="error-message">{{ erros['platforms'] }}</div>
       <ion-item>
-        <ion-label>Estilo de Jogo</ion-label>
+        <ion-label>Tipo de Jogo</ion-label>
         <ion-select [(ngModel)]="form.game_style" name="game_style">
-          <ion-select-option value="Casual">Casual</ion-select-option>
-          <ion-select-option value="Competitivo">Competitivo</ion-select-option>
-          <ion-select-option value="Cooperativo">Cooperativo</ion-select-option>
+          <ion-select-option *ngFor="let t of typeOptions" [value]="t.name">{{ t.name }}</ion-select-option>
+        </ion-select>
+      </ion-item>
+      <ion-item>
+        <ion-label>Gêneros Preferidos</ion-label>
+        <ion-select multiple="true" [(ngModel)]="form.genres" name="genres">
+          <ion-select-option *ngFor="let g of genreOptions" [value]="g.id">{{ g.name }}</ion-select-option>
         </ion-select>
       </ion-item>
       <div *ngIf="erros['game_style']" class="error-message">{{ erros['game_style'] }}</div>

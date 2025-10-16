@@ -70,6 +70,11 @@
         Amigos
       </ion-button>
 
+      <ion-button *ngIf="!auth.isAdmin() && !loading" expand="block" routerLink="/conversations" class="btn-primary">
+        <ion-icon name="chatbubbles-outline" slot="start"></ion-icon>
+        Salas
+      </ion-button>
+
       <ion-button *ngIf="!loading" expand="block" color="medium" (click)="auth.logout(); navigateToLogin()" class="btn-secondary">
         <ion-icon name="log-out-outline" slot="start"></ion-icon>
         Sair
