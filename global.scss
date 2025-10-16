@@ -1,0 +1,157 @@
+/*
+ * App Global CSS
+ * ----------------------------------------------------------------------------
+ * Put style rules here that you want to apply globally. These styles are for
+ * the entire app and not just one component. Additionally, this file can be
+ * used as an entry point to import other CSS/Sass files to be included in the
+ * output CSS.
+ * For more information on global stylesheets, visit the documentation:
+ * https://ionicframework.com/docs/layout/global-stylesheets
+ */
+
+/* Core CSS required for Ionic components to work properly */
+@import "@ionic/angular/css/core.css";
+
+/* Basic CSS for apps built with Ionic */
+@import "@ionic/angular/css/normalize.css";
+@import "@ionic/angular/css/structure.css";
+@import "@ionic/angular/css/typography.css";
+@import "@ionic/angular/css/display.css";
+
+/* Optional CSS utils that can be commented out */
+@import "@ionic/angular/css/padding.css";
+@import "@ionic/angular/css/float-elements.css";
+@import "@ionic/angular/css/text-alignment.css";
+@import "@ionic/angular/css/text-transformation.css";
+@import "@ionic/angular/css/flex-utils.css";
+
+/**
+ * Ionic Dark Mode
+ * -----------------------------------------------------
+ * For more info, please see:
+ * https://ionicframework.com/docs/theming/dark-mode
+ */
+
+/* @import "@ionic/angular/css/palettes/dark.always.css"; */
+/* @import "@ionic/angular/css/palettes/dark.class.css"; */
+@import "@ionic/angular/css/palettes/dark.system.css";
+
+:root { --radius: var(--app-radius); }
+
+html, body, ion-app, ion-content, ion-router-outlet { height: 100%; }
+body {
+  margin: 0;
+  font-family: 'Poppins', 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  background: radial-gradient(1000px 1000px at 10% -80%, rgba(139, 93, 255, 0.562), transparent),
+              radial-gradient(1000px 1000px at -10% 120%, rgba(34,211,238,.2), transparent),
+              var(--ion-background-color);
+  color: var(--ion-text-color);
+}
+
+/* animação suave ao alternar tema */
+body, ion-app, ion-content, ion-router-outlet, ion-header, ion-toolbar, ion-item, .card {
+  transition: background-color 220ms ease, color 220ms ease, border-color 220ms ease;
+}
+
+/* Light / Dark helpers */
+:root {
+  --webloc-input-bg: rgba(255,255,255,0.03);
+  --webloc-input-color: #111827;
+  /* Core ionic vars for light theme */
+  --ion-background-color: #f8fafc;
+  --ion-text-color: #111827;
+  --ion-border-color: rgba(0,0,0,0.08);
+  --ion-surface-color: #ffffff; /* light surface for cards/panels */
+  --ion-color-primary: #8c2ce2; /* purple primary */
+  --ion-color-secondary: #6ea8fe; /* soft blue secondary */
+  --ion-color-medium: #6b7280;
+  --app-radius: 12px;
+  --app-shadow-lg: 0 10px 30px rgba(2,6,23,0.16);
+}
+body.dark {
+  /* Core ionic vars for dark theme - softer, less saturated */
+  --ion-background-color: #0f1724; /* deep slate */
+  --ion-surface-color: #0b1220; /* surface for cards/panels */
+  --ion-text-color: #e6eef8; /* near-white for high contrast */
+  --ion-border-color: rgba(255,255,255,0.04);
+  --ion-color-primary: #8c2ce2; /* purple primary */
+  --ion-color-secondary: #b08cff; /* softer violet secondary */
+  --ion-color-accent: #7dd3fc; /* subtle cyan accent */
+  --ion-color-medium: #9ca3af;
+  --webloc-input-bg: rgba(255,255,255,0.03);
+  --webloc-input-color: #e6eef8;
+  --app-radius: 12px;
+  --app-shadow-lg: 0 10px 30px rgba(2,6,23,0.6);
+
+  /* Make menu accents use primary (purple) instead of cyan/blue in dark mode */
+  --ion-color-accent: var(--ion-color-primary);
+
+  /* Select / option contrast for dark theme: ensure dropdowns, popovers and alerts
+     that render select options inherit a light color for readability */
+  ion-select, ion-select .select-text, ion-select .select-icon,
+  .select-interface, .select-interface .select-option,
+  .select-interface .alert-radio-label, .select-interface .alert-checkbox-label,
+  ion-alert .alert-radio-label, ion-alert .alert-checkbox-label,
+  .select-popover, .select-popover .popover-content {
+    color: var(--webloc-input-color) !important;
+  }
+
+  /* Force menu active/hover/activated state to use primary purple for better brand consistency */
+  ion-menu ion-item[aria-current="true"],
+  ion-menu ion-item.activated,
+  ion-menu ion-item:hover {
+    background: rgba(var(--ion-color-primary-rgb), 0.08);
+    color: var(--ion-color-primary);
+  }
+  ion-menu ion-item[aria-current="true"] ion-icon,
+  ion-menu ion-item.activated ion-icon {
+    color: var(--ion-color-primary);
+  }
+}
+
+body:not(.dark) {
+  --webloc-input-bg: #ffffff;
+  --webloc-input-color: #111827;
+  /* Improve contrast of secondary/medium text on light backgrounds */
+  --ion-color-medium: #475569; /* a darker slate for better readability */
+}
+
+ion-input, input, textarea {
+  background: var(--webloc-input-bg) !important;
+  color: var(--webloc-input-color) !important;
+}
+
+/* Cards globais elegantes */
+.card, ion-card {
+  border-radius: var(--radius) !important;
+  box-shadow: var(--app-shadow-lg) !important;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border: 1px solid var(--ion-border-color);
+  backdrop-filter: saturate(1.05) blur(6px);
+  background-color: var(--ion-surface-color, rgba(255,255,255,0.02));
+}
+
+/* Toolbar/menu refinados */
+ion-toolbar {
+  --background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.008));
+  --border-color: var(--ion-border-color);
+  backdrop-filter: blur(6px);
+}
+ion-menu::part(container) { border-radius: 0 16px 16px 0; border-right: 1px solid var(--ion-border-color); }
+ion-item { --border-color: var(--ion-border-color); border-radius: 12px; }
+
+/* Force menu items to use primary color for active/hover across themes */
+ion-menu ion-item:hover,
+ion-menu ion-item.activated,
+ion-menu ion-item[aria-current="true"] {
+  background: rgba(var(--ion-color-primary-rgb), 0.06);
+  color: var(--ion-color-primary);
+}
+ion-menu ion-item ion-icon { color: var(--ion-color-primary); }
+
+/* Botões com leve elevação */
+ion-button { --border-radius: 14px; box-shadow: 0 10px 24px rgba(0,0,0,.22); }
+
+/* Responsividade básica para listas e painéis */
+.container, ion-list { max-width: 1080px; margin: 0 auto; padding: 0 16px; }
+
