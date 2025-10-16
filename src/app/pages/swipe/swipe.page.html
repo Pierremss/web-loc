@@ -4,10 +4,15 @@
       <ion-back-button defaultHref="/home" text="Voltar"></ion-back-button>
     </ion-buttons>
     <ion-title>Descobrir jogadores</ion-title>
+    <ion-buttons slot="end">
+      <ion-button fill="clear" size="small" (click)="openFilters()">
+        <ion-icon name="options-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
+<ion-content class="swipe-page" [fullscreen]="true">
   <ion-refresher slot="fixed" (ionRefresh)="handlePullRefresh($event)">
     <ion-refresher-content
       pullingIcon="chevron-down-circle-outline"
@@ -16,42 +21,109 @@
       refreshingText="Buscando jogadores...">
     </ion-refresher-content>
   </ion-refresher>
-
-  <ng-container *ngIf="items.length > 0; else fallback">
-    <div class="deck">
-    <div
-      id="swipe-card"
-      class="card"
-      [style.transform]="'translate(' + dx + 'px,' + dy + 'px) rotate(' + angle + 'deg)'"
-      [class.dragging]="dragging"
-      (mousedown)="onDragStart($event)"
-      (mousemove)="onDragMove($event)"
-      (mouseup)="onDragEnd()"
-      (mouseleave)="onDragEnd()"
-      (touchstart)="onDragStart($event)"
-      (touchmove)="onDragMove($event)"
-      (touchend)="onDragEnd()">
-  <img [src]="normalizeAvatar(top()?.avatar_url)" (error)="onImgError($event)" alt="avatar" />
-
-  <div class="overlay like" [style.opacity]="Math.max(0, Math.min(1, dx/120))">LIKE</div>
-  <div class="overlay pass" [style.opacity]="Math.max(0, Math.min(1, -dx/120))">PASS</div>
-
-      <div class="gradient"></div>
-      <div class="info">
-        <h2>
-          {{ top()?.name }}
-          <small>{{ '@' + (top()?.nickname || '') }}</small>
-        </h2>
-        <p class="meta">{{ top()?.game_style }} • {{ top()?.platforms }}</p>
+  <div class="swipe-shell">
+    <section class="swipe-intro">
+      <div class="headline">
+        <h1>Encontre seu duo ideal</h1>
+        <p>Analise compatibilidade, estilos de jogo e horários alinhados antes de dar o próximo like.</p>
       </div>
-    </div>
+      <div class="intro-actions">
+        <ion-button fill="clear" size="small" color="medium" (click)="onRefresh()" [disabled]="loading">
+          <ion-icon slot="start" name="refresh-outline"></ion-icon>
+          Atualizar deck
+        </ion-button>
+        <ion-button size="small" color="primary" (click)="openFilters()">
+          <ion-icon slot="start" name="funnel-outline"></ion-icon>
+          Ajustar filtros
+        </ion-button>
+      </div>
+    </section>
 
-    <div class="fab-actions">
-      <button class="btn pass" [disabled]="busy" (click)="onPass()">✕</button>
-      <button class="btn like" [disabled]="busy" (click)="onLike()">❤</button>
-    </div>
+    <section class="filters-summary" *ngIf="filters.minCompatibility || filters.platformIds?.length || filters.gameStyle || filters.period">
+      <ion-chip color="primary" outline (click)="openFilters()">
+        <ion-icon name="funnel-outline"></ion-icon>
+        <ion-label>Filtros ativos</ion-label>
+      </ion-chip>
+      <div class="summary-tags">
+        <ion-badge color="medium" *ngIf="filters.minCompatibility">Compatibilidade ≥ {{ filters.minCompatibility }}%</ion-badge>
+        <ion-badge color="medium" *ngIf="(filters.platformIds?.length ?? 0) > 0">{{ filters.platformIds?.length ?? 0 }} plataforma(s)</ion-badge>
+        <ion-badge color="medium" *ngIf="filters.gameStyle">Estilo {{ filters.gameStyle }}</ion-badge>
+        <ion-badge color="medium" *ngIf="filters.period">Horário {{ filters.period }}</ion-badge>
+      </div>
+    </section>
+
+    <section class="swipe-stage" *ngIf="top() as current; else fallback">
+      <div class="stage-card">
+        <div class="compatibility" *ngIf="compatibilitySummary(current) as summary">
+          <ion-chip color="success">
+            <ion-icon name="sparkles-outline"></ion-icon>
+            <ion-label>{{ summary.label }}</ion-label>
+          </ion-chip>
+          <p class="details" *ngIf="summary.details">{{ summary.details }}</p>
+        </div>
+
+        <div
+          id="swipe-card"
+          class="player-card"
+          [style.transform]="'translate(' + dx + 'px,' + dy + 'px) rotate(' + angle + 'deg)'"
+          [class.dragging]="dragging"
+          (mousedown)="onDragStart($event)"
+          (mousemove)="onDragMove($event)"
+          (mouseup)="onDragEnd($event)"
+          (mouseleave)="onDragEnd($event)"
+          (touchstart)="onDragStart($event)"
+          (touchmove)="onDragMove($event)"
+          (touchend)="onDragEnd($event)">
+          <img [src]="normalizeAvatar(current.avatar_url)" (error)="onImgError($event)" alt="avatar" />
+
+          <div class="overlay like" [style.opacity]="Math.max(0, Math.min(1, dx/120))">
+            <ion-icon name="heart"></ion-icon>
+          </div>
+          <div class="overlay pass" [style.opacity]="Math.max(0, Math.min(1, -dx/120))">
+            <ion-icon name="close"></ion-icon>
+          </div>
+
+          <div class="gradient"></div>
+          <div class="info">
+            <div class="header">
+              <div>
+                <h2>{{ current.name }}</h2>
+                <span class="nickname" *ngIf="current.nickname">{{ '@' + current.nickname }}</span>
+              </div>
+              <ion-button size="small" fill="outline" color="light" (click)="openProfile(current)">
+                <ion-icon slot="start" name="person-circle-outline"></ion-icon>
+                Perfil
+              </ion-button>
+            </div>
+            <div class="meta">
+              <ion-chip color="dark" *ngIf="current.game_style">
+                <ion-icon name="game-controller-outline"></ion-icon>
+                <ion-label>{{ current.game_style }}</ion-label>
+              </ion-chip>
+              <ion-chip color="dark">
+                <ion-icon name="hardware-chip-outline"></ion-icon>
+                <ion-label>{{ platformList(current) }}</ion-label>
+              </ion-chip>
+            </div>
+            <p class="bio" *ngIf="current.summary?.bio">{{ current.summary.bio }}</p>
+            <div class="availability" *ngIf="current.summary?.availableTimes">
+              <ion-icon name="time-outline"></ion-icon>
+              <span>{{ current.summary.availableTimes }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <ion-button class="fab pass" fill="clear" color="danger" [disabled]="busy" (click)="onPass()">
+            <ion-icon name="close-outline"></ion-icon>
+          </ion-button>
+          <ion-button class="fab like" color="success" [disabled]="busy" (click)="onLike()">
+            <ion-icon name="heart"></ion-icon>
+          </ion-button>
+        </div>
+      </div>
+    </section>
   </div>
-  </ng-container>
 
   <ng-template #fallback>
     <ng-container *ngIf="loading; else emptyState">
@@ -80,7 +152,7 @@
   </ng-template>
 
   <ng-template #skeleton>
-    <ion-list>
+    <ion-list class="skeleton-list">
       <ion-item *ngFor="let i of [1,2,3,4,5]">
         <ion-thumbnail slot="start"><ion-skeleton-text animated style="width: 64px; height: 64px;"></ion-skeleton-text></ion-thumbnail>
         <ion-label>
@@ -90,4 +162,117 @@
       </ion-item>
     </ion-list>
   </ng-template>
+
+  <ion-modal #profileModal [isOpen]="isProfileOpen" (didDismiss)="closeProfile()">
+    <ng-template>
+      <ion-header>
+        <ion-toolbar>
+          <ion-title>Perfil do jogador</ion-title>
+          <ion-buttons slot="end">
+            <ion-button (click)="closeProfile()">
+              <ion-icon name="close"></ion-icon>
+            </ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content *ngIf="profileDetails as profile" class="profile-modal">
+        <div class="profile-hero">
+          <img [src]="normalizeAvatar(profile.avatar_url)" (error)="onImgError($event)" alt="avatar" />
+          <div>
+            <h2>{{ profile.name }}</h2>
+            <p *ngIf="profile.nickname">{{ '@' + profile.nickname }}</p>
+            <ion-badge color="dark" *ngIf="profile.game_style">{{ profile.game_style }}</ion-badge>
+          </div>
+        </div>
+
+        <section *ngIf="profile.profile">
+          <h3>Sobre</h3>
+          <p>{{ profile.profile }}</p>
+        </section>
+
+        <section *ngIf="profileSchedules().length">
+          <h3>Disponibilidade</h3>
+          <ul>
+            <li *ngFor="let slot of profileSchedules()">
+              <strong>{{ slot.day }}:</strong>
+              <span>{{ slot.periods.join(', ') }}</span>
+            </li>
+          </ul>
+        </section>
+
+        <section *ngIf="profileFavoriteGames().length">
+          <h3>Jogos favoritos</h3>
+          <ion-chip *ngFor="let game of profileFavoriteGames()" color="primary">{{ game.name }}</ion-chip>
+        </section>
+
+        <div class="modal-actions">
+          <ion-button expand="block" color="success" (click)="onProfileAction('like')" [disabled]="busy">
+            <ion-icon slot="start" name="heart"></ion-icon>
+            Enviar like
+          </ion-button>
+          <ion-button expand="block" fill="outline" color="medium" (click)="onProfileAction('pass')" [disabled]="busy">
+            <ion-icon slot="start" name="close"></ion-icon>
+            Pular
+          </ion-button>
+        </div>
+      </ion-content>
+      <ion-content *ngIf="profileLoading" class="profile-modal loading">
+        <ion-spinner name="crescent"></ion-spinner>
+      </ion-content>
+    </ng-template>
+  </ion-modal>
+
+  <ion-modal #filterModal [isOpen]="isFilterOpen" (didDismiss)="closeFilters()">
+    <ng-template>
+      <ion-header>
+        <ion-toolbar>
+          <ion-title>Filtrar jogadores</ion-title>
+          <ion-buttons slot="end">
+            <ion-button (click)="closeFilters()">
+              <ion-icon name="close"></ion-icon>
+            </ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content class="filters-modal">
+        <ion-list>
+          <ion-item>
+            <ion-label position="stacked">Compatibilidade mínima</ion-label>
+            <ion-range min="0" max="100" step="5" [(ngModel)]="compatibilityFloor" snaps="true">
+              <ion-label slot="start">0%</ion-label>
+              <ion-label slot="end">100%</ion-label>
+            </ion-range>
+          </ion-item>
+
+          <ion-item>
+            <ion-label position="stacked">Plataformas</ion-label>
+            <ion-select placeholder="Todas" multiple="true" [(ngModel)]="filters.platformIds">
+              <ion-select-option *ngFor="let platform of platformOptions" [value]="platform.id">{{ platform.name }}</ion-select-option>
+            </ion-select>
+          </ion-item>
+
+          <ion-item>
+            <ion-label position="stacked">Estilo de jogo</ion-label>
+            <ion-segment [(ngModel)]="filters.gameStyle">
+              <ion-segment-button value="">Todos</ion-segment-button>
+              <ion-segment-button *ngFor="let style of styleOptions" [value]="style">{{ style }}</ion-segment-button>
+            </ion-segment>
+          </ion-item>
+
+          <ion-item>
+            <ion-label position="stacked">Período</ion-label>
+            <ion-segment [(ngModel)]="filters.period">
+              <ion-segment-button value="">Todos</ion-segment-button>
+              <ion-segment-button *ngFor="let period of periodOptions" [value]="period">{{ period }}</ion-segment-button>
+            </ion-segment>
+          </ion-item>
+        </ion-list>
+
+        <div class="filters-actions">
+          <ion-button expand="block" color="primary" (click)="applyFilters()">Aplicar filtros</ion-button>
+          <ion-button expand="block" fill="clear" color="medium" (click)="resetFilters()">Limpar</ion-button>
+        </div>
+      </ion-content>
+    </ng-template>
+  </ion-modal>
 </ion-content>

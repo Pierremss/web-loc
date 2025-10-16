@@ -1,57 +1,60 @@
-<ion-content class="ion-padding cadastro-page">
-  <div class="cadastro-container fadein">
-    <h1 class="logo">WebLoc</h1>
-    <p class="subtitulo">Crie sua conta</p>
+<ion-content class="register-page" fullscreen>
+  <div class="layout-container register-wrapper">
+    <section class="register-card surface-card stack stack-lg fadein">
+      <header class="logo stack">
+        <h1>WebLoc</h1>
+        <p class="subtitle">Crie sua conta</p>
+      </header>
 
-    <div class="etapas">
-      <div class="etapa" [class.ativa]="etapaAtual === 1">
-        <ion-icon name="ellipse-outline"></ion-icon>
-        <span>Básico</span>
+      <div class="steps">
+        <div class="step" [class.active]="etapaAtual === 1">
+          <ion-icon name="ellipse-outline"></ion-icon>
+          <span>Básico</span>
+        </div>
+        <div class="divider"></div>
+        <div class="step" [class.active]="etapaAtual === 2">
+          <ion-icon name="ellipse-outline"></ion-icon>
+          <span>Perfil</span>
+        </div>
+        <div class="divider"></div>
+        <div class="step" [class.active]="etapaAtual === 3">
+          <ion-icon name="ellipse-outline"></ion-icon>
+          <span>Interesse</span>
+        </div>
       </div>
-      <div class="linha"></div>
-      <div class="etapa" [class.ativa]="etapaAtual === 2">
-        <ion-icon name="ellipse-outline"></ion-icon>
-        <span>Perfil</span>
-      </div>
-      <div class="linha"></div>
-      <div class="etapa" [class.ativa]="etapaAtual === 3">
-        <ion-icon name="ellipse-outline"></ion-icon>
-        <span>Interesse</span>
-      </div>
-    </div>
 
-  <form *ngIf="etapaAtual === 1" (ngSubmit)="avancarEtapa()" class="card glass">
-      <h2 class="titulo-formulario">Informações Básicas</h2>
+      <form *ngIf="etapaAtual === 1" (ngSubmit)="avancarEtapa()" class="form-stage surface-ghost stack">
+        <h2 class="form-title">Informações Básicas</h2>
 
-      <ion-item>
-        <ion-label position="floating">Nome</ion-label>
-        <ion-input [(ngModel)]="form.name" name="name"></ion-input>
-      </ion-item>
-      <div *ngIf="erros['name']" class="error-message">{{ erros['name'] }}</div>
-      <ion-item>
-        <ion-label position="floating">Apelido</ion-label>
-        <ion-input [(ngModel)]="form.nickname" name="nickname"></ion-input>
-      </ion-item>
-      <div *ngIf="erros['nickname']" class="error-message">{{ erros['nickname'] }}</div>
-      <ion-item>
-        <ion-label position="floating">E-mail</ion-label>
-        <ion-input [(ngModel)]="form.email" type="email" name="email"></ion-input>
-      </ion-item>
-      <div *ngIf="erros['email']" class="error-message">{{ erros['email'] }}</div>
-      <ion-item>
-        <ion-label position="floating">Senha</ion-label>
-        <ion-input [(ngModel)]="form.password" type="password" name="password"></ion-input>
-      </ion-item>
-      <div *ngIf="erros['password']" class="error-message">{{ erros['password'] }}</div>
+        <ion-item>
+          <ion-label position="floating">Nome</ion-label>
+          <ion-input [(ngModel)]="form.name" name="name"></ion-input>
+        </ion-item>
+        <div *ngIf="erros['name']" class="error-message">{{ erros['name'] }}</div>
+        <ion-item>
+          <ion-label position="floating">Apelido</ion-label>
+          <ion-input [(ngModel)]="form.nickname" name="nickname"></ion-input>
+        </ion-item>
+        <div *ngIf="erros['nickname']" class="error-message">{{ erros['nickname'] }}</div>
+        <ion-item>
+          <ion-label position="floating">E-mail</ion-label>
+          <ion-input [(ngModel)]="form.email" type="email" name="email"></ion-input>
+        </ion-item>
+        <div *ngIf="erros['email']" class="error-message">{{ erros['email'] }}</div>
+        <ion-item>
+          <ion-label position="floating">Senha</ion-label>
+          <ion-input [(ngModel)]="form.password" type="password" name="password"></ion-input>
+        </ion-item>
+        <div *ngIf="erros['password']" class="error-message">{{ erros['password'] }}</div>
 
-      <ion-button expand="block" class="btn-proximo grad" type="submit">
-        Próximo
-        <ion-icon name="arrow-forward-outline" slot="end"></ion-icon>
-      </ion-button>
-    </form>
+        <ion-button expand="block" class="btn-primary grad" type="submit">
+          Próximo
+          <ion-icon name="arrow-forward-outline" slot="end"></ion-icon>
+        </ion-button>
+      </form>
 
-    <form *ngIf="etapaAtual === 2" (ngSubmit)="avancarEtapa()" class="card glass">
-      <h2 class="titulo-formulario">Perfil Gamer</h2>
+    <form *ngIf="etapaAtual === 2" (ngSubmit)="avancarEtapa()" class="form-stage surface-ghost stack">
+      <h2 class="form-title">Perfil Gamer</h2>
 
       <div class="avatar-select">
         <div class="avatar-preview" *ngIf="avatarPreview; else placeholder">
@@ -99,19 +102,19 @@
       </ion-item>
       <div *ngIf="erros['profile']" class="error-message">{{ erros['profile'] }}</div>
 
-      <ion-button expand="block" class="btn-proximo grad" type="submit">
+      <ion-button expand="block" class="btn-primary grad" type="submit">
         Próximo
         <ion-icon name="arrow-forward-outline" slot="end"></ion-icon>
       </ion-button>
 
-      <ion-button expand="block" color="medium" class="btn-voltar" (click)="voltarEtapa()">
+      <ion-button expand="block" color="medium" class="btn-secondary" (click)="voltarEtapa()">
         Voltar
         <ion-icon name="arrow-back-outline" slot="start"></ion-icon>
       </ion-button>
     </form>
 
-    <form *ngIf="etapaAtual === 3" (ngSubmit)="avancarEtapa()" class="card glass">
-      <h2 class="titulo-formulario">Disponibilidade</h2>
+    <form *ngIf="etapaAtual === 3" (ngSubmit)="avancarEtapa()" class="form-stage surface-ghost stack">
+      <h2 class="form-title">Disponibilidade</h2>
 
       <!-- <ion-card>
         <ion-card-header>
@@ -136,34 +139,32 @@
         </ion-card-content>
       </ion-card> -->
 
-      <ion-card>
-        <ion-card-header>
-          <ion-card-title>Horários Disponíveis</ion-card-title>
-        </ion-card-header>
-        <ion-card-content>
-          <div class="dias-container">
-            <div *ngFor="let dia of diasSemana" class="dia-bloco">
-              <h3>{{ dia }}</h3>
-              <div class="chips-linha">
-                <ion-chip *ngFor="let periodo of periodos" class="select-chip"
-                  [class.selected]="isArray(horariosSelecionados[dia]) && horariosSelecionados[dia].includes(periodo)"
-                  (click)="onHorarioChange(dia, periodo, !(isArray(horariosSelecionados[dia]) && horariosSelecionados[dia].includes(periodo)))">
-                  <ion-label>{{ periodo }}</ion-label>
-                </ion-chip>
-              </div>
+      <div class="availability surface-ghost">
+        <div class="availability-header">
+          <h3>Horários Disponíveis</h3>
+        </div>
+        <div class="availability-grid">
+          <div *ngFor="let dia of diasSemana" class="day-block">
+            <h4>{{ dia }}</h4>
+            <div class="chips-row">
+              <ion-chip *ngFor="let periodo of periodos" class="select-chip"
+                [class.selected]="isArray(horariosSelecionados[dia]) && horariosSelecionados[dia].includes(periodo)"
+                (click)="onHorarioChange(dia, periodo, !(isArray(horariosSelecionados[dia]) && horariosSelecionados[dia].includes(periodo)))">
+                <ion-label>{{ periodo }}</ion-label>
+              </ion-chip>
             </div>
           </div>
-        </ion-card-content>
-      </ion-card>
+        </div>
+      </div>
 
       <div *ngIf="erros['available_times']" class="error-message">{{ erros['available_times'] }}</div>
 
-  <ion-button expand="block" class="btn-proximo grad" type="submit" [disabled]="loading">
+      <ion-button expand="block" class="btn-primary grad" type="submit" [disabled]="loading">
         Criar Conta
         <ion-icon name="checkmark-outline" slot="end"></ion-icon>
       </ion-button>
 
-      <ion-button expand="block" color="medium" class="btn-voltar" (click)="voltarEtapa()">
+      <ion-button expand="block" color="medium" class="btn-secondary" (click)="voltarEtapa()">
         Voltar
         <ion-icon name="arrow-back-outline" slot="start"></ion-icon>
       </ion-button>
@@ -176,5 +177,6 @@
         <div *ngIf="ok && !loading" class="sucesso-global">Conta criada! Redirecionando...</div>
       </div>
     </form>
+    </section>
   </div>
 </ion-content>

@@ -181,8 +181,8 @@ export class ChatPage implements OnInit, OnDestroy {
   }
 
   onScroll(ev: any) {
-    const el = ev?.target?.el || ev?.target;
-    if (!el) return;
+    const el = (ev?.target as HTMLElement) || ev?.target?.el;
+    if (!(el instanceof HTMLElement)) return;
     const threshold = 120; // px
     const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
     this.atBottom = distance < threshold;
@@ -190,9 +190,10 @@ export class ChatPage implements OnInit, OnDestroy {
   }
 
   scrollToBottom(force = false) {
-    const content = document.querySelector('ion-content');
-    if (!content) return;
-    (content as any).scrollToBottom?.(300);
+    const container = document.querySelector<HTMLElement>('.messages');
+    if (!container) return;
+    const behavior: ScrollBehavior = force ? 'auto' : 'smooth';
+    container.scrollTo({ top: container.scrollHeight, behavior });
   }
 
   async openReactions(ev: Event, m: any) {

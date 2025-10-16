@@ -13,8 +13,8 @@
 	/* Secondary */
 	--ion-color-secondary: #22d3ee;
 	--ion-color-secondary-rgb: 34,211,238;
-	--ion-color-secondary-contrast: #0b1220;
-	--ion-color-secondary-contrast-rgb: 11,18,32;
+	--ion-color-secondary-contrast: #061222;
+	--ion-color-secondary-contrast-rgb: 6,18,34;
 	--ion-color-secondary-shade: #1db9d1;
 	--ion-color-secondary-tint: #3ad9f0;
 
@@ -25,22 +25,65 @@
 	--ion-color-tertiary-shade: #d53c3c;
 	--ion-color-tertiary-tint: #f05b5b;
 
+	/* Feedback */
+	--ion-color-success: #34d399;
+	--ion-color-warning: #fbbf24;
+	--ion-color-danger: #f87171;
+
 	/* Neutrals */
 	--ion-color-medium: #94a3b8;
 	--ion-color-light: #e2e8f0;
-	--ion-background-color: #0b1020;
+	--ion-background-color: #0a101f;
+	--ion-background-color-rgb: 10,16,31;
 	--ion-text-color: #e5e7eb;
-	--ion-border-color: rgba(255,255,255,0.06);
+	--ion-text-color-rgb: 229,231,235;
+	--ion-border-color: rgba(255,255,255,0.08);
 
-	/* Radius e elevação */
-	--app-radius: 18px;
-	--app-shadow-lg: 0 20px 50px rgba(0,0,0,.35);
+	/* Gradientes e superfícies */
+	--app-surface-base: linear-gradient(160deg, rgba(34,40,68,0.38), rgba(22,27,49,0.72));
+	--app-surface-alt: rgba(18,23,40,0.78);
+	--app-surface-soft: rgba(18,23,40,0.56);
+	--app-glass-blur: blur(14px);
+	--app-glass-border: rgba(255,255,255,0.10);
+	--app-glow-primary: 0 0 22px rgba(138,93,255,0.42);
+
+	/* Tipografia */
+	--ion-font-family: 'Poppins', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+	--app-heading-weight: 600;
+	--app-letter-spacing-tight: -0.01em;
+	--app-letter-spacing-wide: 0.08em;
+
+	/* Espaçamentos e raios */
+	--app-radius-xs: 10px;
+	--app-radius-sm: 14px;
+	--app-radius-md: 18px;
+	--app-radius-lg: 22px;
+	--app-radius-xl: 28px;
+	--app-radius: var(--app-radius-md);
+	--app-shadow-sm: 0 10px 30px rgba(0,0,0,0.25);
+	--app-shadow-md: 0 18px 40px rgba(2,8,23,0.35);
+	--app-shadow-lg: 0 22px 58px rgba(0,0,0,0.42);
+
+	--space-2: 0.5rem;
+	--space-3: 0.75rem;
+	--space-4: 1rem;
+	--space-5: 1.25rem;
+	--space-6: 1.5rem;
+	--space-8: 2rem;
+	--space-10: 2.5rem;
+	--space-12: 3rem;
 }
 
 @media (prefers-color-scheme: light) {
 	:root {
 		--ion-background-color: #f8fafc;
+		--ion-background-color-rgb: 248,250,252;
 		--ion-text-color: #0b1220;
+		--ion-text-color-rgb: 11,18,32;
 		--ion-border-color: rgba(0,0,0,0.08);
+		--app-surface-base: linear-gradient(160deg, rgba(255,255,255,0.75), rgba(242,246,255,0.95));
+		--app-surface-alt: rgba(255,255,255,0.88);
+		--app-surface-soft: rgba(223,229,245,0.7);
+		--app-glass-border: rgba(115,125,160,0.2);
 	}
 }

@@ -7,46 +7,48 @@
   </ion-toolbar>
 </ion-header>
 
-<ion-content class="chat-page" (ionScroll)="onScroll($event)" scrollEvents="true">
-  <div class="chat-container">
-    <div class="messages">
-      <div *ngFor="let m of messages" class="message-row" [class.mine]="m.sender_id === auth.user?.id">
-        <div class="avatar-col" *ngIf="m.sender_id !== auth.user?.id">
-          <img class="avatar-img" [src]="peerAvatar" alt="Avatar" (error)="onAvatarError($event)" />
-        </div>
-        <div class="bubble" [class.mine]="m.sender_id === auth.user?.id">
-          <ng-container *ngIf="!m.deleted_at; else deletedTpl">
-            <div class="header" *ngIf="m.sender_id !== auth.user?.id">
-              <span class="name">{{ peerName }}</span>
-            </div>
-            <div class="text">{{ m.content }}</div>
-            <div class="meta">
-              <ion-text color="medium" *ngIf="m.edited_at">(editada)</ion-text>
-              <ion-text color="success" *ngIf="m.read_at">Lida</ion-text>
-              <ion-text color="medium" *ngIf="!m.read_at && m.delivered_at">Entregue</ion-text>
-            </div>
-            <div class="actions">
-              <ion-button size="small" fill="clear" (click)="openReactions($event, m)">
-                <ion-icon name="happy-outline"></ion-icon>
-              </ion-button>
-              <ion-button *ngIf="m.sender_id === auth.user?.id" size="small" fill="clear" (click)="edit(m)">
-                <ion-icon name="create-outline"></ion-icon>
-              </ion-button>
-              <ion-button *ngIf="m.sender_id === auth.user?.id" size="small" fill="clear" color="danger" (click)="remove(m)">
-                <ion-icon name="trash-outline"></ion-icon>
-              </ion-button>
-            </div>
-          </ng-container>
-          <ng-template #deletedTpl>
-            <div class="text deleted">Mensagem excluída</div>
-          </ng-template>
+<ion-content class="chat-page" fullscreen>
+  <div class="layout-container chat-wrapper">
+    <div class="chat-container surface-card">
+      <div class="messages" (scroll)="onScroll($event)">
+        <div *ngFor="let m of messages" class="message-row" [class.mine]="m.sender_id === auth.user?.id">
+          <div class="avatar-col" *ngIf="m.sender_id !== auth.user?.id">
+            <img class="avatar-img" [src]="peerAvatar" alt="Avatar" (error)="onAvatarError($event)" />
+          </div>
+          <div class="bubble" [class.mine]="m.sender_id === auth.user?.id">
+            <ng-container *ngIf="!m.deleted_at; else deletedTpl">
+              <div class="header" *ngIf="m.sender_id !== auth.user?.id">
+                <span class="name">{{ peerName }}</span>
+              </div>
+              <div class="text">{{ m.content }}</div>
+              <div class="meta">
+                <ion-text color="medium" *ngIf="m.edited_at">(editada)</ion-text>
+                <ion-text color="success" *ngIf="m.read_at">Lida</ion-text>
+                <ion-text color="medium" *ngIf="!m.read_at && m.delivered_at">Entregue</ion-text>
+              </div>
+              <div class="actions">
+                <ion-button size="small" fill="clear" (click)="openReactions($event, m)">
+                  <ion-icon name="happy-outline"></ion-icon>
+                </ion-button>
+                <ion-button *ngIf="m.sender_id === auth.user?.id" size="small" fill="clear" (click)="edit(m)">
+                  <ion-icon name="create-outline"></ion-icon>
+                </ion-button>
+                <ion-button *ngIf="m.sender_id === auth.user?.id" size="small" fill="clear" color="danger" (click)="remove(m)">
+                  <ion-icon name="trash-outline"></ion-icon>
+                </ion-button>
+              </div>
+            </ng-container>
+            <ng-template #deletedTpl>
+              <div class="text deleted">Mensagem excluída</div>
+            </ng-template>
+          </div>
         </div>
       </div>
-    </div>
-    <div class="scroll-bottom" *ngIf="!atBottom && newMessages > 0">
-      <ion-button size="small" (click)="scrollToBottom()">
-        {{ newMessages }} nova(s) mensagem(ns)
-      </ion-button>
+      <div class="scroll-bottom" *ngIf="!atBottom && newMessages > 0">
+        <ion-button size="small" (click)="scrollToBottom()">
+          {{ newMessages }} nova(s) mensagem(ns)
+        </ion-button>
+      </div>
     </div>
   </div>
 </ion-content>

@@ -51,7 +51,7 @@
 
       <div class="add-row">
         <ion-item lines="none">
-          <ion-label>Adicionar</ion-label>
+          <ion-label></ion-label>
           <ion-select interface="popover" [(ngModel)]="novoFavorito" placeholder="Escolha um jogo">
             <ion-select-option *ngFor="let jogo of todosJogos" [value]="jogo.id">{{jogo.name}}</ion-select-option>
           </ion-select>
