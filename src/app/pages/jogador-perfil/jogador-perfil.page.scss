@@ -15,6 +15,7 @@
     flex-direction: column;
     gap: 18px;
     backdrop-filter: saturate(1.03) blur(6px);
+    -webkit-backdrop-filter: saturate(1.03) blur(6px);
   }
 
   .hero {

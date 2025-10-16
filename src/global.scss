@@ -41,6 +41,12 @@
 
 :root { --radius: var(--app-radius); }
 
+html {
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+}
+
 html, body, ion-app, ion-content, ion-router-outlet { height: 100%; }
 body {
   margin: 0;

@@ -16,8 +16,9 @@
   .logo {
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    backdrop-filter: saturate(1.1) blur(8px);
+  gap: 16px;
+  backdrop-filter: saturate(1.1) blur(8px);
+  -webkit-backdrop-filter: saturate(1.1) blur(8px);
     animation: fadeSlide .34s ease both;
   }
 

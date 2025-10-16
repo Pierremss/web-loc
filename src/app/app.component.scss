@@ -4,6 +4,7 @@
 	color: var(--ion-text-color);
 	border-bottom: 1px solid var(--ion-border-color);
 	backdrop-filter: blur(6px);
+	-webkit-backdrop-filter: blur(6px);
 }
 
 .menu-profile {
