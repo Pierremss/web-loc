@@ -1,135 +1,161 @@
 <ion-content class="ion-padding editar-perfil-page">
   <div class="editar-container fadein">
-    <section class="header">
-      <div class="avatar-wrapper">
+    <!-- Header Centralizado -->
+    <section class="header-section">
+      <div class="avatar-container">
         <ng-container *ngIf="!loading; else avatarSkeleton">
-          <img [src]="normalizeAvatar(form.avatar_url)" (error)="onImgError($event)" alt="Avatar" class="avatar-preview" />
-          <ion-button size="small" (click)="fileInput.click()" type="button" class="grad">
+          <div class="avatar-wrapper">
+            <img [src]="normalizeAvatar(form.avatar_url)" (error)="onImgError($event)" alt="Avatar" class="avatar-preview" />
+            <div class="avatar-overlay" (click)="fileInput.click()">
+              <ion-icon name="camera" class="camera-icon"></ion-icon>
+            </div>
+          </div>
+          <ion-button fill="clear" size="small" (click)="fileInput.click()" type="button" class="change-photo-btn">
             <ion-icon name="image-outline" slot="start"></ion-icon>
             Alterar Foto
           </ion-button>
           <input #fileInput type="file" accept="image/*" hidden (change)="onFile($event)" />
         </ng-container>
         <ng-template #avatarSkeleton>
-          <ion-skeleton-text animated style="width:120px; height:120px; border-radius:60px;"></ion-skeleton-text>
-          <ion-skeleton-text animated style="width:120px; height:32px; border-radius:8px;"></ion-skeleton-text>
+          <ion-skeleton-text animated style="width:140px; height:140px; border-radius:70px;"></ion-skeleton-text>
+          <ion-skeleton-text animated style="width:120px; height:32px; border-radius:8px; margin-top:12px;"></ion-skeleton-text>
         </ng-template>
       </div>
       <div class="title-block">
         <h1>Editar Perfil</h1>
-        <p class="muted">Atualize suas informações de jogador</p>
+        <p class="subtitle">Atualize suas informações de jogador</p>
       </div>
     </section>
 
-    <form (ngSubmit)="salvar()" class="form-grid">
-      <ion-card class="card fadein">
-        <ion-card-header>
-          <ion-card-title>Dados básicos</ion-card-title>
-        </ion-card-header>
-        <ion-card-content>
-          <div class="grid" *ngIf="!loading; else basicSkeleton">
-            <ion-item>
-              <ion-label position="floating">Nome</ion-label>
-              <ion-input [(ngModel)]="form.name" name="name"></ion-input>
-            </ion-item>
-            <ion-item>
-              <ion-label position="floating">Apelido</ion-label>
-              <ion-input [(ngModel)]="form.nickname" name="nickname"></ion-input>
-            </ion-item>
-            <ion-item>
-              <ion-label position="floating">E-mail</ion-label>
-              <ion-input [(ngModel)]="form.email" name="email" type="email" disabled></ion-input>
-            </ion-item>
+    <!-- Formulário com Grid Responsivo -->
+    <form (ngSubmit)="salvar()" class="profile-form">
+      
+      <!-- Seção 1: Informações Básicas -->
+      <div class="form-section">
+        <div class="section-header">
+          <ion-icon name="person-outline" class="section-icon"></ion-icon>
+          <h2 class="section-title">Informações Básicas</h2>
+        </div>
+        <div class="form-grid" *ngIf="!loading; else basicSkeleton">
+          <ion-item class="custom-item">
+            <ion-label position="floating">Nome Completo</ion-label>
+            <ion-input [(ngModel)]="form.name" name="name" placeholder="Digite seu nome"></ion-input>
+          </ion-item>
+          <ion-item class="custom-item">
+            <ion-label position="floating">Apelido / Nickname</ion-label>
+            <ion-input [(ngModel)]="form.nickname" name="nickname" placeholder="Como quer ser chamado?"></ion-input>
+          </ion-item>
+          <ion-item class="custom-item full-width">
+            <ion-label position="floating">E-mail</ion-label>
+            <ion-input [(ngModel)]="form.email" name="email" type="email" disabled></ion-input>
+          </ion-item>
+        </div>
+        <ng-template #basicSkeleton>
+          <div class="form-grid">
+            <ion-skeleton-text animated style="height:56px; border-radius:12px;"></ion-skeleton-text>
+            <ion-skeleton-text animated style="height:56px; border-radius:12px;"></ion-skeleton-text>
+            <ion-skeleton-text animated style="height:56px; border-radius:12px; grid-column: 1 / -1;"></ion-skeleton-text>
           </div>
-          <ng-template #basicSkeleton>
-            <div class="grid">
-              <ion-skeleton-text animated style="height:56px; border-radius:12px;"></ion-skeleton-text>
-              <ion-skeleton-text animated style="height:56px; border-radius:12px;"></ion-skeleton-text>
-              <ion-skeleton-text animated style="height:56px; border-radius:12px;"></ion-skeleton-text>
-            </div>
-          </ng-template>
-        </ion-card-content>
-      </ion-card>
-
-      <ion-card class="card fadein">
-        <ion-card-header>
-          <ion-card-title>Preferências de jogo</ion-card-title>
-        </ion-card-header>
-        <ion-card-content>
-          <div class="grid" *ngIf="!loading; else prefSkeleton">
-            <ion-item>
-              <ion-label>Plataformas</ion-label>
-              <ion-select multiple="true" interface="popover" [(ngModel)]="form.platforms" name="platforms">
-                <ion-select-option value="PC">PC</ion-select-option>
-                <ion-select-option value="Xbox">Xbox</ion-select-option>
-                <ion-select-option value="PS">PS</ion-select-option>
-                <ion-select-option value="Mobile">Mobile</ion-select-option>
-              </ion-select>
-            </ion-item>
-            <ion-item>
-              <ion-label>Estilo de Jogo</ion-label>
-              <ion-select interface="popover" [(ngModel)]="form.game_style" name="game_style">
-                <ion-select-option value="Casual">Casual</ion-select-option>
-                <ion-select-option value="Competitivo">Competitivo</ion-select-option>
-                <ion-select-option value="Cooperativo">Cooperativo</ion-select-option>
-              </ion-select>
-            </ion-item>
-          </div>
-          <ng-template #prefSkeleton>
-            <div class="grid">
-              <ion-skeleton-text animated style="height:56px; border-radius:12px;"></ion-skeleton-text>
-              <ion-skeleton-text animated style="height:56px; border-radius:12px;"></ion-skeleton-text>
-            </div>
-          </ng-template>
-        </ion-card-content>
-      </ion-card>
-
-      <ion-card class="card fadein">
-        <ion-card-header>
-          <ion-card-title>Horários disponíveis</ion-card-title>
-        </ion-card-header>
-        <ion-card-content>
-          <div class="dias-container" *ngIf="!loading; else horariosSkeleton">
-            <div *ngFor="let dia of diasSemana; let i = index" class="dia-bloco" [style.animationDelay]="(i * 30) + 'ms'">
-              <h3>{{ dia }}</h3>
-              <div class="chips-linha">
-                <ion-chip *ngFor="let periodo of periodos" class="select-chip"
-                  [class.selected]="isArray(horariosSelecionados[dia]) && horariosSelecionados[dia].includes(periodo.value)"
-                  (click)="onHorarioChange(dia, periodo.value, !(isArray(horariosSelecionados[dia]) && horariosSelecionados[dia].includes(periodo.value)))">
-                  <ion-label>{{ periodo.label }}</ion-label>
-                </ion-chip>
-              </div>
-            </div>
-          </div>
-          <ng-template #horariosSkeleton>
-            <div class="dias-container">
-              <ion-skeleton-text animated *ngFor="let _ of [0,1,2,3,4,5]" style="height:74px; border-radius:12px;"></ion-skeleton-text>
-            </div>
-          </ng-template>
-        </ion-card-content>
-      </ion-card>
-
-      <ion-card class="card fadein">
-        <ion-card-header>
-          <ion-card-title>Sobre você</ion-card-title>
-        </ion-card-header>
-        <ion-card-content>
-          <ng-container *ngIf="!loading; else aboutSkeleton">
-            <ion-item>
-              <ion-label position="floating">Perfil</ion-label>
-              <ion-textarea [(ngModel)]="form.profile" name="profile"></ion-textarea>
-            </ion-item>
-          </ng-container>
-          <ng-template #aboutSkeleton>
-            <ion-skeleton-text animated style="height:120px; border-radius:12px;"></ion-skeleton-text>
-          </ng-template>
-        </ion-card-content>
-      </ion-card>
-
-      <div class="actions">
-        <ion-button expand="block" type="submit" [disabled]="loading" class="grad">Salvar</ion-button>
+        </ng-template>
       </div>
-      <ion-text color="danger" *ngIf="error" class="erro">{{error}}</ion-text>
+
+      <!-- Seção 2: Preferências de Jogo -->
+      <div class="form-section">
+        <div class="section-header">
+          <ion-icon name="game-controller-outline" class="section-icon"></ion-icon>
+          <h2 class="section-title">Preferências de Jogo</h2>
+        </div>
+        <div class="form-grid" *ngIf="!loading; else prefSkeleton">
+          <ion-item class="custom-item">
+            <ion-label position="floating">Plataformas</ion-label>
+            <ion-select multiple="true" interface="popover" [(ngModel)]="form.platforms" name="platforms" placeholder="Selecione">
+              <ion-select-option value="PC">PC</ion-select-option>
+              <ion-select-option value="Xbox">Xbox</ion-select-option>
+              <ion-select-option value="PS">PlayStation</ion-select-option>
+              <ion-select-option value="Mobile">Mobile</ion-select-option>
+            </ion-select>
+          </ion-item>
+          <ion-item class="custom-item">
+            <ion-label position="floating">Estilo de Jogo</ion-label>
+            <ion-select interface="popover" [(ngModel)]="form.game_style" name="game_style" placeholder="Selecione">
+              <ion-select-option value="Casual">Casual</ion-select-option>
+              <ion-select-option value="Competitivo">Competitivo</ion-select-option>
+              <ion-select-option value="Cooperativo">Cooperativo</ion-select-option>
+            </ion-select>
+          </ion-item>
+        </div>
+        <ng-template #prefSkeleton>
+          <div class="form-grid">
+            <ion-skeleton-text animated style="height:56px; border-radius:12px;"></ion-skeleton-text>
+            <ion-skeleton-text animated style="height:56px; border-radius:12px;"></ion-skeleton-text>
+          </div>
+        </ng-template>
+      </div>
+
+      <!-- Seção 3: Horários Disponíveis -->
+      <div class="form-section">
+        <div class="section-header">
+          <ion-icon name="time-outline" class="section-icon"></ion-icon>
+          <h2 class="section-title">Horários Disponíveis</h2>
+          <p class="section-subtitle">Selecione quando você está disponível para jogar</p>
+        </div>
+        <div class="schedule-container" *ngIf="!loading; else horariosSkeleton">
+          <div *ngFor="let dia of diasSemana; let i = index" class="day-card" [style.animation-delay]="(i * 40) + 'ms'">
+            <div class="day-header">
+              <span class="day-name">{{ dia }}</span>
+            </div>
+            <div class="periods-grid">
+              <button type="button" *ngFor="let periodo of periodos" 
+                class="period-chip"
+                [class.selected]="isArray(horariosSelecionados[dia]) && horariosSelecionados[dia].includes(periodo.value)"
+                (click)="onHorarioChange(dia, periodo.value, !(isArray(horariosSelecionados[dia]) && horariosSelecionados[dia].includes(periodo.value)))">
+                <ion-icon [name]="getPeriodIcon(periodo.value)" class="period-icon"></ion-icon>
+                <span>{{ periodo.label }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <ng-template #horariosSkeleton>
+          <div class="schedule-container">
+            <ion-skeleton-text animated *ngFor="let _ of [0,1,2,3,4,5,6]" style="height:120px; border-radius:16px;"></ion-skeleton-text>
+          </div>
+        </ng-template>
+      </div>
+
+      <!-- Seção 4: Sobre Você -->
+      <div class="form-section">
+        <div class="section-header">
+          <ion-icon name="document-text-outline" class="section-icon"></ion-icon>
+          <h2 class="section-title">Sobre Você</h2>
+          <p class="section-subtitle">Conte um pouco sobre você e seu estilo de jogo</p>
+        </div>
+        <ng-container *ngIf="!loading; else aboutSkeleton">
+          <ion-item class="custom-item textarea-item">
+            <ion-label position="floating">Perfil / Bio</ion-label>
+            <ion-textarea 
+              [(ngModel)]="form.profile" 
+              name="profile" 
+              rows="5"
+              placeholder="Descreva seus interesses, jogos favoritos, objetivos...">
+            </ion-textarea>
+          </ion-item>
+        </ng-container>
+        <ng-template #aboutSkeleton>
+          <ion-skeleton-text animated style="height:140px; border-radius:12px;"></ion-skeleton-text>
+        </ng-template>
+      </div>
+
+      <!-- Botões de Ação -->
+      <div class="actions-container">
+        <ion-button expand="block" type="submit" [disabled]="loading" class="save-button">
+          <ion-icon name="checkmark-circle-outline" slot="start"></ion-icon>
+          Salvar Alterações
+        </ion-button>
+        <ion-text color="danger" *ngIf="error" class="error-message">
+          <ion-icon name="alert-circle-outline"></ion-icon>
+          {{error}}
+        </ion-text>
+      </div>
     </form>
   </div>
 </ion-content>

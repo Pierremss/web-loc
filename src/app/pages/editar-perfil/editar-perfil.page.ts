@@ -246,4 +246,14 @@ export class EditarPerfilPage implements OnInit {
     try { (img as any).dataset.fallbackApplied = '1'; } catch {}
     img.src = 'assets/icon/favicon.png';
   }
+
+  getPeriodIcon(periodo: string): string {
+    const icons: Record<string, string> = {
+      'Manha': 'sunny-outline',
+      'Tarde': 'partly-sunny-outline',
+      'Noite': 'moon-outline',
+      'Madrugada': 'moon-outline'
+    };
+    return icons[periodo] || 'time-outline';
+  }
 }
