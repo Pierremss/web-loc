@@ -55,65 +55,93 @@
     <section class="swipe-stage" *ngIf="top() as current; else fallback">
       <div class="stage-card">
         <div class="compatibility" *ngIf="compatibilitySummary(current) as summary">
-          <ion-chip color="success">
+          <ion-chip color="success" class="compat-chip">
             <ion-icon name="sparkles-outline"></ion-icon>
             <ion-label>{{ summary.label }}</ion-label>
           </ion-chip>
           <p class="details" *ngIf="summary.details">{{ summary.details }}</p>
         </div>
 
-        <div
-          id="swipe-card"
-          class="player-card"
-          [style.transform]="'translate(' + dx + 'px,' + dy + 'px) rotate(' + angle + 'deg)'"
-          [class.dragging]="dragging"
-          (mousedown)="onDragStart($event)"
-          (mousemove)="onDragMove($event)"
-          (mouseup)="onDragEnd($event)"
-          (mouseleave)="onDragEnd($event)"
-          (touchstart)="onDragStart($event)"
-          (touchmove)="onDragMove($event)"
-          (touchend)="onDragEnd($event)">
-          <img [src]="normalizeAvatar(current.avatar_url)" (error)="onImgError($event)" alt="avatar" />
+        <div class="card-stack">
+          <div class="stack-card shadow-left"></div>
+          <div class="stack-card shadow-right"></div>
 
-          <div class="overlay like" [style.opacity]="Math.max(0, Math.min(1, dx/120))">
-            <ion-icon name="heart"></ion-icon>
-          </div>
-          <div class="overlay pass" [style.opacity]="Math.max(0, Math.min(1, -dx/120))">
-            <ion-icon name="close"></ion-icon>
-          </div>
+          <div
+            id="swipe-card"
+            class="player-card"
+            [style.transform]="'translate(' + dx + 'px,' + dy + 'px) rotate(' + angle + 'deg)'"
+            [class.dragging]="dragging"
+            (mousedown)="onDragStart($event)"
+            (mousemove)="onDragMove($event)"
+            (mouseup)="onDragEnd($event)"
+            (mouseleave)="onDragEnd($event)"
+            (touchstart)="onDragStart($event)"
+            (touchmove)="onDragMove($event)"
+            (touchend)="onDragEnd($event)">
+            <img [src]="normalizeAvatar(current.avatar_url)" (error)="onImgError($event)" alt="avatar" />
 
-          <div class="gradient"></div>
-          <div class="info">
-            <div class="header">
-              <div>
-                <h2>{{ current.name }}</h2>
-                <span class="nickname" *ngIf="current.nickname">{{ '@' + current.nickname }}</span>
+            <div class="overlay like" [style.opacity]="Math.max(0, Math.min(1, dx/120))">
+              <ion-icon name="heart"></ion-icon>
+              <span>Like</span>
+            </div>
+            <div class="overlay pass" [style.opacity]="Math.max(0, Math.min(1, -dx/120))">
+              <ion-icon name="close"></ion-icon>
+              <span>Pass</span>
+            </div>
+
+            <div class="gradient"></div>
+            <div class="info">
+              <div class="header">
+                <div>
+                  <h2>{{ current.name }}</h2>
+                  <span class="nickname" *ngIf="current.nickname">{{ '@' + current.nickname }}</span>
+                </div>
+                <ion-button size="small" fill="outline" color="light" (click)="openProfile(current)">
+                  <ion-icon slot="start" name="person-circle-outline"></ion-icon>
+                  Perfil
+                </ion-button>
               </div>
-              <ion-button size="small" fill="outline" color="light" (click)="openProfile(current)">
-                <ion-icon slot="start" name="person-circle-outline"></ion-icon>
-                Perfil
-              </ion-button>
-            </div>
-            <div class="meta">
-              <ion-chip color="dark" *ngIf="current.game_style">
-                <ion-icon name="game-controller-outline"></ion-icon>
-                <ion-label>{{ current.game_style }}</ion-label>
-              </ion-chip>
-              <ion-chip color="dark">
-                <ion-icon name="hardware-chip-outline"></ion-icon>
-                <ion-label>{{ platformList(current) }}</ion-label>
-              </ion-chip>
-            </div>
-            <p class="bio" *ngIf="current.summary?.bio">{{ current.summary.bio }}</p>
-            <div class="availability" *ngIf="availabilitySummary(current.summary?.availableTimes) as availability">
-              <ion-icon name="time-outline"></ion-icon>
-              <span>{{ availability }}</span>
+
+              <div class="meta">
+                <ion-chip color="dark" *ngIf="current.game_style">
+                  <ion-icon name="game-controller-outline"></ion-icon>
+                  <ion-label>{{ current.game_style }}</ion-label>
+                </ion-chip>
+                <ion-chip color="dark">
+                  <ion-icon name="hardware-chip-outline"></ion-icon>
+                  <ion-label>{{ platformList(current) }}</ion-label>
+                </ion-chip>
+              </div>
+
+              <p class="bio" *ngIf="current.summary?.bio">{{ current.summary.bio }}</p>
+
+              <div class="availability" *ngIf="availabilitySummary(current.summary?.availableTimes) as availability">
+                <ion-icon name="time-outline"></ion-icon>
+                <span>{{ availability }}</span>
+              </div>
+
+              <div class="info-footer">
+                <div class="tag" *ngIf="current.compatibility.commonGames.length">
+                  <ion-icon name="albums-outline"></ion-icon>
+                  <span>{{ current.compatibility.commonGames.length }} jogo(s) em comum</span>
+                </div>
+                <div class="tag" *ngIf="current.summary?.favoriteCount">
+                  <ion-icon name="flame-outline"></ion-icon>
+                  <span>{{ current.summary.favoriteCount }} favorito(s)</span>
+                </div>
+                <div class="tag" *ngIf="current.compatibility.scheduleOverlap.length">
+                  <ion-icon name="calendar-outline"></ion-icon>
+                  <span>Horários compatíveis</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
         <div class="actions">
+          <ion-button class="fab rewind" fill="clear" color="medium" [disabled]="busy" (click)="onRefresh()">
+            <ion-icon name="refresh-outline"></ion-icon>
+          </ion-button>
           <ion-button class="fab pass" fill="clear" color="danger" [disabled]="busy" (click)="onPass()">
             <ion-icon name="close-outline"></ion-icon>
           </ion-button>
