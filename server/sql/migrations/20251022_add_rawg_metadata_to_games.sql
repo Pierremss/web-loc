@@ -1,0 +1,15 @@
+ALTER TABLE games
+  ADD COLUMN rawg_id INT UNSIGNED NULL UNIQUE,
+  ADD COLUMN slug VARCHAR(160) NULL,
+  ADD COLUMN description TEXT NULL,
+  ADD COLUMN released DATE NULL,
+  ADD COLUMN background_image VARCHAR(500) NULL,
+  ADD COLUMN rating DECIMAL(4,1) NULL,
+  ADD COLUMN ratings_count INT UNSIGNED NULL,
+  ADD COLUMN metacritic INT NULL,
+  ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  ADD INDEX idx_games_slug (slug),
+  ADD INDEX idx_games_released (released);
+  
+
+

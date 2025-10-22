@@ -10,6 +10,15 @@
   ],
   "exclude": [
     "src/**/*.spec.ts",
-    "src/test.ts"
+    "src/test.ts",
+    "src/app/model/usuario.ts",
+    "src/app/services/autenticacao.service.ts",
+    "src/app/services/rawg-api.service.ts",
+    "src/app/services/realtime-events.service.ts",
+    "src/app/pages/editar-perfil/components/availability-card/**/*",
+    "src/app/pages/editar-perfil/components/profile-header/**/*",
+    "src/app/pages/jogador-perfil/index.ts",
+    "src/app/pages/menu-admin/**/*",
+    "src/app/pages/recuperar-senha/**/*"
   ]
 }

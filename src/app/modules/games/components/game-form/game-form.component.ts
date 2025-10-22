@@ -10,6 +10,7 @@ import { GamePayload } from '../../games-admin.facade';
   selector: 'app-game-form',
   templateUrl: './game-form.component.html',
   styleUrls: ['./game-form.component.scss'],
+  standalone:false
 })
 export class GameFormComponent implements OnChanges {
   private readonly fb = inject(FormBuilder);

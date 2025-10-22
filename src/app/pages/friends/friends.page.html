@@ -16,15 +16,15 @@
         <p class="hero-copy">Gerencie convites, encontre novos jogadores e siga em contato com a sua comunidade.</p>
         <div class="hero-stats">
           <div class="stat-chip">
-            <span class="stat-number">{{ friends?.length || 0 }}</span>
+            <span class="stat-number">{{ friends.length || 0 }}</span>
             <span class="stat-label">amigos</span>
           </div>
           <div class="stat-chip">
-            <span class="stat-number">{{ requests?.length || 0 }}</span>
+            <span class="stat-number">{{ requests.length || 0 }}</span>
             <span class="stat-label">convites</span>
           </div>
           <div class="stat-chip">
-            <span class="stat-number">{{ results?.length || 0 }}</span>
+            <span class="stat-number">{{ results.length || 0 }}</span>
             <span class="stat-label">resultados</span>
           </div>
         </div>
@@ -51,7 +51,7 @@
           </ion-card-header>
           <ion-card-content>
             <ng-container *ngIf="!pageLoading; else pedidosSkeleton">
-              <ion-list lines="none" class="list-surface" *ngIf="requests?.length; else semPedidos">
+              <ion-list lines="none" class="list-surface" *ngIf="requests.length; else semPedidos">
                 <ion-item class="list-row" *ngFor="let r of requests">
                   <ion-avatar slot="start" class="avatar avatar-md">
                     <ng-container *ngIf="r.avatar_url; else initialsP">
@@ -101,7 +101,7 @@
             </div>
           </ion-card-header>
           <ion-card-content>
-            <ion-list lines="none" class="list-surface" *ngIf="results?.length; else resultadosVazios">
+            <ion-list lines="none" class="list-surface" *ngIf="results.length; else resultadosVazios">
               <ion-item class="list-row" *ngFor="let u of results">
                 <ion-avatar slot="start" class="avatar avatar-md">
                   <ng-container *ngIf="u.avatar_url; else initialsR">
@@ -122,7 +122,7 @@
               </ion-item>
             </ion-list>
             <ng-template #resultadosVazios>
-              <ion-text color="medium" *ngIf="(q?.length || 0) >= 2 && !loading">
+              <ion-text color="medium" *ngIf="(q.length || 0) >= 2 && !loading">
                 Nenhum resultado encontrado para "{{ q }}".
               </ion-text>
             </ng-template>
@@ -144,7 +144,7 @@
           </ion-card-header>
           <ion-card-content>
             <ng-container *ngIf="!pageLoading; else amigosSkeleton">
-              <ion-list lines="none" class="list-surface" *ngIf="friends?.length; else semAmigos">
+              <ion-list lines="none" class="list-surface" *ngIf="friends.length; else semAmigos">
                 <ion-item class="friend-row" *ngFor="let f of friends">
                   <ion-avatar slot="start" class="avatar avatar-lg">
                     <ng-container *ngIf="f.avatar_url; else initialsF">

@@ -9,6 +9,7 @@ import { Game } from '../../games.service';
   selector: 'app-game-admin-shell',
   templateUrl: './game-admin-shell.component.html',
   styleUrls: ['./game-admin-shell.component.scss'],
+  standalone:false
 })
 export class GameAdminShellComponent implements OnInit, OnDestroy {
   private readonly facade = inject(GamesAdminFacade);

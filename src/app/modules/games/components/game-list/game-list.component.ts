@@ -5,6 +5,7 @@ import { Game } from '../../games.service';
   selector: 'app-game-list',
   templateUrl: './game-list.component.html',
   styleUrls: ['./game-list.component.scss'],
+  standalone: false
 })
 export class GameListComponent {
   @Input() games: Game[] | null = [];
@@ -31,6 +32,26 @@ export class GameListComponent {
   formatTypes(game: Game): string {
     if (!game.types?.length) return 'Sem tipos associados';
     return game.types.map(type => type.name).join(', ');
+  }
+
+  formatReleaseDate(game: Game): string {
+    if (!game.released) return 'Data não informada';
+    const date = new Date(game.released);
+    if (Number.isNaN(date.getTime())) return game.released;
+    try {
+      return new Intl.DateTimeFormat('pt-BR', {
+        year: 'numeric',
+        month: 'long',
+        day: '2-digit'
+      }).format(date);
+    } catch {
+      return date.toLocaleDateString('pt-BR');
+    }
+  }
+
+  formatRating(game: Game): string {
+    if (game.rating === null || game.rating === undefined || Number.isNaN(game.rating)) return '—';
+    return `${Number(game.rating).toFixed(1)} / 5`;
   }
 
   onEdit(game: Game): void {

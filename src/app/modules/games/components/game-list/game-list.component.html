@@ -11,10 +11,21 @@
           class="game-list__item"
           *ngFor="let game of games; trackBy: trackByGameId">
 
+          <ion-thumbnail slot="start" *ngIf="game.background_image" class="game-list__thumb">
+            <img [src]="game.background_image" [alt]="'Capa de ' + game.name" />
+          </ion-thumbnail>
+
           <ion-label>
             <div class="game-list__title">
-              <h2>{{ game.name }}</h2>
-              <ion-badge color="medium" mode="ios">{{ game.platforms?.length || 0 }} plataforma{{ (game.platforms?.length || 0) === 1 ? '' : 's' }}</ion-badge>
+              <div>
+                <h2>{{ game.name }}</h2>
+                <p class="game-list__meta">
+                  <span><ion-icon name="calendar-outline"></ion-icon> {{ formatReleaseDate(game) }}</span>
+                  <span *ngIf="game.rating !== null && game.rating !== undefined"><ion-icon name="star-half-outline"></ion-icon> {{ formatRating(game) }}</span>
+                  <span *ngIf="game.metacritic !== null && game.metacritic !== undefined"><ion-icon name="pulse-outline"></ion-icon> Metacritic {{ game.metacritic }}</span>
+                </p>
+              </div>
+              <ion-badge color="medium" mode="ios">{{ game.platforms.length || 0 }} plataforma{{ (game.platforms.length || 0) === 1 ? '' : 's' }}</ion-badge>
             </div>
 
             <section class="game-list__section" aria-label="Plataformas">
@@ -47,6 +58,11 @@
                 </ion-chip>
                 <span *ngIf="!game.types?.length" class="game-list__empty-chip">Sem tipos associados</span>
               </div>
+            </section>
+
+            <section class="game-list__section" *ngIf="game.description" aria-label="Descrição">
+              <span class="game-list__section-title">Descrição</span>
+              <p class="game-list__description">{{ game.description | slice:0:220 }}<span *ngIf="game.description && game.description.length > 220">…</span></p>
             </section>
           </ion-label>
 

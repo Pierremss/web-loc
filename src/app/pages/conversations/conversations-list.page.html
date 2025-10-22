@@ -33,7 +33,7 @@
         </div>
       </div>
 
-      <ion-list lines="none" class="rooms-list" *ngIf="rooms?.length; else empty">
+  <ion-list lines="none" class="rooms-list" *ngIf="rooms.length; else empty">
         <ion-item class="room-item fadein" lines="none" *ngFor="let room of rooms; let i = index" (click)="open(room)" [style.animationDelay]="(i * 30) + 'ms'">
           <div class="avatar-ring avatar-ring--sm" slot="start">
             <img src="assets/icon/favicon.png" alt="room" />

@@ -14,11 +14,15 @@ export class ConversationsListPage implements OnInit {
   rooms: any[] = [];
   name = '';
   is_public = true;
-  typing: Record<number, Set<number>> = {};
+  typing: Partial<Record<number, Set<number>>> = {};
   private typingHandler = ({ userId, typing, conversationId }: any) => {
     if (!conversationId) return;
-    this.typing[conversationId] = this.typing[conversationId] || new Set<number>();
-    if (typing) this.typing[conversationId].add(userId); else this.typing[conversationId].delete(userId);
+    const set = this.typing[conversationId] ?? (this.typing[conversationId] = new Set<number>());
+    if (typing) {
+      set.add(userId);
+    } else {
+      set.delete(userId);
+    }
   };
 
   private readonly convSvc = inject(ConversationsService);

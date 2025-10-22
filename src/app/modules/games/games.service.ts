@@ -8,6 +8,15 @@ export interface Game {
   id: number;
   name: string;
   created_at?: string;
+  updated_at?: string;
+  rawg_id?: number;
+  slug?: string | null;
+  description?: string | null;
+  released?: string | null;
+  background_image?: string | null;
+  rating?: number | null;
+  ratings_count?: number | null;
+  metacritic?: number | null;
   platforms: Platform[];
   genres?: { id: number; name: string }[];
   types?: { id: number; name: string }[];

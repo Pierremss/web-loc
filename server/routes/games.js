@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { body, validationResult } from 'express-validator';
 import { pool } from '../db.js';
 import { ensureAuth, ensureAdmin } from '../middleware/auth.js';
+import { importRawgCatalog } from '../services/rawg-importer.js';
 
 const router = Router();
 
@@ -124,7 +125,11 @@ async function ensureValidTypes(ids, conn = pool) {
 // Listar jogos (aberto)
 router.get('/', async (_req, res) => {
   try {
-    const [rows] = await pool.query('SELECT id, name, created_at FROM games ORDER BY name ASC');
+    const [rows] = await pool.query(`
+      SELECT id, name, rawg_id, slug, description, released, background_image, rating, ratings_count, metacritic, created_at, updated_at
+      FROM games
+      ORDER BY name ASC
+    `);
     let withPlatforms = await attachPlatforms(rows);
     withPlatforms = await attachGenres(withPlatforms);
     withPlatforms = await attachTypes(withPlatforms);
@@ -139,7 +144,11 @@ router.get('/', async (_req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const id = Number(req.params.id);
-    const [rows] = await pool.query('SELECT id, name, created_at FROM games WHERE id = ?', [id]);
+    const [rows] = await pool.query(`
+      SELECT id, name, rawg_id, slug, description, released, background_image, rating, ratings_count, metacritic, created_at, updated_at
+      FROM games
+      WHERE id = ?
+    `, [id]);
     if (!rows.length) return res.status(404).json({ error: 'Jogo não encontrado' });
     let [withPlatforms] = await attachPlatforms(rows);
     withPlatforms = await attachGenres(withPlatforms);
@@ -356,6 +365,25 @@ router.put('/:id', ensureAuth, ensureAdmin,
   }
 );
 
+router.post('/import/rawg', ensureAuth, ensureAdmin, async (req, res) => {
+  try {
+    const options = {
+      pageSize: parseOptionalInt(req.body?.pageSize),
+      delayMs: parseOptionalInt(req.body?.delayMs),
+      pages: parseOptionalInt(req.body?.pages),
+      startPage: parseOptionalInt(req.body?.startPage),
+      ordering: typeof req.body?.ordering === 'string' ? req.body.ordering : undefined,
+      fetchDetails: parseOptionalBool(req.body?.fetchDetails),
+      dryRun: parseOptionalBool(req.body?.dryRun),
+    };
+    const summary = await importRawgCatalog(options);
+    res.status(200).json({ message: 'Importação RAWG concluída', summary });
+  } catch (error) {
+    console.error('Erro ao importar catálogo RAWG', error);
+    res.status(500).json({ error: error.message || 'Falha ao importar jogos da RAWG' });
+  }
+});
+
 // Deletar jogo (admin)
 router.delete('/:id', ensureAuth, ensureAdmin, async (req, res) => {
   try {
@@ -370,3 +398,19 @@ router.delete('/:id', ensureAuth, ensureAdmin, async (req, res) => {
 });
 
 export default router;
+
+function parseOptionalInt(value) {
+  if (value === undefined || value === null || value === '') return undefined;
+  const parsed = Number.parseInt(value, 10);
+  return Number.isNaN(parsed) ? undefined : parsed;
+}
+
+function parseOptionalBool(value) {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value !== 0;
+  const normalized = String(value).toLowerCase();
+  if (['true', '1', 'yes', 'sim'].includes(normalized)) return true;
+  if (['false', '0', 'no', 'nao', 'não'].includes(normalized)) return false;
+  return undefined;
+}
