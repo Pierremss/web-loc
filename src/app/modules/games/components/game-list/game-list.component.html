@@ -1,0 +1,79 @@
+<ion-card class="game-list">
+  <ion-card-header>
+    <ion-card-title>Jogos cadastrados</ion-card-title>
+    <ion-card-subtitle>Mantenha a lista sempre atualizada</ion-card-subtitle>
+  </ion-card-header>
+
+  <ion-card-content>
+    <ng-container *ngIf="games && games.length; else emptyState">
+      <ion-list lines="none">
+        <ion-item
+          class="game-list__item"
+          *ngFor="let game of games; trackBy: trackByGameId">
+
+          <ion-label>
+            <div class="game-list__title">
+              <h2>{{ game.name }}</h2>
+              <ion-badge color="medium" mode="ios">{{ game.platforms?.length || 0 }} plataforma{{ (game.platforms?.length || 0) === 1 ? '' : 's' }}</ion-badge>
+            </div>
+
+            <section class="game-list__section" aria-label="Plataformas">
+              <span class="game-list__section-title">Plataformas</span>
+              <div class="game-list__chips">
+                <ion-chip *ngFor="let platform of game.platforms" color="primary" mode="ios">
+                  <ion-icon name="hardware-chip-outline"></ion-icon>
+                  <ion-label>{{ platform.name }}</ion-label>
+                </ion-chip>
+              </div>
+            </section>
+
+            <section class="game-list__section" aria-label="Gêneros">
+              <span class="game-list__section-title">Gêneros</span>
+              <div class="game-list__chips">
+                <ion-chip *ngFor="let genre of game.genres" color="tertiary" mode="ios">
+                  <ion-icon name="color-filter-outline"></ion-icon>
+                  <ion-label>{{ genre.name }}</ion-label>
+                </ion-chip>
+                <span *ngIf="!game.genres?.length" class="game-list__empty-chip">Sem gêneros associados</span>
+              </div>
+            </section>
+
+            <section class="game-list__section" aria-label="Tipos">
+              <span class="game-list__section-title">Tipos</span>
+              <div class="game-list__chips">
+                <ion-chip *ngFor="let type of game.types" color="secondary" mode="ios">
+                  <ion-icon name="game-controller-outline"></ion-icon>
+                  <ion-label>{{ type.name }}</ion-label>
+                </ion-chip>
+                <span *ngIf="!game.types?.length" class="game-list__empty-chip">Sem tipos associados</span>
+              </div>
+            </section>
+          </ion-label>
+
+          <div class="game-list__actions" slot="end">
+            <ion-button fill="clear" color="secondary" (click)="onEdit(game)">
+              <ion-icon name="create-outline"></ion-icon>
+            </ion-button>
+            <ion-button fill="clear" color="danger" [disabled]="processing" (click)="onRemove(game)">
+              <ion-icon name="trash-outline"></ion-icon>
+            </ion-button>
+          </div>
+        </ion-item>
+      </ion-list>
+    </ng-container>
+
+    <ng-template #emptyState>
+      <div class="game-list__empty">
+        <ion-icon name="shapes-outline"></ion-icon>
+        <ng-container *ngIf="!searchTerm; else noResults">
+          <h3>Nenhum jogo por aqui ainda</h3>
+          <p>Use o botão “Novo jogo” para começar a construir o catálogo.</p>
+        </ng-container>
+        <ng-template #noResults>
+          <h3>Nenhum jogo encontrado</h3>
+          <p>Revise os termos de busca ou ajuste os filtros.</p>
+        </ng-template>
+      </div>
+    </ng-template>
+  </ion-card-content>
+</ion-card>

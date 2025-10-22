@@ -1,0 +1,117 @@
+:host {
+  display: block;
+}
+
+.games-admin {
+  background: linear-gradient(155deg, rgba(30, 34, 74, 0.88), rgba(12, 14, 32, 0.92));
+  backdrop-filter: blur(22px);
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: var(--app-shadow-lg, 0 24px 48px rgba(0, 0, 0, 0.24));
+  max-width: 1200px;
+  margin: 0 auto;
+  color: var(--ion-text-color);
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+
+  &__brand {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  &__back {
+    --padding-start: 12px;
+    --padding-end: 16px;
+    --border-radius: 12px;
+    --box-shadow: 0 12px 32px rgba(35, 137, 255, 0.35);
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+
+  &__title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(1.5rem, 2.8vw, 2.1rem);
+    margin: 0;
+    color: var(--ion-color-primary);
+  }
+
+  &__subtitle {
+    margin: 4px 0 0 0;
+    color: var(--ion-color-medium);
+    font-size: 0.95rem;
+  }
+
+  &__cta {
+    --border-radius: 12px;
+    font-weight: 600;
+    --box-shadow: 0 12px 24px rgba(0, 0, 0, 0.24);
+  }
+
+  &__toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin: 18px 0 24px;
+  }
+
+  &__grid {
+    --ion-grid-column-padding: 12px;
+  }
+
+  &__row {
+    align-items: stretch;
+  }
+
+  &__loading-card {
+    --background: var(--webloc-surface-elevated, rgba(18, 18, 28, 0.9));
+    --border-radius: 16px;
+    margin-top: 16px;
+  }
+
+  &__modal::part(content) {
+    --width: min(640px, 95vw);
+    --min-height: 520px;
+    --border-radius: 20px;
+  }
+
+  ion-searchbar {
+    flex: 1 1 320px;
+    --background: rgba(255, 255, 255, 0.08);
+    --color: var(--ion-text-color, #f6f7ff);
+    --placeholder-color: rgba(255, 255, 255, 0.55);
+    --placeholder-opacity: 1;
+    --icon-color: rgba(255, 255, 255, 0.7);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    box-shadow: 0 14px 28px rgba(9, 11, 30, 0.4);
+    backdrop-filter: blur(18px);
+  }
+
+  ion-chip {
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+
+  @media (max-width: 960px) {
+    padding: 16px;
+
+    &__brand {
+      width: 100%;
+      justify-content: space-between;
+    }
+
+    &__cta {
+      width: 100%;
+    }
+  }
+}

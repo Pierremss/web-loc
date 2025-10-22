@@ -169,13 +169,13 @@ export class SwipePage implements OnInit {
   }
 
   onImgError(ev: Event) {
-    const img = ev.target as HTMLImageElement | null;
-    if (!img) return;
-    if ((img as any).dataset && (img as any).dataset.fallbackApplied) return;
+    const target = ev.target;
+    if (!(target instanceof HTMLImageElement)) return;
+    if (target.dataset['fallbackApplied']) return;
     try {
-      (img as any).dataset.fallbackApplied = '1';
+      target.dataset['fallbackApplied'] = '1';
     } catch {}
-    img.src = 'assets/icon/favicon.png';
+    target.src = 'assets/icon/favicon.png';
   }
 
   normalizeAvatar(url?: string | null) {

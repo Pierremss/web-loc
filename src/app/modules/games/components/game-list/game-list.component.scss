@@ -1,0 +1,121 @@
+:host {
+  display: block;
+}
+
+.game-list {
+  --background: var(--webloc-surface-elevated, rgba(16, 16, 28, 0.92));
+  --border-radius: 16px;
+  --color: var(--ion-text-color);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+
+  ion-card-title {
+    font-weight: 700;
+    color: var(--ion-color-primary);
+  }
+
+  ion-card-subtitle {
+    color: var(--ion-color-medium);
+  }
+
+  &__item {
+    --inner-padding-start: 0;
+    --inner-padding-end: 0;
+    --padding-start: 16px;
+    --padding-end: 12px;
+    --background: transparent;
+    margin-bottom: 12px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+  }
+
+  &__title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+
+    h2 {
+      margin: 0;
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+  }
+
+  &__section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+
+  &__section-title {
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(var(--ion-text-color-rgb), 0.65);
+  }
+
+  &__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  &__actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding-left: 12px;
+  }
+
+  &__empty {
+    display: grid;
+    gap: 12px;
+    place-items: center;
+    padding: 48px 16px;
+    text-align: center;
+
+    ion-icon {
+      font-size: 36px;
+      color: var(--ion-color-medium);
+    }
+
+    h3 {
+      margin: 0;
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+
+    p {
+      margin: 0;
+      color: var(--ion-color-medium);
+    }
+  }
+
+  &__empty-chip {
+    color: rgba(var(--ion-text-color-rgb), 0.6);
+    font-size: 0.85rem;
+  }
+
+  ion-chip {
+    --padding-start: 10px;
+    --padding-end: 10px;
+    --border-radius: 12px;
+    font-weight: 600;
+  }
+}
+
+@media (max-width: 768px) {
+  .game-list {
+    &__item {
+      flex-direction: column;
+    }
+
+    &__actions {
+      justify-content: flex-end;
+      width: 100%;
+      margin-top: 12px;
+    }
+  }
+}

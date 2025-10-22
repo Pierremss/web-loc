@@ -123,22 +123,32 @@ async function ensureValidTypes(ids, conn = pool) {
 
 // Listar jogos (aberto)
 router.get('/', async (_req, res) => {
-  const [rows] = await pool.query('SELECT id, name, created_at FROM games ORDER BY name ASC');
-  let withPlatforms = await attachPlatforms(rows);
-  withPlatforms = await attachGenres(withPlatforms);
-  withPlatforms = await attachTypes(withPlatforms);
-  res.json(withPlatforms);
+  try {
+    const [rows] = await pool.query('SELECT id, name, created_at FROM games ORDER BY name ASC');
+    let withPlatforms = await attachPlatforms(rows);
+    withPlatforms = await attachGenres(withPlatforms);
+    withPlatforms = await attachTypes(withPlatforms);
+    res.json(withPlatforms);
+  } catch (err) {
+    console.error('Erro ao listar jogos', err);
+    res.status(500).json({ error: 'Não foi possível recuperar os jogos' });
+  }
 });
 
 // Obter jogo individual
 router.get('/:id', async (req, res) => {
-  const id = Number(req.params.id);
-  const [rows] = await pool.query('SELECT id, name, created_at FROM games WHERE id = ?', [id]);
-  if (!rows.length) return res.status(404).json({ error: 'Jogo não encontrado' });
-  let [withPlatforms] = await attachPlatforms(rows);
-  withPlatforms = await attachGenres(withPlatforms);
-  withPlatforms = await attachTypes(withPlatforms);
-  res.json(withPlatforms);
+  try {
+    const id = Number(req.params.id);
+    const [rows] = await pool.query('SELECT id, name, created_at FROM games WHERE id = ?', [id]);
+    if (!rows.length) return res.status(404).json({ error: 'Jogo não encontrado' });
+    let [withPlatforms] = await attachPlatforms(rows);
+    withPlatforms = await attachGenres(withPlatforms);
+    withPlatforms = await attachTypes(withPlatforms);
+    res.json(withPlatforms);
+  } catch (err) {
+    console.error('Erro ao carregar jogo', err);
+    res.status(500).json({ error: 'Não foi possível recuperar o jogo' });
+  }
 });
 
 // Criar jogo (admin)
@@ -148,34 +158,35 @@ router.post('/', ensureAuth, ensureAdmin,
   body('genres').optional().isArray().withMessage('Gêneros inválidos'),
   body('types').optional().isArray().withMessage('Tipos inválidos'),
   async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
-
-    const name = req.body.name.trim();
-    const platformIds = normalizeIds(req.body.platforms);
-    const genreIds = normalizeIds(req.body.genres || []);
-    const typeIds = normalizeIds(req.body.types || []);
-    const validation = await ensureValidPlatforms(platformIds);
-    if (!validation.valid) {
-      return res.status(validation.error.status).json({ error: validation.error.message, missing: validation.error.missing });
-    }
-
-    // validate genres/types if provided
-    let validatedGenres = [];
-    let validatedTypes = [];
-    if (genreIds.length) {
-      const vg = await ensureValidGenres(genreIds);
-      if (!vg.valid) return res.status(vg.error.status).json({ error: vg.error.message, missing: vg.error.missing });
-      validatedGenres = vg.data;
-    }
-    if (typeIds.length) {
-      const vt = await ensureValidTypes(typeIds);
-      if (!vt.valid) return res.status(vt.error.status).json({ error: vt.error.message, missing: vt.error.missing });
-      validatedTypes = vt.data;
-    }
-
-    const conn = await pool.getConnection();
+    let conn;
     try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+      const name = req.body.name.trim();
+      const platformIds = normalizeIds(req.body.platforms);
+      const genreIds = normalizeIds(req.body.genres || []);
+      const typeIds = normalizeIds(req.body.types || []);
+      const validation = await ensureValidPlatforms(platformIds);
+      if (!validation.valid) {
+        return res.status(validation.error.status).json({ error: validation.error.message, missing: validation.error.missing });
+      }
+
+      // validate genres/types if provided
+      let validatedGenres = [];
+      let validatedTypes = [];
+      if (genreIds.length) {
+        const vg = await ensureValidGenres(genreIds);
+        if (!vg.valid) return res.status(vg.error.status).json({ error: vg.error.message, missing: vg.error.missing });
+        validatedGenres = vg.data;
+      }
+      if (typeIds.length) {
+        const vt = await ensureValidTypes(typeIds);
+        if (!vt.valid) return res.status(vt.error.status).json({ error: vt.error.message, missing: vt.error.missing });
+        validatedTypes = vt.data;
+      }
+
+      conn = await pool.getConnection();
       await conn.beginTransaction();
       const [result] = await conn.query('INSERT INTO games (name) VALUES (?)', [name]);
       const values = platformIds.flatMap((platformId) => [result.insertId, platformId]);
@@ -193,19 +204,26 @@ router.post('/', ensureAuth, ensureAdmin,
       }
       await conn.commit();
 
-      res.status(201).json({
+      return res.status(201).json({
         id: result.insertId,
         name,
         platforms: validation.data
       });
     } catch (e) {
-      await conn.rollback();
+      if (conn) {
+        try {
+          await conn.rollback();
+        } catch (rollbackErr) {
+          console.error('Falha ao executar rollback da criação de jogo', rollbackErr);
+        }
+      }
       if (e.code === 'ER_DUP_ENTRY') {
         return res.status(409).json({ error: 'Já existe um jogo com este nome' });
       }
-      res.status(500).json({ error: 'Erro ao criar jogo', detail: e.message });
+      console.error('Erro ao criar jogo', e);
+      return res.status(500).json({ error: 'Erro ao criar jogo' });
     } finally {
-      conn.release();
+      if (conn) conn.release();
     }
   }
 );
@@ -217,22 +235,23 @@ router.put('/:id', ensureAuth, ensureAdmin,
   body('genres').optional().isArray().withMessage('Gêneros inválidos'),
   body('types').optional().isArray().withMessage('Tipos inválidos'),
   async (req, res) => {
-    const id = Number(req.params.id);
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
-
-  const hasPlatformsField = Object.prototype.hasOwnProperty.call(req.body, 'platforms');
-  const hasGenresField = Object.prototype.hasOwnProperty.call(req.body, 'genres');
-  const hasTypesField = Object.prototype.hasOwnProperty.call(req.body, 'types');
-  const platformIds = hasPlatformsField ? normalizeIds(req.body.platforms) : null;
-  const genreIds = hasGenresField ? normalizeIds(req.body.genres) : null;
-  const typeIds = hasTypesField ? normalizeIds(req.body.types) : null;
-  let validatedPlatforms = null;
-  let validatedGenres = null;
-  let validatedTypes = null;
-
-    const conn = await pool.getConnection();
+    let conn;
     try {
+      const id = Number(req.params.id);
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+      const hasPlatformsField = Object.prototype.hasOwnProperty.call(req.body, 'platforms');
+      const hasGenresField = Object.prototype.hasOwnProperty.call(req.body, 'genres');
+      const hasTypesField = Object.prototype.hasOwnProperty.call(req.body, 'types');
+      const platformIds = hasPlatformsField ? normalizeIds(req.body.platforms) : null;
+      const genreIds = hasGenresField ? normalizeIds(req.body.genres) : null;
+      const typeIds = hasTypesField ? normalizeIds(req.body.types) : null;
+      let validatedPlatforms = null;
+      let validatedGenres = null;
+      let validatedTypes = null;
+
+      conn = await pool.getConnection();
       await conn.beginTransaction();
       const [existingRows] = await conn.query('SELECT id, name FROM games WHERE id = ?', [id]);
       if (!existingRows.length) {
@@ -298,8 +317,7 @@ router.put('/:id', ensureAuth, ensureAdmin,
       await conn.commit();
 
       const gameName = req.body.name ? req.body.name.trim() : existingRows[0].name;
-      // if some relations were not requested to be updated, fetch full ones
-  const response = { id, name: gameName };
+      const response = { id, name: gameName };
       if (!validatedPlatforms) {
         const [withPlatforms] = await attachPlatforms([{ id, name: gameName }]);
         response.platforms = withPlatforms.platforms;
@@ -320,23 +338,35 @@ router.put('/:id', ensureAuth, ensureAdmin,
       }
       return res.json(response);
     } catch (e) {
-      await conn.rollback();
+      if (conn) {
+        try {
+          await conn.rollback();
+        } catch (rollbackErr) {
+          console.error('Falha ao executar rollback da atualização de jogo', rollbackErr);
+        }
+      }
       if (e.code === 'ER_DUP_ENTRY') {
         return res.status(409).json({ error: 'Já existe um jogo com este nome' });
       }
-      res.status(500).json({ error: 'Erro ao atualizar jogo', detail: e.message });
+      console.error('Erro ao atualizar jogo', e);
+      return res.status(500).json({ error: 'Erro ao atualizar jogo' });
     } finally {
-      conn.release();
+      if (conn) conn.release();
     }
   }
 );
 
 // Deletar jogo (admin)
 router.delete('/:id', ensureAuth, ensureAdmin, async (req, res) => {
-  const id = Number(req.params.id);
-  const [result] = await pool.query('DELETE FROM games WHERE id = ?', [id]);
-  if (!result.affectedRows) return res.status(404).json({ error: 'Jogo não encontrado' });
-  res.status(204).send();
+  try {
+    const id = Number(req.params.id);
+    const [result] = await pool.query('DELETE FROM games WHERE id = ?', [id]);
+    if (!result.affectedRows) return res.status(404).json({ error: 'Jogo não encontrado' });
+    res.status(204).send();
+  } catch (err) {
+    console.error('Erro ao remover jogo', err);
+    res.status(500).json({ error: 'Erro ao remover jogo' });
+  }
 });
 
 export default router;

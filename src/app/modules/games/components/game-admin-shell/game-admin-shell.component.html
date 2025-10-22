@@ -1,0 +1,78 @@
+<ng-container *ngIf="vm$ | async as vm">
+  <section class="games-admin" aria-live="polite">
+    <header class="games-admin__header">
+      <div class="games-admin__brand">
+        <ion-button fill="solid" color="primary" routerLink="/home" class="games-admin__back">
+          <ion-icon name="arrow-back-outline" slot="start"></ion-icon>
+          Voltar
+        </ion-button>
+        <div>
+          <h1 class="games-admin__title">Gerenciar Jogos</h1>
+          <p class="games-admin__subtitle">Administre o catálogo e mantenha tudo organizado</p>
+        </div>
+      </div>
+      <ion-button color="primary" class="games-admin__cta" (click)="openCreate()">
+        <ion-icon name="add-circle-outline" slot="start"></ion-icon>
+        Novo jogo
+      </ion-button>
+    </header>
+
+    <ion-card *ngIf="vm.loading" class="games-admin__loading-card">
+      <ion-card-content>
+        <ion-skeleton-text animated style="width: 50%; height: 20px"></ion-skeleton-text>
+        <ion-skeleton-text animated style="width: 100%; height: 120px; margin-top: 16px"></ion-skeleton-text>
+      </ion-card-content>
+    </ion-card>
+
+    <ng-container *ngIf="!vm.loading">
+      <div class="games-admin__toolbar">
+        <ion-searchbar
+          placeholder="Pesquisar por nome"
+          [formControl]="searchControl"
+          show-clear-button="focus">
+        </ion-searchbar>
+        <ion-chip color="secondary" outline>
+          <ion-icon name="library-outline" color="secondary"></ion-icon>
+          <ion-label>{{ vm.games.length }} jogo{{ vm.games.length === 1 ? '' : 's' }}</ion-label>
+        </ion-chip>
+      </div>
+
+      <ion-grid class="games-admin__grid">
+        <ion-row class="games-admin__row" align-items-center>
+          <ion-col size="12" size-lg="8">
+            <app-game-list
+              [games]="vm.games"
+              [processing]="vm.processing"
+              [searchTerm]="vm.searchTerm"
+              (edit)="openEdit($event)"
+              (remove)="handleDelete($event)">
+            </app-game-list>
+          </ion-col>
+          <ion-col size="12" size-lg="4">
+            <app-taxonomy-manager
+              [processing]="vm.processing"
+              [platforms]="vm.platforms"
+              [genres]="vm.genres"
+              [types]="vm.types">
+            </app-taxonomy-manager>
+          </ion-col>
+        </ion-row>
+      </ion-grid>
+    </ng-container>
+  </section>
+
+  <ion-modal [isOpen]="isFormOpen" (didDismiss)="closeForm()" cssClass="games-admin__modal">
+    <ng-template>
+      <app-game-form
+        [mode]="formMode"
+        [game]="currentGame"
+        [platforms]="vm.platforms"
+        [genres]="vm.genres"
+        [types]="vm.types"
+        [processing]="vm.processing"
+        (cancel)="closeForm()"
+        (save)="handleSave($event)">
+      </app-game-form>
+    </ng-template>
+  </ion-modal>
+</ng-container>

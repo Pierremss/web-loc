@@ -5,6 +5,7 @@ import { RegisterPage } from './modules/auth/register.page';
 import { UsersListPage } from './modules/users/users-list.page';
 import { GamesListPage } from './modules/games/games-list.page';
 import { AuthGuard } from './modules/auth/auth.guard';
+import { AdminGuard } from './modules/auth/admin.guard';
 import { HomePage } from './home.page';
 import { JogadorPerfilPage } from './pages/jogador-perfil/jogador-perfil.page';
 
@@ -13,7 +14,7 @@ const routes: Routes = [
   { path: 'login', component: LoginPage },
   { path: 'register', component: RegisterPage },
   { path: 'users', component: UsersListPage, canActivate: [AuthGuard] },
-  { path: 'games', component: GamesListPage },
+  { path: 'games', component: GamesListPage, canActivate: [AdminGuard] },
   { path: 'home', component: HomePage },
   { path: 'friends', loadChildren: () => import('./pages/friends/friends.module').then(m => m.FriendsPageModule) },
   { path: 'rooms', loadChildren: () => import('./pages/rooms/rooms.module').then(m => m.RoomsListPageModule) },

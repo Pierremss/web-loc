@@ -37,7 +37,6 @@
 
 /* @import "@ionic/angular/css/palettes/dark.always.css"; */
 /* @import "@ionic/angular/css/palettes/dark.class.css"; */
-@import "@ionic/angular/css/palettes/dark.system.css";
 
 :root { --radius: var(--app-radius); }
 
@@ -45,6 +44,11 @@ html {
   text-size-adjust: 100%;
   -webkit-text-size-adjust: 100%;
   -ms-text-size-adjust: 100%;
+  transition: background-color 280ms ease, color 280ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html, body { transition: none; }
 }
 
 html, body, ion-app, ion-content, ion-router-outlet { height: 100%; }
@@ -56,6 +60,7 @@ body {
     radial-gradient(120% 120% at 90% 130%, rgba(34,211,238,0.16), transparent 70%),
     var(--ion-background-color);
   color: var(--ion-text-color);
+  transition: background 280ms ease, color 280ms ease;
 }
 
 a {
@@ -85,7 +90,7 @@ ion-card-header {
 
 /* Toolbar e menus */
 ion-toolbar {
-  --background: rgba(16,22,40,0.78);
+  --background: var(--app-surface-1);
   --border-color: var(--ion-border-color);
   --color: var(--ion-text-color);
   backdrop-filter: blur(10px);
@@ -106,7 +111,7 @@ ion-item {
 }
 
 ion-item:hover {
-  --background: rgba(146,163,206,0.08);
+  --background: rgba(var(--ion-text-color-rgb), 0.06);
   transform: translateY(-1px);
 }
 
