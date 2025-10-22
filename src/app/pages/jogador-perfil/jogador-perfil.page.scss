@@ -17,7 +17,7 @@
 
   .perfil-container {
     background: linear-gradient(155deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.03);
     border-radius: clamp(20px, 2.4vw, 28px);
     padding: clamp(24px, 3vw, 36px);
     max-width: 960px;
@@ -29,60 +29,31 @@
     gap: clamp(20px, 3vw, 32px);
     backdrop-filter: saturate(1.1) blur(16px);
     -webkit-backdrop-filter: saturate(1.1) blur(16px);
-    border-inline: 1px solid rgba(255, 255, 255, 0.14);
     position: relative;
     overflow: hidden;
-
-    &::after {
-      content: "";
-      position: absolute;
-      inset: clamp(16px, 2.2vw, 28px);
-      border-radius: inherit;
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      pointer-events: none;
-      mix-blend-mode: screen;
-    }
   }
 
   .hero {
     display: grid;
     grid-template-columns: auto 1fr;
-    align-items: center;
+    border: 1px solid rgba(15, 23, 42, 0.035);
     gap: clamp(20px, 3vw, 36px);
     padding: clamp(8px, 1vw, 18px) clamp(4px, 1vw, 12px);
     position: relative;
-
-    &::before {
-      content: "";
-      position: absolute;
-      inset: -24px;
-      background: radial-gradient(circle at top left, rgba(140, 44, 226, 0.22), transparent 65%);
-      opacity: 0.35;
-      z-index: -1;
-    }
   }
-
+    border: 1px solid rgba(15, 23, 42, 0.04);
   .avatar-wrap {
     width: clamp(104px, 11vw, 136px);
     height: clamp(104px, 11vw, 136px);
     border-radius: 50%;
     overflow: hidden;
-    border: 3px solid rgba(var(--ion-color-primary-rgb), 0.8);
+  border: 3px solid rgba(var(--ion-color-primary-rgb), 0.65);
     box-shadow: 0 18px 42px rgba(15, 23, 42, 0.32);
     flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     position: relative;
-
-    &::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      border-radius: inherit;
-      border: 1px solid rgba(255, 255, 255, 0.35);
-      mix-blend-mode: screen;
-    }
   }
 
   .avatar-wrap.lg {
@@ -100,34 +71,30 @@
   .hero-texts {
     display: grid;
     gap: 12px;
-    justify-items: start;
   }
 
   .hero-texts h1 {
     font-size: clamp(1.9rem, 3vw, 2.4rem);
-    margin: 0;
     word-break: break-word;
     letter-spacing: -0.01em;
     font-weight: 700;
   }
 
   .hero-meta {
-    display: flex;
+    border: 3px solid rgba(var(--ion-color-primary-rgb), 0.6);
     gap: 12px;
-    align-items: center;
     color: var(--ion-color-medium);
     font-size: 0.95rem;
     font-weight: 500;
   }
-
   .hero-texts p {
     margin: 0;
     font-size: 0.98rem;
   }
 
   .hero-texts .muted {
-    color: var(--ion-color-medium);
     margin: 0;
+    color: var(--ion-color-medium);
   }
 
   .quick-actions {
@@ -149,7 +116,7 @@
 
   .card {
     background: rgba(17, 25, 40, 0.32);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.03);
     border-radius: clamp(18px, 2vw, 22px);
     padding: clamp(18px, 2.4vw, 24px);
     transition: box-shadow .18s ease, transform .18s ease;
@@ -193,7 +160,7 @@
 
   .add-row ion-item {
     --background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 14px;
     padding-inline: 6px;
     --inner-padding-start: 12px;
@@ -239,7 +206,7 @@
     min-height: 44px;
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
     --color: var(--ion-text-color);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.05);
     border-radius: 999px;
     transition: transform .16s cubic-bezier(.2,.9,.3,1), box-shadow .18s ease, opacity .2s ease;
     animation: fadeUp .28s ease both;
@@ -290,18 +257,14 @@
   :host-context(body:not(.dark)) {
     .perfil-container {
       background: linear-gradient(160deg, rgba(252, 252, 255, 0.96), rgba(255, 255, 255, 0.9));
-      border: 1px solid rgba(11, 18, 32, 0.06);
+      border: 1px solid rgba(11, 18, 32, 0.04);
       box-shadow: 0 24px 60px rgba(15, 23, 42, 0.12);
-    }
-
-    .perfil-container::after {
-      border-color: rgba(11, 18, 32, 0.05);
     }
 
     .card {
       background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(250, 253, 255, 0.86));
       color: #0b1220;
-      border: 1px solid rgba(15, 23, 42, 0.06);
+      border: 1px solid rgba(15, 23, 42, 0.03);
       box-shadow: 0 18px 38px rgba(15, 23, 42, 0.12);
     }
 
@@ -312,13 +275,13 @@
     .fav-chip {
       background: rgba(255, 255, 255, 0.94);
       color: #0b1220;
-      border: 1px solid rgba(15, 23, 42, 0.08);
+      border: 1px solid rgba(15, 23, 42, 0.035);
     }
 
     .hero-texts .muted { color: rgba(17,24,39,0.66); }
 
     .add-row ion-item {
-      border-color: rgba(15, 23, 42, 0.12);
+      border-color: rgba(15, 23, 42, 0.06);
     }
 
     ion-searchbar {
@@ -355,13 +318,13 @@
     .card { 
       background: rgba(24, 29, 44, 0.6); 
       color: var(--ion-text-color); 
-      border: 1px solid rgba(255,255,255,0.09);
+      border: 1px solid rgba(255,255,255,0.05);
     }
     
     .fav-chip { 
       --background: #2b2b3c; 
       color: #f1f1f1; 
-      border: 1px solid rgba(255,255,255,0.12); 
+      border: 1px solid rgba(255,255,255,0.06); 
     }
 
     ion-searchbar {
