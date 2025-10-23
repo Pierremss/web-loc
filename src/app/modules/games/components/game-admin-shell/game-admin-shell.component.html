@@ -31,11 +31,84 @@
           [formControl]="searchControl"
           show-clear-button="focus">
         </ion-searchbar>
-        <ion-chip color="secondary" outline>
-          <ion-icon name="library-outline" color="secondary"></ion-icon>
-          <ion-label>{{ vm.games.length }} jogo{{ vm.games.length === 1 ? '' : 's' }}</ion-label>
-        </ion-chip>
+        <div class="games-admin__metrics">
+          <ion-chip color="secondary" outline>
+            <ion-icon name="library-outline" color="secondary"></ion-icon>
+            <ion-label>{{ vm.meta?.total ?? vm.games.length }} jogo{{ (vm.meta?.total ?? vm.games.length) === 1 ? '' : 's' }}</ion-label>
+          </ion-chip>
+          <ion-chip color="primary" outline *ngIf="vm.meta as meta">
+            <ion-icon name="layers-outline"></ion-icon>
+            <ion-label>
+              Página {{ meta.page ?? 1 }} / {{ meta.totalPages ?? 1 }}
+            </ion-label>
+          </ion-chip>
+        </div>
       </div>
+
+      <form class="games-admin__filters" [formGroup]="filtersGroup" novalidate>
+        <div class="games-admin__filters-row">
+          <ion-select
+            formControlName="platforms"
+            multiple="true"
+            interface="popover"
+            label="Plataformas"
+            placeholder="Todas as plataformas"
+            cancel-text="Cancelar"
+            ok-text="Aplicar">
+            <ion-select-option *ngFor="let platform of vm.platforms" [value]="platform.id">
+              {{ platform.name }}
+            </ion-select-option>
+          </ion-select>
+
+          <ion-select
+            formControlName="genres"
+            multiple="true"
+            interface="popover"
+            label="Gêneros"
+            placeholder="Todos os gêneros"
+            cancel-text="Cancelar"
+            ok-text="Aplicar">
+            <ion-select-option *ngFor="let genre of vm.genres" [value]="genre.id">
+              {{ genre.name }}
+            </ion-select-option>
+          </ion-select>
+
+          <ion-select
+            formControlName="types"
+            multiple="true"
+            interface="popover"
+            label="Tipos"
+            placeholder="Todos os tipos"
+            cancel-text="Cancelar"
+            ok-text="Aplicar">
+            <ion-select-option *ngFor="let type of vm.types" [value]="type.id">
+              {{ type.name }}
+            </ion-select-option>
+          </ion-select>
+
+          <ion-select
+            formControlName="pageSize"
+            interface="popover"
+            label="Itens por página"
+            placeholder="24 itens">
+            <ion-select-option *ngFor="let size of pageSizeOptions" [value]="size">
+              {{ size }} por página
+            </ion-select-option>
+          </ion-select>
+
+          <ion-button type="button" fill="clear" color="light" (click)="clearFilters()" class="games-admin__clear">
+            <ion-icon name="close-circle-outline" slot="start"></ion-icon>
+            Limpar filtros
+          </ion-button>
+        </div>
+
+        <ion-segment formControlName="sort" mode="ios" class="games-admin__sort">
+          <ion-segment-button *ngFor="let option of sortOptions" [value]="option.value">
+            <ion-icon [name]="option.icon"></ion-icon>
+            <ion-label>{{ option.label }}</ion-label>
+          </ion-segment-button>
+        </ion-segment>
+      </form>
 
       <ion-grid class="games-admin__grid">
         <ion-row class="games-admin__row" align-items-center>
@@ -47,6 +120,16 @@
               (edit)="openEdit($event)"
               (remove)="handleDelete($event)">
             </app-game-list>
+            <ion-infinite-scroll
+              *ngIf="vm.meta?.hasNext"
+              [disabled]="!vm.meta?.hasNext || vm.loadingMore"
+              threshold="120px"
+              (ionInfinite)="loadMore($event)">
+              <ion-infinite-scroll-content
+                loadingSpinner="crescent"
+                loadingText="Carregando mais jogos...">
+              </ion-infinite-scroll-content>
+            </ion-infinite-scroll>
           </ion-col>
           <ion-col size="12" size-lg="4">
             <app-taxonomy-manager

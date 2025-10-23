@@ -66,6 +66,55 @@
     margin: 18px 0 24px;
   }
 
+  &__metrics {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  &__filters {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  &__filters-row {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    align-items: center;
+  }
+
+  &__sort {
+    --background: rgba(255, 255, 255, 0.06);
+    border-radius: 14px;
+    padding: 8px;
+    display: flex;
+    justify-content: center;
+
+    ion-segment-button {
+      min-width: 140px;
+      font-size: 0.78rem;
+      text-transform: none;
+    }
+  }
+
+  &__clear {
+    justify-self: end;
+    font-weight: 600;
+    --color: rgba(255, 255, 255, 0.85);
+  }
+
+  &__filters ion-select {
+    --placeholder-opacity: 0.8;
+    --placeholder-color: rgba(255, 255, 255, 0.7);
+    --border-radius: 12px;
+    --background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
   &__grid {
     --ion-grid-column-padding: 12px;
   }
@@ -116,6 +165,10 @@
 
     &__cta {
       width: 100%;
+    }
+
+    &__filters-row {
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
     }
   }
 }

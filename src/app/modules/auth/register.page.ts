@@ -75,7 +75,7 @@ export class RegisterPage implements OnInit {
   }
 
   ngOnInit(): void {
-    this.gamesService.list().subscribe((jogos) => this.jogos = jogos);
+  this.gamesService.list({ pageSize: 200, order: 'name' }).subscribe((jogos) => this.jogos = jogos);
     this.platformsService.list().subscribe(platforms => {
       this.platformOptions = platforms.sort((a, b) => a.name.localeCompare(b.name));
     });

@@ -6,6 +6,80 @@ import { importRawgCatalog } from '../services/rawg-importer.js';
 
 const router = Router();
 
+const MAX_PAGE_SIZE = 100;
+const DEFAULT_PAGE_SIZE = Math.min(
+  Math.max(Number(process.env.GAMES_PAGE_SIZE) || 24, 1),
+  MAX_PAGE_SIZE
+);
+
+const ORDER_MAP = Object.freeze({
+  name: 'g.name ASC',
+  '-name': 'g.name DESC',
+  released: 'g.released ASC',
+  '-released': 'g.released DESC',
+  rating: 'g.rating ASC',
+  '-rating': 'g.rating DESC',
+  metacritic: 'g.metacritic ASC',
+  '-metacritic': 'g.metacritic DESC',
+  '-created_at': 'g.created_at DESC',
+  created_at: 'g.created_at ASC'
+});
+
+function parseIdsParam(raw) {
+  if (!raw) return [];
+  const serialized = Array.isArray(raw) ? raw.join(',') : String(raw);
+  return serialized
+    .split(',')
+    .map((value) => Number.parseInt(String(value).trim(), 10))
+    .filter((value) => Number.isInteger(value) && value > 0);
+}
+
+function parsePositiveInt(raw, fallback) {
+  const numeric = Number.parseInt(String(raw ?? ''), 10);
+  return Number.isFinite(numeric) && numeric > 0 ? numeric : fallback;
+}
+
+function resolveOrder(order) {
+  if (typeof order !== 'string') return ORDER_MAP.name;
+  return ORDER_MAP[order] ?? ORDER_MAP.name;
+}
+
+function buildFilterClauses({ search, platformIds, genreIds, typeIds }) {
+  const clauses = [];
+  const params = [];
+
+  if (search) {
+    clauses.push('LOWER(g.name) LIKE ?');
+    params.push(`%${search.toLowerCase()}%`);
+  }
+
+  if (platformIds.length) {
+    clauses.push(
+      'EXISTS (SELECT 1 FROM game_platforms gp WHERE gp.game_id = g.id AND gp.platform_id IN (?))'
+    );
+    params.push(platformIds);
+  }
+
+  if (genreIds.length) {
+    clauses.push(
+      'EXISTS (SELECT 1 FROM game_genres gg WHERE gg.game_id = g.id AND gg.genre_id IN (?))'
+    );
+    params.push(genreIds);
+  }
+
+  if (typeIds.length) {
+    clauses.push(
+      'EXISTS (SELECT 1 FROM game_game_types gt WHERE gt.game_id = g.id AND gt.type_id IN (?))'
+    );
+    params.push(typeIds);
+  }
+
+  return {
+    sql: clauses.length ? `WHERE ${clauses.join(' AND ')}` : '',
+    params
+  };
+}
+
 function normalizeIds(input) {
   if (!Array.isArray(input)) return [];
   const ids = input.map((item) => {
@@ -123,17 +197,55 @@ async function ensureValidTypes(ids, conn = pool) {
 }
 
 // Listar jogos (aberto)
-router.get('/', async (_req, res) => {
+router.get('/', async (req, res) => {
   try {
-    const [rows] = await pool.query(`
-      SELECT id, name, rawg_id, slug, description, released, background_image, rating, ratings_count, metacritic, created_at, updated_at
-      FROM games
-      ORDER BY name ASC
-    `);
-    let withPlatforms = await attachPlatforms(rows);
-    withPlatforms = await attachGenres(withPlatforms);
-    withPlatforms = await attachTypes(withPlatforms);
-    res.json(withPlatforms);
+    const page = Math.max(parsePositiveInt(req.query.page, 1), 1);
+    const requestedPageSize = parsePositiveInt(req.query.pageSize, DEFAULT_PAGE_SIZE);
+    const pageSize = Math.min(Math.max(requestedPageSize, 1), MAX_PAGE_SIZE);
+    const offset = (page - 1) * pageSize;
+    const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
+    const order = resolveOrder(req.query.order);
+    const platformIds = parseIdsParam(req.query.platforms);
+    const genreIds = parseIdsParam(req.query.genres);
+    const typeIds = parseIdsParam(req.query.types);
+
+    const filters = buildFilterClauses({ search, platformIds, genreIds, typeIds });
+    const whereSql = filters.sql;
+
+    const countParams = filters.params.slice();
+    const [countRows] = await pool.query(
+      `SELECT COUNT(*) AS total FROM games g ${whereSql}`,
+      countParams
+    );
+    const total = countRows?.[0]?.total ?? 0;
+
+    const dataParams = filters.params.slice();
+    dataParams.push(pageSize, offset);
+    const [rows] = await pool.query(
+      `SELECT g.id, g.name, g.rawg_id, g.slug, g.description, g.released, g.background_image, g.rating, g.ratings_count, g.metacritic, g.created_at, g.updated_at
+       FROM games g
+       ${whereSql}
+       ORDER BY ${order}
+       LIMIT ? OFFSET ?`,
+      dataParams
+    );
+
+    let enriched = await attachPlatforms(rows);
+    enriched = await attachGenres(enriched);
+    enriched = await attachTypes(enriched);
+
+    const totalPages = total === 0 ? 0 : Math.max(Math.ceil(total / pageSize), 1);
+    res.json({
+      data: enriched,
+      meta: {
+        total,
+        page,
+        pageSize,
+        totalPages,
+        hasNext: totalPages > 0 && page < totalPages,
+        hasPrevious: totalPages > 0 && page > 1
+      }
+    });
   } catch (err) {
     console.error('Erro ao listar jogos', err);
     res.status(500).json({ error: 'Não foi possível recuperar os jogos' });

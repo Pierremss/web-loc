@@ -6,76 +6,78 @@
 
   <ion-card-content>
     <ng-container *ngIf="games && games.length; else emptyState">
-      <ion-list lines="none">
-        <ion-item
-          class="game-list__item"
-          *ngFor="let game of games; trackBy: trackByGameId">
+      <div class="game-list__viewport">
+        <cdk-virtual-scroll-viewport itemSize="260" class="game-list__cdk-viewport">
+          <div class="game-list__virtual-item" *cdkVirtualFor="let game of (games || []); trackBy: trackByGameId">
+            <ion-item class="game-list__item">
 
-          <ion-thumbnail slot="start" *ngIf="game.background_image" class="game-list__thumb">
-            <img [src]="game.background_image" [alt]="'Capa de ' + game.name" />
-          </ion-thumbnail>
+              <ion-thumbnail slot="start" *ngIf="game.background_image" class="game-list__thumb">
+                <img [src]="game.background_image" [alt]="'Capa de ' + game.name" />
+              </ion-thumbnail>
 
-          <ion-label>
-            <div class="game-list__title">
-              <div>
-                <h2>{{ game.name }}</h2>
-                <p class="game-list__meta">
-                  <span><ion-icon name="calendar-outline"></ion-icon> {{ formatReleaseDate(game) }}</span>
-                  <span *ngIf="game.rating !== null && game.rating !== undefined"><ion-icon name="star-half-outline"></ion-icon> {{ formatRating(game) }}</span>
-                  <span *ngIf="game.metacritic !== null && game.metacritic !== undefined"><ion-icon name="pulse-outline"></ion-icon> Metacritic {{ game.metacritic }}</span>
-                </p>
+              <ion-label>
+                <div class="game-list__title">
+                  <div>
+                    <h2>{{ game.name }}</h2>
+                    <p class="game-list__meta">
+                      <span><ion-icon name="calendar-outline"></ion-icon> {{ formatReleaseDate(game) }}</span>
+                      <span *ngIf="game.rating !== null && game.rating !== undefined"><ion-icon name="star-half-outline"></ion-icon> {{ formatRating(game) }}</span>
+                      <span *ngIf="game.metacritic !== null && game.metacritic !== undefined"><ion-icon name="pulse-outline"></ion-icon> Metacritic {{ game.metacritic }}</span>
+                    </p>
+                  </div>
+                  <ion-badge color="medium" mode="ios">{{ game.platforms.length || 0 }} plataforma{{ (game.platforms.length || 0) === 1 ? '' : 's' }}</ion-badge>
+                </div>
+
+                <section class="game-list__section" aria-label="Plataformas">
+                  <span class="game-list__section-title">Plataformas</span>
+                  <div class="game-list__chips">
+                    <ion-chip *ngFor="let platform of game.platforms" color="primary" mode="ios">
+                      <ion-icon name="hardware-chip-outline"></ion-icon>
+                      <ion-label>{{ platform.name }}</ion-label>
+                    </ion-chip>
+                  </div>
+                </section>
+
+                <section class="game-list__section" aria-label="Gêneros">
+                  <span class="game-list__section-title">Gêneros</span>
+                  <div class="game-list__chips">
+                    <ion-chip *ngFor="let genre of game.genres" color="tertiary" mode="ios">
+                      <ion-icon name="color-filter-outline"></ion-icon>
+                      <ion-label>{{ genre.name }}</ion-label>
+                    </ion-chip>
+                    <span *ngIf="!game.genres?.length" class="game-list__empty-chip">Sem gêneros associados</span>
+                  </div>
+                </section>
+
+                <section class="game-list__section" aria-label="Tipos">
+                  <span class="game-list__section-title">Tipos</span>
+                  <div class="game-list__chips">
+                    <ion-chip *ngFor="let type of game.types" color="secondary" mode="ios">
+                      <ion-icon name="game-controller-outline"></ion-icon>
+                      <ion-label>{{ type.name }}</ion-label>
+                    </ion-chip>
+                    <span *ngIf="!game.types?.length" class="game-list__empty-chip">Sem tipos associados</span>
+                  </div>
+                </section>
+
+                <section class="game-list__section" *ngIf="game.description" aria-label="Descrição">
+                  <span class="game-list__section-title">Descrição</span>
+                  <p class="game-list__description">{{ game.description | slice:0:220 }}<span *ngIf="game.description && game.description.length > 220">…</span></p>
+                </section>
+              </ion-label>
+
+              <div class="game-list__actions" slot="end">
+                <ion-button fill="clear" color="secondary" (click)="onEdit(game)">
+                  <ion-icon name="create-outline"></ion-icon>
+                </ion-button>
+                <ion-button fill="clear" color="danger" [disabled]="processing" (click)="onRemove(game)">
+                  <ion-icon name="trash-outline"></ion-icon>
+                </ion-button>
               </div>
-              <ion-badge color="medium" mode="ios">{{ game.platforms.length || 0 }} plataforma{{ (game.platforms.length || 0) === 1 ? '' : 's' }}</ion-badge>
-            </div>
-
-            <section class="game-list__section" aria-label="Plataformas">
-              <span class="game-list__section-title">Plataformas</span>
-              <div class="game-list__chips">
-                <ion-chip *ngFor="let platform of game.platforms" color="primary" mode="ios">
-                  <ion-icon name="hardware-chip-outline"></ion-icon>
-                  <ion-label>{{ platform.name }}</ion-label>
-                </ion-chip>
-              </div>
-            </section>
-
-            <section class="game-list__section" aria-label="Gêneros">
-              <span class="game-list__section-title">Gêneros</span>
-              <div class="game-list__chips">
-                <ion-chip *ngFor="let genre of game.genres" color="tertiary" mode="ios">
-                  <ion-icon name="color-filter-outline"></ion-icon>
-                  <ion-label>{{ genre.name }}</ion-label>
-                </ion-chip>
-                <span *ngIf="!game.genres?.length" class="game-list__empty-chip">Sem gêneros associados</span>
-              </div>
-            </section>
-
-            <section class="game-list__section" aria-label="Tipos">
-              <span class="game-list__section-title">Tipos</span>
-              <div class="game-list__chips">
-                <ion-chip *ngFor="let type of game.types" color="secondary" mode="ios">
-                  <ion-icon name="game-controller-outline"></ion-icon>
-                  <ion-label>{{ type.name }}</ion-label>
-                </ion-chip>
-                <span *ngIf="!game.types?.length" class="game-list__empty-chip">Sem tipos associados</span>
-              </div>
-            </section>
-
-            <section class="game-list__section" *ngIf="game.description" aria-label="Descrição">
-              <span class="game-list__section-title">Descrição</span>
-              <p class="game-list__description">{{ game.description | slice:0:220 }}<span *ngIf="game.description && game.description.length > 220">…</span></p>
-            </section>
-          </ion-label>
-
-          <div class="game-list__actions" slot="end">
-            <ion-button fill="clear" color="secondary" (click)="onEdit(game)">
-              <ion-icon name="create-outline"></ion-icon>
-            </ion-button>
-            <ion-button fill="clear" color="danger" [disabled]="processing" (click)="onRemove(game)">
-              <ion-icon name="trash-outline"></ion-icon>
-            </ion-button>
+            </ion-item>
           </div>
-        </ion-item>
-      </ion-list>
+        </cdk-virtual-scroll-viewport>
+      </div>
     </ng-container>
 
     <ng-template #emptyState>

@@ -33,7 +33,7 @@ export class JogadorPerfilPage implements OnInit {
 
   ngOnInit() {
     this.carregarFavoritos();
-    this.gamesService.list().subscribe(jogos => this.todosJogos = jogos);
+  this.gamesService.list({ pageSize: 200, order: 'name' }).subscribe(jogos => this.todosJogos = jogos);
   }
 
   carregarFavoritos() {
