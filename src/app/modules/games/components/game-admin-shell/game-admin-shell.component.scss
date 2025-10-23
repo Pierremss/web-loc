@@ -3,14 +3,16 @@
 }
 
 .games-admin {
-  background: linear-gradient(155deg, rgba(30, 34, 74, 0.88), rgba(12, 14, 32, 0.92));
-  backdrop-filter: blur(22px);
+  background: var(--app-surface-base);
+  border: 1px solid var(--app-glass-border, rgba(98, 108, 140, 0.18));
   border-radius: 18px;
   padding: 24px;
-  box-shadow: var(--app-shadow-lg, 0 24px 48px rgba(0, 0, 0, 0.24));
+  box-shadow: var(--app-shadow-lg, 0 24px 48px rgba(0, 0, 0, 0.18));
+  backdrop-filter: blur(18px);
   max-width: 1200px;
   margin: 0 auto;
   color: var(--ion-text-color);
+  transition: background 220ms ease, color 220ms ease, border-color 220ms ease;
 
   &__header {
     display: flex;
@@ -73,9 +75,10 @@
   }
 
   &__loading-card {
-    --background: var(--webloc-surface-elevated, rgba(18, 18, 28, 0.9));
+    --background: var(--webloc-surface-elevated, rgba(255, 255, 255, 0.86));
     --border-radius: 16px;
     margin-top: 16px;
+    --color: var(--ion-text-color);
   }
 
   &__modal::part(content) {
@@ -86,15 +89,16 @@
 
   ion-searchbar {
     flex: 1 1 320px;
-    --background: rgba(255, 255, 255, 0.08);
-    --color: var(--ion-text-color, #f6f7ff);
-    --placeholder-color: rgba(255, 255, 255, 0.55);
+    --background: rgba(var(--ion-background-color-rgb, 248, 250, 252), 0.92);
+    --color: var(--ion-text-color, #0b1220);
+    --placeholder-color: rgba(var(--ion-text-color-rgb, 11, 18, 32), 0.56);
     --placeholder-opacity: 1;
-    --icon-color: rgba(255, 255, 255, 0.7);
+    --icon-color: rgba(var(--ion-text-color-rgb, 11, 18, 32), 0.62);
     border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    box-shadow: 0 14px 28px rgba(9, 11, 30, 0.4);
-    backdrop-filter: blur(18px);
+    border: 1px solid var(--app-glass-border, rgba(98, 108, 140, 0.18));
+    box-shadow: var(--app-shadow-sm, 0 12px 20px rgba(15, 23, 42, 0.12));
+    backdrop-filter: saturate(1.05) blur(14px);
+    transition: border-color 220ms ease, box-shadow 220ms ease;
   }
 
   ion-chip {
@@ -113,5 +117,25 @@
     &__cta {
       width: 100%;
     }
+  }
+}
+
+:host-context(.dark) .games-admin {
+  background: linear-gradient(160deg, rgba(24, 30, 56, 0.82), rgba(18, 23, 46, 0.94));
+  border-color: rgba(132, 148, 220, 0.22);
+  box-shadow: var(--app-shadow-md, 0 22px 44px rgba(0, 0, 0, 0.38));
+
+  ion-searchbar {
+    --background: rgba(28, 34, 64, 0.82);
+    --color: var(--ion-text-color, #e5e7eb);
+    --placeholder-color: rgba(var(--ion-text-color-rgb, 229, 231, 235), 0.58);
+    --icon-color: rgba(var(--ion-text-color-rgb, 229, 231, 235), 0.72);
+    border: 1px solid rgba(132, 148, 220, 0.24);
+    box-shadow: var(--app-shadow-sm, 0 20px 40px rgba(2, 10, 32, 0.42));
+  }
+
+  &__loading-card {
+    --background: rgba(24, 26, 46, 0.92);
+    --color: var(--ion-text-color);
   }
 }

@@ -1,11 +1,20 @@
 :host {
   ion-content {
-    --background: linear-gradient(140deg, rgba(19, 18, 46, 0.92) 0%, rgba(9, 16, 35, 0.96) 50%, rgba(6, 10, 24, 0.98) 100%),
-      radial-gradient(circle at 18% -10%, rgba(106, 104, 255, 0.32), transparent 60%),
-      radial-gradient(circle at 82% -8%, rgba(0, 173, 255, 0.28), transparent 58%),
-      #070916;
-    background-blend-mode: screen, lighten;
+    --background:
+      radial-gradient(120% 120% at 10% -40%, rgba(var(--ion-color-primary-rgb, 138, 93, 255), 0.16), transparent 65%),
+      radial-gradient(120% 120% at 85% -20%, rgba(var(--ion-color-secondary-rgb, 34, 211, 238), 0.12), transparent 70%),
+      var(--ion-background-color);
+    background: var(--background);
   }
+}
+
+:host-context(.dark) ion-content {
+  --background:
+    linear-gradient(150deg, rgba(18, 22, 44, 0.95) 0%, rgba(10, 14, 30, 0.98) 70%, rgba(6, 10, 24, 1) 100%),
+    radial-gradient(circle at 18% -10%, rgba(106, 104, 255, 0.24), transparent 60%),
+    radial-gradient(circle at 82% -8%, rgba(16, 198, 255, 0.22), transparent 58%),
+    #070916;
+  background: var(--background);
 }
 
 .games-list-page {

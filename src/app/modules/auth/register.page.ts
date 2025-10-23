@@ -97,6 +97,8 @@ export class RegisterPage implements OnInit {
         this.erros['email'] = 'E-mail é obrigatório.';
       } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.form.email)) {
         this.erros['email'] = 'E-mail inválido.';
+      } else if (this.isAdminEmail(this.form.email)) {
+        this.erros['email'] = 'Este endereço é reservado para o administrador.';
       }
       if (!this.form.password || this.form.password.trim() === '') {
         this.erros['password'] = 'Senha é obrigatória.';
@@ -141,6 +143,18 @@ export class RegisterPage implements OnInit {
     if (this.etapaAtual > 1) this.etapaAtual--;
   }
 
+  handleNavBack(): void {
+    if (this.etapaAtual > 1) {
+      this.voltarEtapa();
+    } else {
+      void this.router.navigateByUrl('/home');
+    }
+  }
+
+  goToHome(): void {
+    void this.router.navigateByUrl('/home');
+  }
+
   getAvailableTimes(): string {
     const normalized = this.normalizeScheduleMap(this.horariosSelecionados);
     this.horariosSelecionados = normalized;
@@ -153,6 +167,11 @@ export class RegisterPage implements OnInit {
     this.loading = true;
     this.error = '';
     this.errorDetails = '';
+    if (this.isAdminEmail(this.form.email)) {
+      this.loading = false;
+      this.error = 'Este endereço de e-mail não pode ser utilizado.';
+      return;
+    }
     const platformIds = this.normalizeIdArray(this.form.platforms);
     const favoriteIds = this.normalizeIdArray(this.form.jogos_favoritos);
     if (!platformIds.length) {
@@ -314,5 +333,9 @@ export class RegisterPage implements OnInit {
       })
       .filter((id: number) => Number.isInteger(id) && id > 0);
     return Array.from(new Set(ids));
+  }
+
+  private isAdminEmail(email: string): boolean {
+    return String(email ?? '').trim().toLowerCase() === 'admin@gmail.com';
   }
 }

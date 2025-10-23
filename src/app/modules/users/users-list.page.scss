@@ -1,30 +1,48 @@
 .users-list-page {
   color: var(--ion-text-color);
+  transition: color 200ms ease;
 
   .users-container {
-    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.006));
-    background-color: var(--ion-surface-color, #ffffff);
+    background: var(--app-surface-base);
+    border: 1px solid var(--app-glass-border, rgba(93,108,150,0.16));
     border-radius: 16px;
     padding: 32px 24px;
-    max-width: 440px;
-    margin: auto;
-    margin-top: 5vh;
+    max-width: 480px;
+    margin: 5vh auto 0;
     box-shadow: var(--app-shadow-lg);
     text-align: center;
     display: flex;
     flex-direction: column;
     gap: 16px;
+    backdrop-filter: blur(18px);
+    transition: background 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
   }
-  .header { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+
+  .header { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
   .logo h1 { font-family: 'Orbitron', sans-serif; font-size: 2.2rem; color: var(--ion-color-primary); margin-bottom: 4px; }
   .subtitulo { font-size: 1rem; color: var(--ion-color-medium); margin-bottom: 24px; }
   .btn-back { --color: var(--ion-text-color); --padding-start: 6px; font-weight: 600; }
-  .btn-secondary { --background: #555; --border-radius: 12px; --box-shadow: 0 4px 12px rgba(0,0,0,0.12); font-weight: bold; font-size: 0.95rem; margin-top: 8px; }
+
+  .btn-secondary {
+    --background: var(--ion-color-secondary, #22d3ee);
+    --color: var(--ion-color-secondary-contrast, #082032);
+    --border-radius: 12px;
+    --box-shadow: 0 10px 24px rgba(34, 211, 238, 0.25);
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-top: 8px;
+  }
 
   .search-form {
     margin-top: 16px;
 
-    ion-item { --background: var(--webloc-input-bg); --color: var(--webloc-input-color); border-radius: 8px; margin-top: 8px;
+    ion-item {
+      --background: var(--webloc-input-bg);
+      --color: var(--webloc-input-color);
+      border-radius: 10px;
+      margin-top: 8px;
+      transition: background 180ms ease;
+
       ion-label { color: var(--ion-color-medium); }
       ion-input { color: var(--webloc-input-color); }
     }
@@ -34,13 +52,63 @@
     --background: transparent;
     margin-top: 16px;
 
-      .user-item { --background: var(--webloc-input-bg); border-radius: 8px; margin-bottom: 8px; --inner-padding-end: 8px;
-      ion-label { color: var(--ion-text-color);
-        h2 { color: var(--ion-text-color); margin-bottom: 4px; small { color: var(--ion-color-primary); } }
+    .user-item {
+      --background: var(--webloc-input-bg);
+      border-radius: 10px;
+      margin-bottom: 12px;
+      --inner-padding-end: 8px;
+      border: 1px solid transparent;
+      transition: transform 150ms ease, border-color 150ms ease;
+
+      &:hover { transform: translateY(-1px); border-color: rgba(var(--ion-text-color-rgb, 11, 18, 32), 0.08); }
+
+      ion-label {
+        color: var(--ion-text-color);
+
+        h2 {
+          color: var(--ion-text-color);
+          margin-bottom: 4px;
+
+          small { color: var(--ion-color-primary); }
+        }
+
         p { color: var(--ion-color-medium); }
       }
 
-      .btn-remove { --background: #dc3545; --border-radius: 8px; font-weight: bold; }
+      .btn-remove {
+        --background: var(--ion-color-danger, #dc2626);
+        --color: #fff;
+        --border-radius: 10px;
+        --box-shadow: 0 10px 20px rgba(220, 38, 38, 0.2);
+        font-weight: 600;
+      }
+    }
+  }
+}
+
+:host-context(.dark) .users-list-page {
+  .users-container {
+    background: linear-gradient(165deg, rgba(22, 26, 46, 0.9), rgba(16, 19, 34, 0.92));
+    border-color: rgba(146, 163, 206, 0.18);
+    box-shadow: var(--app-shadow-md, 0 24px 48px rgba(0, 0, 0, 0.42));
+  }
+
+  .btn-secondary {
+    --background: rgba(110, 168, 254, 0.18);
+    --color: var(--ion-color-secondary, #b08cff);
+    --box-shadow: 0 12px 30px rgba(15, 23, 42, 0.36);
+  }
+
+  .users-list {
+    .user-item {
+      border-color: rgba(146, 163, 206, 0.1);
+
+      &:hover { border-color: rgba(146, 163, 206, 0.32); }
+
+      .btn-remove {
+        --background: rgba(220, 38, 38, 0.82);
+        --box-shadow: 0 20px 36px rgba(220, 38, 38, 0.38);
+      }
     }
   }
 }

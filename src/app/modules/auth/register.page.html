@@ -1,6 +1,16 @@
 <ion-content class="register-page" fullscreen>
   <div class="layout-container register-wrapper">
     <section class="register-card surface-card stack stack-lg fadein">
+      <div class="register-nav">
+        <ion-button fill="clear" class="nav-btn nav-btn--back" (click)="handleNavBack()">
+          <ion-icon slot="start" name="arrow-back-outline"></ion-icon>
+          <span>{{ etapaAtual === 1 ? 'Voltar' : 'Etapa anterior' }}</span>
+        </ion-button>
+        <ion-button *ngIf="etapaAtual > 1" fill="clear" class="nav-btn nav-btn--home" (click)="goToHome()">
+          <ion-icon slot="start" name="home-outline"></ion-icon>
+          <span>Menu principal</span>
+        </ion-button>
+      </div>
       <header class="logo stack">
         <h1>WebLoc</h1>
         <p class="subtitle">Crie sua conta</p>
