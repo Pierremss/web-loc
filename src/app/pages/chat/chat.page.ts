@@ -27,7 +27,10 @@ export class ChatPage implements OnInit, OnDestroy {
   newMessages = 0;
   replyingTo: any | null = null;
   messageMap: Record<number, any> = {};
-  private swipeTracker: { pointerId: number; startX: number; startY: number; message: any; triggered: boolean } | null = null;
+  private swipeTracker: { pointerId: number; startX: number; startY: number; message: any; triggered: boolean; lastOffset: number } | null = null;
+  private readonly swipeTriggerThreshold = 64;
+  private readonly swipeMaxOffset = 120;
+  private readonly swipeVerticalTolerance = 80;
 
   private readonly timeFormatter = new Intl.DateTimeFormat('pt-BR', {
     hour: '2-digit',
@@ -278,7 +281,9 @@ export class ChatPage implements OnInit, OnDestroy {
       startY: ev.clientY,
       message,
       triggered: false,
+      lastOffset: 0,
     };
+    this.prepareSwipeVisual(message);
   }
 
   onBubblePointerMove(ev: PointerEvent) {
@@ -287,7 +292,11 @@ export class ChatPage implements OnInit, OnDestroy {
     }
     const dx = ev.clientX - this.swipeTracker.startX;
     const dy = ev.clientY - this.swipeTracker.startY;
-    if (!this.swipeTracker.triggered && dx > 60 && Math.abs(dy) < 45) {
+    const offset = dx > 0 ? Math.min(dx, this.swipeMaxOffset) : 0;
+    this.applySwipeOffset(this.swipeTracker.message, offset);
+    this.swipeTracker.lastOffset = offset;
+    const verticalDistance = Math.abs(dy);
+    if (!this.swipeTracker.triggered && offset >= this.swipeTriggerThreshold && verticalDistance < this.swipeVerticalTolerance) {
       this.swipeTracker.triggered = true;
       this.startReply(this.swipeTracker.message);
     }
@@ -295,6 +304,7 @@ export class ChatPage implements OnInit, OnDestroy {
 
   onBubblePointerEnd(ev: PointerEvent) {
     if (this.swipeTracker && this.swipeTracker.pointerId === ev.pointerId) {
+      this.finalizeSwipeVisual(this.swipeTracker.message, this.swipeTracker.lastOffset > 0);
       this.swipeTracker = null;
     }
   }
@@ -304,8 +314,77 @@ export class ChatPage implements OnInit, OnDestroy {
       return;
     }
     if (!ev || this.swipeTracker.pointerId === ev.pointerId) {
+      this.finalizeSwipeVisual(this.swipeTracker.message, this.swipeTracker.lastOffset > 0);
       this.swipeTracker = null;
     }
+  }
+
+  private prepareSwipeVisual(message: any) {
+    if (!message) {
+      return;
+    }
+    this.clearSwipeVisualState(message);
+    message.__swipeActive = true;
+  }
+
+  private applySwipeOffset(message: any, offset: number) {
+    if (!message) {
+      return;
+    }
+    const clamped = Math.max(0, Math.min(offset, this.swipeMaxOffset));
+    const eased = clamped <= this.swipeTriggerThreshold
+      ? clamped
+      : this.swipeTriggerThreshold + (clamped - this.swipeTriggerThreshold) * 0.35;
+    message.__swipeOffset = eased;
+  }
+
+  private finalizeSwipeVisual(message: any, animate: boolean) {
+    if (!message) {
+      return;
+    }
+    if (!animate) {
+      this.clearSwipeVisualState(message);
+      return;
+    }
+    if (message.__swipeReleaseTimer) {
+      clearTimeout(message.__swipeReleaseTimer);
+    }
+    message.__swipeActive = false;
+    message.__swipeReleasing = true;
+    message.__swipeOffset = 0;
+    message.__swipeReleaseTimer = setTimeout(() => {
+      message.__swipeReleasing = false;
+      message.__swipeReleaseTimer = undefined;
+    }, 180);
+  }
+
+  private clearSwipeVisualState(message: any) {
+    if (!message) {
+      return;
+    }
+    if (message.__swipeReleaseTimer) {
+      clearTimeout(message.__swipeReleaseTimer);
+      message.__swipeReleaseTimer = undefined;
+    }
+    message.__swipeOffset = 0;
+    message.__swipeActive = false;
+    message.__swipeReleasing = false;
+  }
+
+  getSwipeTransform(message: any) {
+    if (!message) {
+      return null;
+    }
+    const offset = Number(message.__swipeOffset) || 0;
+    return offset ? `translateX(${offset}px)` : null;
+  }
+
+  isSwipeActive(message: any) {
+    return !!message?.__swipeActive;
+  }
+
+  isSwipeReleasing(message: any) {
+    return !!message?.__swipeReleasing;
   }
 
   private registerMessage(message: any) {

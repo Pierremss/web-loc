@@ -1,9 +1,26 @@
 <ion-header>
-  <ion-toolbar>
-    <ion-buttons slot="start">
-      <ion-menu-button></ion-menu-button>
+  <ion-toolbar class="chat-toolbar">
+    <ion-buttons slot="start" class="chat-toolbar-back">
+      <ion-back-button
+        defaultHref="/conversations"
+        text=""
+        aria-label="Voltar"
+      ></ion-back-button>
     </ion-buttons>
-    <ion-title>Chat</ion-title>
+    <ion-title>
+      <div class="chat-toolbar-profile" aria-live="polite">
+        <img
+          class="chat-toolbar-avatar"
+          [src]="peerAvatar"
+          [alt]="peerName"
+          (error)="onAvatarError($event)"
+        />
+        <div class="chat-toolbar-text">
+          <span class="chat-toolbar-name">{{ peerName }}</span>
+          <span class="chat-toolbar-subtitle" *ngIf="isTyping">Digitando…</span>
+        </div>
+      </div>
+    </ion-title>
   </ion-toolbar>
 </ion-header>
 
@@ -19,6 +36,9 @@
             class="bubble"
             [class.mine]="m.sender_id === auth.user?.id"
             [class.reply-source]="replyingTo?.id === m.id"
+            [class.swipe-active]="isSwipeActive(m)"
+            [class.swipe-releasing]="isSwipeReleasing(m)"
+            [style.transform]="getSwipeTransform(m)"
             (pointerdown)="onBubblePointerDown($event, m)"
             (pointermove)="onBubblePointerMove($event)"
             (pointerup)="onBubblePointerEnd($event)"
@@ -65,9 +85,6 @@
                     </div>
                   </ng-template>
                 </ng-container>
-                <div class="header" *ngIf="m.sender_id !== auth.user?.id">
-                  <span class="name">{{ peerName }}</span>
-                </div>
                 <div class="text">{{ m.content }}</div>
                 <div class="meta">
                   <span class="time">{{ m.__displayTime }}</span>
@@ -122,7 +139,7 @@
 </ion-content>
 
 <ion-footer class="chat-input">
-  <ion-toolbar>
+  <ion-toolbar class="composer-toolbar">
     <ion-item class="reply-banner" lines="none" *ngIf="replyingTo">
       <div class="reply-banner-content">
         <span class="reply-banner-label">
@@ -136,19 +153,19 @@
         <ion-icon slot="icon-only" name="close"></ion-icon>
       </ion-button>
     </ion-item>
-    <ion-item lines="none">
+    <ion-item class="composer-item" lines="none">
       <ion-input
         placeholder="Mensagem"
         [(ngModel)]="content"
         (ionInput)="onTyping()"
         (keyup.enter)="send()"
       ></ion-input>
-      <ion-button (click)="send()" [disabled]="!content.trim()">
+      <ion-button class="send-btn" (click)="send()" [disabled]="!content.trim()">
         <ion-icon name="send-outline"></ion-icon>
       </ion-button>
     </ion-item>
-    <ion-item lines="none" *ngIf="isTyping">
+    <div class="typing" *ngIf="isTyping">
       <ion-text color="medium">Digitando…</ion-text>
-    </ion-item>
+    </div>
   </ion-toolbar>
 </ion-footer>
