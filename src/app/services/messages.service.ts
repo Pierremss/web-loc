@@ -14,8 +14,12 @@ export class MessagesService {
     return this.http.get<any[]>(`${this.base}/conversation/${userId}`, { params });
   }
 
-  send(toUserId: number, content: string) {
-    return this.http.post(`${this.base}/send`, { toUserId, content });
+  send(toUserId: number, content: string, replyToId?: number) {
+    const body: any = { toUserId, content };
+    if (replyToId) {
+      body.replyToId = replyToId;
+    }
+    return this.http.post(`${this.base}/send`, body);
   }
 
   markRead(messageId: number) {

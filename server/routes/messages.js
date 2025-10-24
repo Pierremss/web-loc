@@ -26,12 +26,27 @@ router.get('/conversation/:userId', ensureAuth, async (req, res) => {
 router.post('/send', ensureAuth,
   body('toUserId').isInt({ min: 1 }),
   body('content').isString().isLength({ min: 1, max: 2000 }),
+  body('replyToId').optional().isInt({ min: 1 }),
+  body('reply_to_id').optional().isInt({ min: 1 }),
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
     const fromId = Number(req.user.id);
     const toId = Number(req.body.toUserId);
     const content = String(req.body.content);
+    const replyToRaw = req.body.reply_to_id ?? req.body.replyToId ?? null;
+
+    let replyToId = null;
+    if (replyToRaw) {
+      const candidateId = Number(replyToRaw);
+      const [[replyMsg]] = await pool.query('SELECT * FROM messages WHERE id = ?', [candidateId]);
+      if (!replyMsg) return res.status(404).json({ error: 'reply_not_found' });
+      const participants = [replyMsg.sender_id, replyMsg.receiver_id];
+      if (!participants.includes(fromId) || !participants.includes(toId)) {
+        return res.status(400).json({ error: 'reply_out_of_context' });
+      }
+      replyToId = candidateId;
+    }
 
     // Opcional: validar que são amigos (não-direcional)
     const [friends] = await pool.query(
@@ -40,7 +55,7 @@ router.post('/send', ensureAuth,
     );
     if (!friends.length) return res.status(403).json({ error: 'Usuários não são amigos' });
 
-    const [result] = await pool.query('INSERT INTO messages (sender_id, receiver_id, content) VALUES (?, ?, ?)', [fromId, toId, content]);
+    const [result] = await pool.query('INSERT INTO messages (sender_id, receiver_id, content, reply_to_id) VALUES (?, ?, ?, ?)', [fromId, toId, content, replyToId]);
     const [rows] = await pool.query('SELECT * FROM messages WHERE id = ?', [result.insertId]);
 
     // Realtime: se socket estiver configurado, emita evento (será feito no módulo realtime)

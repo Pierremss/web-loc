@@ -154,6 +154,84 @@
 	}
 }
 
+:host-context(body:not(.dark)) {
+	.conversations-page {
+		--background: linear-gradient(185deg, #f8fafc 0%, #e2e8f0 100%);
+		color: rgba(15, 23, 42, 0.94);
+	}
+
+	.conversations-hero h1 {
+		color: rgba(15, 23, 42, 0.95);
+	}
+
+	.conversations-hero p {
+		color: rgba(71, 85, 105, 0.78);
+	}
+
+	.conversations-section {
+		background: linear-gradient(175deg, rgba(255, 255, 255, 0.96), rgba(241, 245, 249, 0.88));
+		border: 1px solid rgba(148, 163, 184, 0.16);
+		box-shadow: 0 26px 60px rgba(15, 23, 42, 0.12);
+	}
+
+	.create-block {
+		background: rgba(248, 250, 252, 0.92);
+		border: 1px solid rgba(148, 163, 184, 0.16);
+	}
+
+	.create-header h2 {
+		color: rgba(15, 23, 42, 0.92);
+	}
+
+	.create-header p,
+	.create-actions ion-toggle,
+	.create-block p {
+		color: rgba(71, 85, 105, 0.8);
+	}
+
+	.input-row {
+		--background: rgba(241, 245, 249, 0.92);
+		--border-color: rgba(148, 163, 184, 0.34);
+		--color: rgba(15, 23, 42, 0.9);
+	}
+
+	.btn-pill {
+		--box-shadow: 0 16px 32px rgba(99, 102, 241, 0.22);
+	}
+
+	.rooms-list {
+		gap: 12px;
+	}
+
+	.room-item {
+		--background: rgba(241, 245, 249, 0.88);
+		border: 1px solid rgba(148, 163, 184, 0.2);
+		box-shadow: 0 14px 34px rgba(15, 23, 42, 0.12);
+	}
+
+	.room-item:hover {
+		box-shadow: 0 22px 46px rgba(15, 23, 42, 0.18);
+	}
+
+	.room-item h3 {
+		color: rgba(15, 23, 42, 0.92);
+	}
+
+	.room-item p {
+		color: rgba(71, 85, 105, 0.72);
+	}
+
+	.empty-state {
+		background: rgba(248, 250, 252, 0.94);
+		border: 1px solid rgba(148, 163, 184, 0.18);
+		color: rgba(71, 85, 105, 0.78);
+	}
+
+	.empty-state ion-icon {
+		color: rgba(99, 102, 241, 0.6);
+	}
+}
+
 @media (max-width: 600px) {
 	.create-actions {
 		flex-direction: column;

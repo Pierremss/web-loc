@@ -18,6 +18,221 @@
   }
 }
 
+:host-context(body:not(.dark)) {
+  ion-content.swipe-page {
+    --background: linear-gradient(170deg, rgba(248, 250, 252, 0.98) 0%, rgba(226, 232, 240, 0.9) 100%);
+    color: rgba(15, 23, 42, 0.94);
+
+    &::before {
+      background:
+        radial-gradient(115% 115% at 50% -14%, rgba(99, 102, 241, 0.16) 0%, transparent 62%),
+        radial-gradient(80% 80% at 85% 30%, rgba(14, 165, 233, 0.15) 0%, transparent 72%),
+        radial-gradient(90% 90% at 15% 80%, rgba(244, 114, 182, 0.14) 0%, transparent 74%);
+    }
+  }
+
+  .swipe-shell {
+    &::before {
+      background: linear-gradient(120deg, rgba(148, 163, 184, 0.18), rgba(99, 102, 241, 0.12) 55%, transparent 100%);
+    }
+  }
+
+  .swipe-intro {
+    background: rgba(255, 255, 255, 0.94);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    box-shadow: 0 28px 60px rgba(15, 23, 42, 0.14);
+    color: rgba(30, 41, 59, 0.95);
+  }
+
+  .swipe-intro .headline h1 {
+    color: rgba(15, 23, 42, 0.95);
+  }
+
+  .swipe-intro .headline p {
+    color: rgba(71, 85, 105, 0.78);
+  }
+
+  .intro-actions ion-button {
+    --background: rgba(241, 245, 249, 0.92);
+    --background-hover: rgba(226, 232, 240, 0.92);
+    --background-activated: rgba(226, 232, 240, 0.9);
+    --color: rgba(30, 41, 59, 0.92);
+    box-shadow: 0 18px 40px rgba(148, 163, 184, 0.22);
+  }
+
+  .intro-actions ion-button.ion-color-primary {
+    --color: #fff;
+  }
+
+  .filters-summary {
+    background: rgba(255, 255, 255, 0.94);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    box-shadow: 0 26px 50px rgba(15, 23, 42, 0.12);
+  }
+
+  .filters-summary ion-chip {
+    --color: rgba(72, 61, 139, 0.86);
+    --background: rgba(224, 231, 255, 0.85);
+    --border-color: rgba(99, 102, 241, 0.24);
+  }
+
+  .filters-summary .summary-tags ion-badge {
+    --background: rgba(241, 245, 249, 0.92);
+    --color: rgba(30, 41, 59, 0.85);
+  }
+
+  .stack-card {
+    background: rgba(255, 255, 255, 0.86);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    box-shadow: 0 28px 56px rgba(148, 163, 184, 0.18);
+  }
+
+  .compatibility .details {
+    color: rgba(71, 85, 105, 0.78);
+  }
+
+  .compat-chip {
+    --background: rgba(34, 197, 94, 0.16);
+    --color: rgba(5, 122, 85, 0.86);
+    --border-color: rgba(34, 197, 94, 0.34);
+  }
+
+  .player-card {
+    background: linear-gradient(175deg, rgba(255, 255, 255, 0.96), rgba(241, 245, 249, 0.88));
+    box-shadow: 0 36px 80px rgba(148, 163, 184, 0.22);
+    border: 1px solid rgba(148, 163, 184, 0.22);
+  }
+
+  .player-card .gradient {
+    background: linear-gradient(to top, rgba(248, 250, 252, 0.9) 0%, rgba(248, 250, 252, 0) 55%);
+  }
+
+  .player-card .info {
+    color: rgba(15, 23, 42, 0.96);
+    text-shadow: none;
+  }
+
+  .player-card .header h2,
+  .player-card .nickname {
+    color: rgba(15, 23, 42, 0.95);
+  }
+
+  .player-card .meta ion-chip {
+    --background: rgba(226, 232, 240, 0.78);
+    --color: rgba(30, 41, 59, 0.9);
+  }
+
+  .player-card .bio {
+    color: rgba(71, 85, 105, 0.82);
+  }
+
+  .player-card .availability {
+    color: rgba(51, 65, 85, 0.86);
+  }
+
+  .overlay.like {
+    background: rgba(34, 197, 94, 0.14);
+    box-shadow: 0 20px 40px rgba(34, 197, 94, 0.18);
+    color: rgba(5, 122, 85, 0.85);
+  }
+
+  .overlay.pass {
+    background: rgba(248, 113, 113, 0.16);
+    box-shadow: 0 20px 40px rgba(248, 113, 113, 0.2);
+    color: rgba(185, 28, 28, 0.78);
+  }
+
+  .info-footer .tag {
+    background: rgba(226, 232, 240, 0.88);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    color: rgba(51, 65, 85, 0.86);
+  }
+
+  .info-footer .tag ion-icon {
+    color: rgba(99, 102, 241, 0.75);
+  }
+
+  .actions ion-button.fab {
+    box-shadow: 0 28px 52px rgba(148, 163, 184, 0.24);
+  }
+
+  .actions ion-button.fab.pass {
+    --background: rgba(248, 113, 113, 0.18);
+    color: rgba(220, 38, 38, 0.82);
+  }
+
+  .actions ion-button.fab.rewind {
+    --background: rgba(226, 232, 240, 0.9);
+    color: rgba(51, 65, 85, 0.82);
+  }
+
+  .empty-state {
+    background: radial-gradient(120% 120% at 50% 10%, rgba(99, 102, 241, 0.12) 0%, rgba(255, 255, 255, 0) 65%);
+  }
+
+  .empty-card {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    box-shadow: 0 28px 70px rgba(148, 163, 184, 0.24);
+    color: rgba(15, 23, 42, 0.95);
+  }
+
+  .empty-card .icon-wrap {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.18), rgba(59, 130, 246, 0.22));
+    color: rgba(59, 130, 246, 0.92);
+  }
+
+  .empty-card h2 {
+    color: rgba(15, 23, 42, 0.95);
+  }
+
+  .empty-card p {
+    color: rgba(71, 85, 105, 0.78);
+  }
+
+  .empty-card ion-button {
+    --box-shadow: 0 24px 48px rgba(99, 102, 241, 0.2);
+  }
+
+  .empty-card ion-spinner {
+    --color: rgba(30, 41, 59, 0.88);
+  }
+
+  .skeleton-list ion-item {
+    --background: rgba(226, 232, 240, 0.8);
+  }
+
+  .profile-modal {
+    background: #f8fafc;
+    color: rgba(15, 23, 42, 0.92);
+  }
+
+  .profile-modal .profile-hero img {
+    box-shadow: 0 20px 40px rgba(148, 163, 184, 0.26);
+  }
+
+  .profile-modal section p,
+  .profile-modal section ul {
+    color: rgba(71, 85, 105, 0.8);
+  }
+
+  .filters-modal {
+    background: #f1f5f9;
+  }
+
+  .filters-modal ion-item {
+    --background: rgba(255, 255, 255, 0.95);
+    --color: rgba(30, 41, 59, 0.92);
+  }
+
+  .filters-modal ion-range {
+    --bar-background: rgba(59, 130, 246, 0.2);
+    --bar-background-active: rgba(59, 130, 246, 0.8);
+    --knob-background: rgba(59, 130, 246, 0.9);
+    --knob-box-shadow: 0 10px 26px rgba(59, 130, 246, 0.26);
+  }
+}
+
 .swipe-shell {
   min-height: 100%;
   padding: 24px 20px 120px;

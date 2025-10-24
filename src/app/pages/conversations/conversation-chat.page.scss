@@ -8,19 +8,37 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		background: rgba(26,33,58,0.8);
-		border: 1px solid rgba(146,163,206,0.25);
-		font-size: 0.75rem;
+		background: rgba(26,33,58,0.82);
+		border: 1px solid rgba(146,163,206,0.32);
+		font-size: 0.72rem;
 		font-weight: 600;
-		color: rgba(193,205,243,0.82);
+		color: rgba(193,205,243,0.86);
 		padding: 0 6px;
 	}
 
+	.bubble {
+		border-radius: 22px;
+	}
+
 	.bubble .header {
-		margin-bottom: 4px;
+		gap: 6px;
 	}
 
 	.bubble .text {
 		font-size: 0.95rem;
+	}
+
+	.bubble .meta {
+		justify-content: flex-end;
+	}
+}
+
+:host-context(body:not(.dark)) {
+	.conversation-chat {
+		.avatar-fallback {
+			background: rgba(226, 232, 240, 0.86);
+			border: 1px solid rgba(191, 200, 217, 0.55);
+			color: rgba(45, 55, 72, 0.88);
+		}
 	}
 }

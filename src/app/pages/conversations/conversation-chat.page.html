@@ -29,10 +29,19 @@
 </ion-content>
 
 <ion-footer class="chat-input">
-  <ion-toolbar>
-    <ion-input placeholder="Mensagem" [(ngModel)]="content" (ionInput)="onTyping()"></ion-input>
-    <ion-buttons slot="end">
-      <ion-button (click)="send()" [disabled]="!content.trim()">Enviar</ion-button>
-    </ion-buttons>
+  <ion-toolbar class="composer-toolbar">
+    <div class="composer">
+      <ion-input
+        placeholder="Digite uma mensagem elegante"
+        [(ngModel)]="content"
+        (ionInput)="onTyping()"
+        (keyup.enter)="send()"
+        clearInput="true"
+        enterkeyhint="send"
+      ></ion-input>
+      <ion-button class="send-btn" (click)="send()" [disabled]="!content.trim()" aria-label="Enviar mensagem">
+        <ion-icon name="send"></ion-icon>
+      </ion-button>
+    </div>
   </ion-toolbar>
 </ion-footer>

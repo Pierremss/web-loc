@@ -80,6 +80,12 @@
           Amigos
         </ion-button>
 
+        <ion-button *ngIf="!auth.isAdmin() && !loading" expand="block" routerLink="/conversations" class="btn-primary pill">
+          <ion-icon name="people-circle-outline" slot="start"></ion-icon>
+          Salas
+        </ion-button>
+        
+
         <ion-button *ngIf="!loading" expand="block" color="medium" (click)="auth.logout(); navigateToLogin()" class="btn-secondary pill btn-outline">
           <ion-icon name="log-out-outline" slot="start"></ion-icon>
           Sair
