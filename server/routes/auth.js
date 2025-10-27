@@ -6,6 +6,7 @@ import { body, validationResult } from 'express-validator';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { pool } from '../db.js';
+import { issueVerificationCode, CODE_EXPIRATION_MINUTES } from '../services/email-verification.js';
 
 const router = Router();
 
@@ -141,13 +142,28 @@ router.post('/register',
           await pool.query('INSERT INTO user_games (user_id, game_id) VALUES (?,?)', [userId, gameId]);
         }
       }
-  // Buscar todos os dados do usuário recém cadastrado
-      const [userRows] = await pool.query('SELECT * FROM users WHERE id = ?', [userId]);
-      const user = userRows[0];
-      if (user && user.avatar_url && !/^https?:/i.test(user.avatar_url)) {
-        user.avatar_url = `${req.protocol}://${req.get('host')}${user.avatar_url}`;
+      let delivered = false;
+      let expiresAt = null;
+      try {
+        const issued = await issueVerificationCode(userId, email);
+        delivered = issued.delivered;
+        expiresAt = issued.expiresAt;
+      } catch (err) {
+        console.error('[auth] Cadastro criado, mas falha ao emitir código de verificação', err);
       }
-      return res.status(201).json(user);
+
+      return res.status(201).json({
+        success: true,
+        userId,
+        email,
+        requiresVerification: true,
+        delivered,
+        expiresAt,
+        expiresInMinutes: CODE_EXPIRATION_MINUTES,
+        message: delivered
+          ? 'Conta criada! Enviamos um código de verificação para o seu e-mail.'
+          : 'Conta criada! Gere um novo código de verificação para ativar seu acesso.'
+      });
     } catch (e) {
       return res.status(500).json({ error: 'Erro no cadastro', detail: e.message });
     }
@@ -183,6 +199,13 @@ router.post('/login',
       const user = rows[0];
       const ok = await bcrypt.compare(password, user.password_hash);
       if (!ok) return res.status(401).json({ error: 'Credenciais inválidas' });
+
+      if (!user.is_verified) {
+        return res.status(403).json({
+          error: 'E-mail não verificado. Confirme o código enviado para o seu e-mail.',
+          requiresVerification: true
+        });
+      }
 
       const token = jwt.sign({ id: user.id, email: user.email, is_admin: !!user.is_admin, name: user.name }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '2h' });
       let avatar = user.avatar_url;

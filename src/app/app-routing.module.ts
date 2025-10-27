@@ -16,14 +16,17 @@ const routes: Routes = [
   { path: 'users', component: UsersListPage, canActivate: [AuthGuard] },
   { path: 'games', component: GamesListPage, canActivate: [AdminGuard] },
   { path: 'home', component: HomePage },
+  { path: 'menu-admin', loadChildren: () => import('./pages/menu-admin/menu-admin.module').then(m => m.MenuAdminPageModule), canActivate: [AdminGuard] },
+  { path: 'admin/recomendacoes', loadChildren: () => import('./pages/admin-recomendacoes/admin-recomendacoes.module').then(m => m.AdminRecomendacoesPageModule), canActivate: [AdminGuard] },
   { path: 'friends', loadChildren: () => import('./pages/friends/friends.module').then(m => m.FriendsPageModule) },
   { path: 'rooms', loadChildren: () => import('./pages/rooms/rooms.module').then(m => m.RoomsListPageModule) },
   { path: 'chat/:id', loadChildren: () => import('./pages/chat/chat.module').then(m => m.ChatPageModule) },
   { path: 'conversations', loadChildren: () => import('./pages/conversations/conversations.module').then(m => m.ConversationsModule) },
   { path: 'user-profile/:id', loadChildren: () => import('./pages/user-profile/user-profile.module').then(m => m.UserProfilePageModule) },
   { path: 'jogador-perfil', loadChildren: () => import('./pages/jogador-perfil/jogador-perfil.module').then(m => m.JogadorPerfilPageModule) },
-  { path: 'editar-perfil', loadChildren: () => import('./pages/editar-perfil/editar-perfil.module').then(m => m.EditarPerfilPageModule) }
-  ,{ path: 'swipe', loadChildren: () => import('./pages/swipe/swipe.module').then(m => m.SwipePageModule) }
+  { path: 'editar-perfil', loadChildren: () => import('./pages/editar-perfil/editar-perfil.module').then(m => m.EditarPerfilPageModule) },
+  { path: 'swipe', loadChildren: () => import('./pages/swipe/swipe.module').then(m => m.SwipePageModule) },
+  { path: 'recomendar-jogo', loadChildren: () => import('./pages/recomendar-jogo/recomendar-jogo.module').then(m => m.RecomendarJogoPageModule) }
 ];
 
 @NgModule({

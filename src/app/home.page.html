@@ -70,6 +70,11 @@
           Gerenciar Usuários
         </ion-button>
 
+        <ion-button *ngIf="auth.isAdmin() && !loading" expand="block" routerLink="/admin/recomendacoes" class="btn-primary pill">
+          <ion-icon name="bulb-outline" slot="start"></ion-icon>
+          Recomendações dos jogadores
+        </ion-button>
+
         <ion-button *ngIf="!auth.isAdmin() && !loading" expand="block" routerLink="/jogador-perfil" class="btn-primary pill">
           <ion-icon name="person-outline" slot="start"></ion-icon>
           Meu Perfil
@@ -83,6 +88,11 @@
         <ion-button *ngIf="!auth.isAdmin() && !loading" expand="block" routerLink="/conversations" class="btn-primary pill">
           <ion-icon name="people-circle-outline" slot="start"></ion-icon>
           Salas
+        </ion-button>
+
+        <ion-button *ngIf="!auth.isAdmin() && !loading" expand="block" routerLink="/recomendar-jogo" class="btn-primary pill">
+          <ion-icon name="bulb-outline" slot="start"></ion-icon>
+          Recomendar jogo
         </ion-button>
         
 

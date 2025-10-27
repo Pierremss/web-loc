@@ -36,6 +36,14 @@ export class ChatPage implements OnInit, OnDestroy {
     hour: '2-digit',
     minute: '2-digit',
   });
+  private readonly shortDateFormatter = new Intl.DateTimeFormat('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
+  private readonly weekdayFormatter = new Intl.DateTimeFormat('pt-BR', {
+    weekday: 'long',
+  });
   private handlerNew: any;
   private handlerTyping: any;
   private handlerEdited: any;
@@ -61,6 +69,7 @@ export class ChatPage implements OnInit, OnDestroy {
         this.registerMessage(decorated);
         this.linkReplyPreview(decorated);
         this.messages.push(decorated);
+        this.injectDateMarkers();
         // confirma entrega
         socket.emit('message:delivered', { messageId: msg.id });
         // marca leitura imediata se chat estiver focado
@@ -91,6 +100,7 @@ export class ChatPage implements OnInit, OnDestroy {
           this.replyingTo = this.messages[i];
         }
         this.refreshReplyDependents(msg.id);
+        this.injectDateMarkers();
       }
     };
     this.handlerDeleted = ({ id }: any) => {
@@ -104,6 +114,7 @@ export class ChatPage implements OnInit, OnDestroy {
           this.clearReply();
         }
         this.refreshReplyDependents(id);
+        this.injectDateMarkers();
       }
     };
     this.handlerDelivered = ({ messageId }: any) => {
@@ -113,6 +124,7 @@ export class ChatPage implements OnInit, OnDestroy {
         this.decorateMessage(this.messages[i]);
         this.registerMessage(this.messages[i]);
         this.linkReplyPreview(this.messages[i]);
+        this.injectDateMarkers();
       }
     };
     this.handlerRead = ({ messageId }: any) => {
@@ -122,6 +134,7 @@ export class ChatPage implements OnInit, OnDestroy {
         this.decorateMessage(this.messages[i]);
         this.registerMessage(this.messages[i]);
         this.linkReplyPreview(this.messages[i]);
+        this.injectDateMarkers();
       }
     };
     socket.on('message:new', this.handlerNew);
@@ -151,10 +164,11 @@ export class ChatPage implements OnInit, OnDestroy {
         this.linkReplyPreview(decorated);
         return decorated;
       });
+      this.injectDateMarkers();
       this.replyingTo = null;
-      if (this.messages.length) {
-        const last = this.messages[this.messages.length - 1];
-        this.msgSvc.markRead(last.id).subscribe();
+      const lastMessage = [...this.messages].reverse().find(m => !m.__isMarker && m.id != null);
+      if (lastMessage) {
+        this.msgSvc.markRead(lastMessage.id).subscribe();
       }
       setTimeout(() => this.scrollToBottom(true), 0);
     });
@@ -163,12 +177,13 @@ export class ChatPage implements OnInit, OnDestroy {
   send() {
     const text = this.content.trim();
     if (!text) return;
-  const replyToId = this.replyingTo?.id != null ? Number(this.replyingTo.id) : undefined;
-  this.msgSvc.send(this.otherId, text, replyToId).subscribe((msg: any) => {
+    const replyToId = this.replyingTo?.id != null ? Number(this.replyingTo.id) : undefined;
+    this.msgSvc.send(this.otherId, text, replyToId).subscribe((msg: any) => {
       const decorated = this.decorateMessage(msg);
       this.registerMessage(decorated);
       this.linkReplyPreview(decorated);
       this.messages.push(decorated);
+      this.injectDateMarkers();
       this.content = '';
       this.replyingTo = null;
       Haptics.impact({ style: ImpactStyle.Medium }).catch(() => {});
@@ -195,6 +210,7 @@ export class ChatPage implements OnInit, OnDestroy {
       next: (updated: any) => {
         Object.assign(m, updated);
         this.decorateMessage(m);
+        this.injectDateMarkers();
       },
       error: (e) => alert('Não foi possível editar: ' + (e?.error?.error || e.message))
     });
@@ -206,6 +222,7 @@ export class ChatPage implements OnInit, OnDestroy {
       next: () => {
         m.deleted_at = new Date();
         this.decorateMessage(m);
+        this.injectDateMarkers();
       },
       error: (e) => alert('Não foi possível excluir: ' + (e?.error?.error || e.message))
     });
@@ -403,7 +420,7 @@ export class ChatPage implements OnInit, OnDestroy {
       return;
     }
     const key = Number(replyId);
-    const target = this.messageMap[key] ?? this.messages.find(m => Number(m.id) === key);
+    const target = this.messageMap[key] ?? this.messages.find(m => !m.__isMarker && Number(m.id) === key);
     if (target) {
       message.__replyTarget = target;
     } else {
@@ -414,6 +431,7 @@ export class ChatPage implements OnInit, OnDestroy {
   private refreshReplyDependents(targetId: number) {
     const key = Number(targetId);
     for (const msg of this.messages) {
+      if (msg.__isMarker) continue;
       const replyId = msg.reply_to_id ?? msg.replyToId ?? null;
       if (replyId != null && Number(replyId) === key) {
         this.linkReplyPreview(msg);
@@ -479,20 +497,73 @@ export class ChatPage implements OnInit, OnDestroy {
       null;
 
     let displayTime = '--:--';
+    let displayDate = '';
     if (rawTimestamp) {
       const date = rawTimestamp instanceof Date ? rawTimestamp : new Date(rawTimestamp);
       if (!Number.isNaN(date.getTime())) {
         displayTime = this.timeFormatter.format(date);
         message.__sentDate = date;
+        const today = new Date();
+        const isToday = date.toDateString() === today.toDateString();
+        const yesterday = new Date(today);
+        yesterday.setDate(today.getDate() - 1);
+        if (!isToday) {
+          if (date.toDateString() === yesterday.toDateString()) {
+            displayDate = 'Ontem';
+          } else {
+            displayDate = this.shortDateFormatter.format(date);
+          }
+        }
+        message.__displayDateLabel = this.dateLabel(date, today, yesterday);
       } else {
         delete message.__sentDate;
+        delete message.__displayDateLabel;
       }
     } else {
       delete message.__sentDate;
+      delete message.__displayDateLabel;
     }
-
     message.__displayTime = displayTime;
+    message.__displayDate = displayDate;
     return message;
+  }
+
+  private dateLabel(date: Date, today: Date, yesterday: Date) {
+    if (date.toDateString() === today.toDateString()) return 'Hoje';
+    if (date.toDateString() === yesterday.toDateString()) return 'Ontem';
+    const diffInDays = Math.floor((today.getTime() - date.getTime()) / (24 * 60 * 60 * 1000));
+    const weekday = this.weekdayFormatter.format(date);
+    const capitalizedWeekday = weekday.charAt(0).toUpperCase() + weekday.slice(1);
+    if (diffInDays <= 6) {
+      return capitalizedWeekday;
+    }
+    return `${capitalizedWeekday}, ${this.shortDateFormatter.format(date)}`;
+  }
+
+  private injectDateMarkers() {
+    const markers: any[] = [];
+    let lastLabel = '';
+    for (const msg of this.messages.filter(m => !m.__isMarker).sort((a, b) => {
+      const aDate = a.__sentDate ? a.__sentDate.getTime() : 0;
+      const bDate = b.__sentDate ? b.__sentDate.getTime() : 0;
+      return aDate - bDate;
+    })) {
+      if (!msg.__sentDate) {
+        markers.push(msg);
+        continue;
+      }
+      const label = msg.__displayDateLabel || this.shortDateFormatter.format(msg.__sentDate);
+      if (label !== lastLabel) {
+        markers.push({ __isMarker: true, __label: label, __timestamp: msg.__sentDate.getTime() });
+        lastLabel = label;
+      }
+      markers.push(msg);
+    }
+    if (!markers.length) {
+      this.messages = [];
+      return;
+    }
+    this.messages = markers;
   }
 
   openReactions(message: any) {

@@ -17,7 +17,13 @@
           </div>
           <div class="bubble" [class.mine]="m.sender_id === auth.user?.id">
             <div class="header">
-              <span class="name">{{ m.sender_name || ('Jogador #' + m.sender_id) }}</span>
+              <div class="meta-left">
+                <span class="name">{{ m.sender_name || ('Jogador #' + m.sender_id) }}</span>
+              </div>
+              <div class="meta-right">
+                <span class="time" *ngIf="m.__displayTime">{{ m.__displayTime }}</span>
+                <span class="date" *ngIf="m.__displayDate">{{ m.__displayDate }}</span>
+              </div>
             </div>
             <div class="text">{{ m.content }}</div>
           </div>

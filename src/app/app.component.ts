@@ -24,6 +24,7 @@ export class AppComponent {
     // Itens do admin
     { title: 'Gerenciar Jogos', url: '/games', icon: 'game-controller-outline', show: () => this.auth.isAdmin() },
     { title: 'Usuários', url: '/users', icon: 'people-outline', show: () => this.auth.isAdmin() },
+    { title: 'Recomendações', url: '/admin/recomendacoes', icon: 'bulb-outline', show: () => this.auth.isAdmin() },
   ];
 
   pendingRequests = 0;

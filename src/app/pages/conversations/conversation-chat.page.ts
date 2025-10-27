@@ -15,6 +15,15 @@ export class ConversationChatPage implements OnInit, OnDestroy {
   messages: any[] = [];
   content = '';
   typingUsers = new Set<number>();
+  private readonly timeFormatter = new Intl.DateTimeFormat('pt-BR', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+  private readonly shortDateFormatter = new Intl.DateTimeFormat('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
   private handlers: { [k: string]: (...args: any[]) => void } = {};
 
   private readonly route = inject(ActivatedRoute);
@@ -29,7 +38,8 @@ export class ConversationChatPage implements OnInit, OnDestroy {
     socket.emit('conv:join', { conversationId: this.convId });
     this.handlers['new'] = (msg: any) => {
       if (msg.conversation_id === this.convId) {
-        this.messages.push(msg);
+        const decorated = this.decorateMessage(msg);
+        this.messages.push(decorated);
         this.markRead(msg.id);
         this.scrollToBottom();
       }
@@ -52,9 +62,46 @@ export class ConversationChatPage implements OnInit, OnDestroy {
 
   load() {
     this.convSvc.getMessages(this.convId).subscribe((list) => {
-      this.messages = list;
+      this.messages = list.map((m: any) => this.decorateMessage(m));
       setTimeout(() => this.scrollToBottom(true), 0);
     });
+  }
+
+  private decorateMessage(message: any) {
+    if (!message || typeof message !== 'object') return message;
+
+    const rawTimestamp =
+      message.sent_at ??
+      message.sentAt ??
+      message.created_at ??
+      message.createdAt ??
+      message.updated_at ??
+      message.updatedAt ??
+      null;
+
+    if (rawTimestamp) {
+      const date = rawTimestamp instanceof Date ? rawTimestamp : new Date(rawTimestamp);
+      if (!Number.isNaN(date.getTime())) {
+        message.__sentDate = date;
+        message.__displayTime = this.timeFormatter.format(date);
+        const today = new Date();
+        if (date.toDateString() !== today.toDateString()) {
+          message.__displayDate = this.shortDateFormatter.format(date);
+        } else {
+          message.__displayDate = '';
+        }
+      } else {
+        delete message.__sentDate;
+        delete message.__displayTime;
+        delete message.__displayDate;
+      }
+    } else {
+      delete message.__sentDate;
+      delete message.__displayTime;
+      delete message.__displayDate;
+    }
+
+    return message;
   }
 
   isRoomMessage(content: string) {

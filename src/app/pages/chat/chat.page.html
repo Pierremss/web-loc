@@ -28,7 +28,13 @@
   <div class="layout-container chat-wrapper">
     <div class="chat-container surface-card">
       <div class="messages" (scroll)="onScroll($event)">
-        <div *ngFor="let m of messages" class="message-row" [class.mine]="m.sender_id === auth.user?.id">
+        <ng-container *ngFor="let m of messages">
+          <div class="date-divider" *ngIf="m.__isMarker">
+            <span class="line"></span>
+            <span class="label">{{ m.__label }}</span>
+            <span class="line"></span>
+          </div>
+          <div *ngIf="!m.__isMarker" class="message-row" [class.mine]="m.sender_id === auth.user?.id">
           <div class="avatar-col" *ngIf="m.sender_id !== auth.user?.id">
             <img class="avatar-img" [src]="peerAvatar" alt="Avatar" (error)="onAvatarError($event)" />
           </div>
@@ -87,11 +93,16 @@
                 </ng-container>
                 <div class="text">{{ m.content }}</div>
                 <div class="meta">
-                  <span class="time">{{ m.__displayTime }}</span>
-                  <div class="status-group" *ngIf="m.edited_at || m.read_at || (!m.read_at && m.delivered_at)">
-                    <ion-text class="status" color="medium" *ngIf="m.edited_at">(editada)</ion-text>
-                    <ion-text class="status" color="success" *ngIf="m.read_at">Lida</ion-text>
-                    <ion-text class="status" color="medium" *ngIf="!m.read_at && m.delivered_at">Entregue</ion-text>
+                  <div class="meta-left">
+                    <div class="status-group" *ngIf="m.edited_at || m.read_at || (!m.read_at && m.delivered_at)">
+                      <ion-text class="status" color="medium" *ngIf="m.edited_at">(editada)</ion-text>
+                      <ion-text class="status" color="success" *ngIf="m.read_at">Lida</ion-text>
+                      <ion-text class="status" color="medium" *ngIf="!m.read_at && m.delivered_at">Entregue</ion-text>
+                    </div>
+                  </div>
+                  <div class="meta-right">
+                    <span class="time">{{ m.__displayTime }}</span>
+                    <span class="date" *ngIf="m.__displayDate">{{ m.__displayDate }}</span>
                   </div>
                 </div>
               </div>
@@ -123,11 +134,16 @@
               </ng-container>
               <div class="text deleted">Mensagem excluída</div>
               <div class="meta">
-                <span class="time">{{ m.__displayTime }}</span>
+                <div class="meta-left"></div>
+                <div class="meta-right">
+                  <span class="time">{{ m.__displayTime }}</span>
+                  <span class="date" *ngIf="m.__displayDate">{{ m.__displayDate }}</span>
+                </div>
               </div>
             </ng-template>
           </div>
-        </div>
+          </div>
+        </ng-container>
       </div>
       <div class="scroll-bottom" *ngIf="!atBottom && newMessages > 0">
         <ion-button size="small" (click)="scrollToBottom()">

@@ -60,6 +60,17 @@ export class RegisterPage implements OnInit {
   loading: boolean = false;
   error: string = '';
   ok: boolean = false;
+  verificationStep = false;
+  verificationEmail = '';
+  verificationDelivered = false;
+  verificationExpiresAt: string | null = null;
+  verificationMessage = '';
+  verificationCode = '';
+  verificationError = '';
+  verificationSuccess = false;
+  verificationResendLoading = false;
+  verificationConfirmLoading = false;
+  verificationInfo = '';
 
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
@@ -213,9 +224,8 @@ export class RegisterPage implements OnInit {
     this.auth.register(fd).subscribe({
       next: (resp) => {
         this.loading = false;
-        this.ok = true;
-        console.log('[REGISTER] Sucesso', resp);
-        setTimeout(() => this.router.navigateByUrl('/login'), 1200);
+        this.ok = false;
+        this.handleVerificationResponse(resp);
       },
       error: (err) => {
         this.loading = false;
@@ -237,6 +247,83 @@ export class RegisterPage implements OnInit {
         this.error = msg || 'Falha no cadastro';
         this.errorDetails = `status=${err.status}; statusText=${err.statusText}; tipoPayload=${typeof payload}`;
         console.warn('Erro ao cadastrar', { err, payload, mapped: this.error });
+      }
+    });
+  }
+
+  private handleVerificationResponse(resp: any): void {
+    if (!resp) {
+      this.error = 'Não foi possível iniciar a verificação de e-mail.';
+      return;
+    }
+    this.verificationStep = true;
+    this.etapaAtual = 4;
+    this.verificationSuccess = false;
+    this.verificationCode = '';
+    this.verificationError = '';
+    this.verificationEmail = String(resp.email || this.form.email || '').trim().toLowerCase();
+    this.verificationDelivered = Boolean(resp.delivered);
+    this.verificationExpiresAt = resp.expiresAt ?? null;
+    this.verificationMessage = resp.message ?? '';
+    this.verificationInfo = resp.expiresInMinutes
+      ? `O código expira em ${resp.expiresInMinutes} minutos.`
+      : '';
+  }
+
+  resendVerification(): void {
+    if (!this.verificationEmail) return;
+    this.verificationResendLoading = true;
+    this.verificationError = '';
+    this.auth.sendVerificationCode(this.verificationEmail).subscribe({
+      next: (resp) => {
+        this.verificationResendLoading = false;
+        this.verificationDelivered = Boolean(resp.delivered);
+        this.verificationMessage = resp.message ?? 'Novo código gerado.';
+        this.verificationInfo = resp.expiresInMinutes
+          ? `O código expira em ${resp.expiresInMinutes} minutos.`
+          : '';
+        this.verificationExpiresAt = resp.expiresAt ?? null;
+      },
+      error: (err) => {
+        this.verificationResendLoading = false;
+        const payload = err?.error;
+        if (payload?.error) {
+          this.verificationError = payload.error;
+        } else if (Array.isArray(payload?.errors) && payload.errors.length) {
+          this.verificationError = payload.errors.map((e: any) => e.msg).join(' | ');
+        } else {
+          this.verificationError = 'Não foi possível reenviar o código.';
+        }
+      }
+    });
+  }
+
+  confirmVerification(): void {
+    if (!this.verificationEmail || !this.verificationCode || this.verificationConfirmLoading) {
+      this.verificationError = 'Informe o código de 6 dígitos.';
+      return;
+    }
+    this.verificationConfirmLoading = true;
+    this.verificationError = '';
+    this.auth.confirmVerification(this.verificationEmail, this.verificationCode).subscribe({
+      next: (resp) => {
+        this.verificationConfirmLoading = false;
+        this.verificationSuccess = true;
+        this.verificationMessage = resp.alreadyVerified
+          ? 'E-mail já estava verificado. Você pode entrar agora.'
+          : 'E-mail verificado com sucesso! Você pode fazer login.';
+        setTimeout(() => this.router.navigateByUrl('/login'), 1200);
+      },
+      error: (err) => {
+        this.verificationConfirmLoading = false;
+        const payload = err?.error;
+        if (payload?.error) {
+          this.verificationError = payload.error;
+        } else if (Array.isArray(payload?.errors) && payload.errors.length) {
+          this.verificationError = payload.errors.map((e: any) => e.msg).join(' | ');
+        } else {
+          this.verificationError = 'Código inválido ou expirado.';
+        }
       }
     });
   }

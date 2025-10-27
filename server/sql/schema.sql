@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS users (
   email VARCHAR(160) NOT NULL UNIQUE,
   password_hash VARCHAR(255) NOT NULL,
   is_admin TINYINT(1) NOT NULL DEFAULT 0,
+  is_verified TINYINT(1) NOT NULL DEFAULT 0,
   platforms VARCHAR(100),
   game_style VARCHAR(20),
   available_times TEXT,
@@ -175,6 +176,37 @@ CREATE TABLE IF NOT EXISTS user_games (
   PRIMARY KEY (user_id, game_id),
   CONSTRAINT fk_ug_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   CONSTRAINT fk_ug_game FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS verification_codes (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id INT NOT NULL,
+  email VARCHAR(255) NOT NULL,
+  code CHAR(6) NOT NULL,
+  expires_at DATETIME NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_verification_codes_user (user_id),
+  CONSTRAINT fk_verification_codes_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS game_recommendations (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id INT NOT NULL,
+  game_name VARCHAR(255) NOT NULL,
+  platform VARCHAR(255) NOT NULL,
+  genre VARCHAR(255) NOT NULL,
+  game_type VARCHAR(255) NOT NULL,
+  notes TEXT NULL,
+  status ENUM('pending', 'accepted', 'rejected') NOT NULL DEFAULT 'pending',
+  admin_notes TEXT NULL,
+  resolved_at DATETIME NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_game_recommendations_status (status),
+  KEY idx_game_recommendations_created_at (created_at),
+  CONSTRAINT fk_game_recommendations_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 -- Social: pedidos de amizade, amizades e mensagens

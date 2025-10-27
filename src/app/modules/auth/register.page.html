@@ -2,10 +2,6 @@
   <div class="layout-container register-wrapper">
     <section class="register-card surface-card stack stack-lg fadein">
       <div class="register-nav">
-        <ion-button fill="clear" class="nav-btn nav-btn--back" (click)="handleNavBack()">
-          <ion-icon slot="start" name="arrow-back-outline"></ion-icon>
-          <span>{{ etapaAtual === 1 ? 'Voltar' : 'Etapa anterior' }}</span>
-        </ion-button>
         <ion-button *ngIf="etapaAtual > 1" fill="clear" class="nav-btn nav-btn--home" (click)="goToHome()">
           <ion-icon slot="start" name="home-outline"></ion-icon>
           <span>Menu principal</span>
@@ -30,6 +26,11 @@
         <div class="step" [class.active]="etapaAtual === 3">
           <ion-icon name="ellipse-outline"></ion-icon>
           <span>Interesse</span>
+        </div>
+        <div class="divider"></div>
+        <div class="step" [class.active]="etapaAtual === 4">
+          <ion-icon name="ellipse-outline"></ion-icon>
+          <span>Verificação</span>
         </div>
       </div>
 
@@ -185,6 +186,48 @@
           <div *ngIf="errorDetails" class="error-more">{{ errorDetails }}</div>
         </div>
         <div *ngIf="ok && !loading" class="sucesso-global">Conta criada! Redirecionando...</div>
+      </div>
+    </form>
+
+    <form *ngIf="etapaAtual === 4" (ngSubmit)="confirmVerification()" class="form-stage surface-ghost stack">
+      <h2 class="form-title">Verifique seu e-mail</h2>
+      <p class="text-soft">
+        Enviamos um código de 6 dígitos para <strong>{{ verificationEmail }}</strong>. Digite-o abaixo para finalizar o cadastro.
+      </p>
+      <ion-item>
+        <ion-label position="floating">Código de verificação</ion-label>
+        <ion-input
+          inputmode="numeric"
+          maxlength="6"
+          [(ngModel)]="verificationCode"
+          name="verificationCode">
+        </ion-input>
+      </ion-item>
+      <div *ngIf="verificationInfo" class="info-message">{{ verificationInfo }}</div>
+      <div *ngIf="verificationMessage" class="success-message">{{ verificationMessage }}</div>
+      <div *ngIf="verificationError" class="error-message">{{ verificationError }}</div>
+
+      <ion-button expand="block" class="btn-primary grad" type="submit" [disabled]="verificationConfirmLoading">
+        <ion-spinner slot="start" *ngIf="verificationConfirmLoading"></ion-spinner>
+        Confirmar código
+      </ion-button>
+
+      <ion-button
+        expand="block"
+        color="medium"
+        class="btn-secondary"
+        type="button"
+        (click)="resendVerification()"
+        [disabled]="verificationResendLoading"
+      >
+        <ion-spinner slot="start" *ngIf="verificationResendLoading"></ion-spinner>
+        Reenviar código
+      </ion-button>
+
+      <div class="mensagens-retorno">
+        <div *ngIf="verificationSuccess" class="sucesso-global">
+          E-mail verificado! Redirecionando para o login...
+        </div>
       </div>
     </form>
     </section>

@@ -1,0 +1,57 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Recomendar jogo</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <div class="page-container surface-card stack">
+    <div class="header">
+      <h2>Compartilhe uma recomendação</h2>
+      <p class="text-soft">
+        Conte pra gente qual jogo deveria entrar no WebLoc. Preencha os campos abaixo e envie sua sugestão.
+      </p>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="submit()" novalidate class="form stack">
+      <ion-list lines="none" class="form-list">
+        <ion-item [class.invalid]="showError('gameName')">
+          <ion-label position="stacked">Nome do jogo</ion-label>
+          <ion-input formControlName="gameName" type="text" autocomplete="off" maxlength="255"> </ion-input>
+        </ion-item>
+        <ion-note *ngIf="showError('gameName')" color="danger">Informe o nome do jogo.</ion-note>
+
+        <ion-item [class.invalid]="showError('platform')">
+          <ion-label position="stacked">Plataforma</ion-label>
+          <ion-input formControlName="platform" type="text" autocomplete="off" maxlength="255"></ion-input>
+        </ion-item>
+        <ion-note *ngIf="showError('platform')" color="danger">Informe a plataforma.</ion-note>
+
+        <ion-item [class.invalid]="showError('gameType')">
+          <ion-label position="stacked">Tipo</ion-label>
+          <ion-input formControlName="gameType" type="text" autocomplete="off" maxlength="255"></ion-input>
+        </ion-item>
+        <ion-note *ngIf="showError('gameType')" color="danger">Informe o tipo do jogo.</ion-note>
+
+        <ion-item [class.invalid]="showError('genre')">
+          <ion-label position="stacked">Gênero</ion-label>
+          <ion-input formControlName="genre" type="text" autocomplete="off" maxlength="255"></ion-input>
+        </ion-item>
+        <ion-note *ngIf="showError('genre')" color="danger">Informe o gênero.</ion-note>
+
+        <ion-item>
+          <ion-label position="stacked">Observações (opcional)</ion-label>
+          <ion-textarea formControlName="notes" autoGrow="true" maxlength="4000"></ion-textarea>
+        </ion-item>
+      </ion-list>
+
+      <ion-button type="submit" expand="block" class="btn-primary pill" [disabled]="submitting">
+        <ion-spinner slot="start" *ngIf="submitting"></ion-spinner>
+        Enviar recomendação
+      </ion-button>
+    </form>
+  </div>
+</ion-content>

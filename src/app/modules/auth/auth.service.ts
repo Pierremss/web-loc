@@ -43,6 +43,20 @@ export class AuthService {
     return this.http.post(`${this.base}/register`, data);
   }
 
+  sendVerificationCode(email: string) {
+    return this.http.post<{ success: boolean; delivered: boolean; message?: string; expiresAt?: string; expiresInMinutes?: number }>(
+      `/api/verification/send`,
+      { email }
+    );
+  }
+
+  confirmVerification(email: string, code: string) {
+    return this.http.post<{ success: boolean; userId: number; alreadyVerified?: boolean }>(
+      `/api/verification/confirm`,
+      { email, code }
+    );
+  }
+
   logout() {
     this.token = null;
     this.user = null;

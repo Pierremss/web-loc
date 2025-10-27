@@ -21,11 +21,48 @@
 	}
 
 	.bubble .header {
-		gap: 6px;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
 	}
 
 	.bubble .text {
 		font-size: 0.95rem;
+	}
+
+	.bubble .header .meta-left {
+		display: flex;
+		align-items: center;
+	}
+
+	.bubble .header .meta-right {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+		justify-content: center;
+		gap: 2px;
+	}
+
+	.bubble .header .name {
+		color: var(--chat-bubble-header, rgba(0,0,0,0.85));
+		font-weight: 700;
+		font-size: 0.95rem;
+		letter-spacing: -0.01em;
+		line-height: 1;
+		margin-right: 6px;
+		text-shadow: 0 1px 0 rgba(255,255,255,0.02);
+	}
+
+	.bubble .header .time {
+		font-size: 0.78rem;
+		color: rgba(156,163,175,0.95);
+		font-weight: 600;
+	}
+
+	.bubble .header .date {
+		font-size: 0.7rem;
+		color: rgba(148,163,184,0.85);
 	}
 
 	.bubble .meta {
@@ -39,6 +76,20 @@
 			background: rgba(226, 232, 240, 0.86);
 			border: 1px solid rgba(191, 200, 217, 0.55);
 			color: rgba(45, 55, 72, 0.88);
+		}
+
+		/* Forçar nome legível no tema claro */
+		.bubble .header .name {
+			color: rgba(15, 23, 42, 0.95);
+			text-shadow: none;
+		}
+
+		.bubble .header .time {
+			color: rgba(75,85,99,0.9);
+		}
+
+		.bubble .header .date {
+			color: rgba(99,102,121,0.8);
 		}
 	}
 }

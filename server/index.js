@@ -17,6 +17,8 @@ import platformRoutes from './routes/platforms.js';
 import roomsRoutes from './routes/rooms.js';
 import genresRoutes from './routes/genres.js';
 import gameTypesRoutes from './routes/game-types.js';
+import gameRecommendationRoutes from './routes/game-recommendations.js';
+import emailVerificationRoutes from './routes/email-verification.js';
 import { attachRealtime } from './realtime.js';
 import { createServer } from 'http';
 
@@ -48,6 +50,8 @@ app.use('/api/platforms', platformRoutes);
 app.use('/api/rooms', roomsRoutes);
 app.use('/api/genres', genresRoutes);
 app.use('/api/game-types', gameTypesRoutes);
+app.use('/api/game-recommendations', gameRecommendationRoutes);
+app.use('/api/verification', emailVerificationRoutes);
 
 const port = process.env.PORT || 3333;
 // Criar HTTP server e anexar Socket.IO

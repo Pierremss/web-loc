@@ -112,6 +112,37 @@
 	overscroll-behavior-y: contain;
 }
 
+.messages .date-divider {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 12px;
+	font-size: 0.78rem;
+	letter-spacing: 0.015em;
+	text-transform: none;
+	color: rgba(148, 163, 184, 0.82);
+	padding: 0 clamp(8px, 2vw, 16px);
+}
+
+.messages .date-divider .line {
+	flex: 1 1 100%;
+	max-width: 120px;
+	height: 1px;
+	background: linear-gradient(90deg, rgba(148, 163, 184, 0.04), rgba(148, 163, 184, 0.35), rgba(148, 163, 184, 0.04));
+	border-radius: 999px;
+}
+
+.messages .date-divider .label {
+	padding: 6px 18px;
+	border-radius: 999px;
+	background: rgba(30, 41, 59, 0.72);
+	border: 1px solid rgba(148, 163, 184, 0.28);
+	box-shadow: 0 12px 24px rgba(5, 9, 24, 0.28);
+	font-weight: 600;
+	color: rgba(226, 232, 240, 0.96);
+	text-transform: capitalize;
+}
+
 .messages::-webkit-scrollbar {
 	width: 6px;
 }
@@ -282,6 +313,28 @@
 	font-weight: 600;
 }
 
+.bubble .meta .meta-left {
+	flex: 1 1 auto;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	min-height: 1rem;
+}
+
+.bubble .meta .meta-right {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	gap: 2px;
+	min-width: 56px;
+}
+
+.bubble .meta .date {
+	font-size: 0.72rem;
+	color: rgba(148,163,184,0.7);
+	font-weight: 500;
+}
+
 .bubble .meta .status-group {
 	display: inline-flex;
 	align-items: center;
@@ -300,6 +353,52 @@
 .bubble.mine .meta .time,
 .bubble.mine .meta .status {
 	color: rgba(226, 232, 255, 0.92);
+}
+
+/* Tema claro: forçar nome do toolbar e ajustar cores de meta */
+
+/* Tema claro: ajustes de contraste e back button escuro */
+:host-context(body:not(.dark)) {
+	.chat-toolbar-name {
+		color: rgba(15,23,42,0.95) !important;
+	}
+
+	.chat-toolbar-back ion-back-button {
+		--color: rgba(15,23,42,0.95);
+		--background: transparent;
+		--background-hover: rgba(15,23,42,0.08);
+	}
+
+	.chat-toolbar-back ion-back-button::part(native) {
+		color: rgba(15,23,42,0.95);
+	}
+
+	.bubble .meta {
+		color: rgba(75,85,99,0.9);
+	}
+
+	.bubble .meta .time {
+		color: rgba(75,85,99,0.95);
+	}
+
+	.bubble .meta .date {
+		color: rgba(99,102,121,0.85);
+	}
+
+	.messages .date-divider {
+		color: rgba(71, 85, 105, 0.75);
+	}
+
+	.messages .date-divider .line {
+		background: linear-gradient(90deg, rgba(148, 163, 184, 0.05), rgba(148, 163, 184, 0.4), rgba(148, 163, 184, 0.05));
+	}
+
+	.messages .date-divider .label {
+		background: rgba(226, 232, 240, 0.92);
+		border: 1px solid rgba(191, 219, 254, 0.7);
+		color: rgba(45, 55, 72, 0.88);
+		box-shadow: 0 16px 32px rgba(148, 163, 184, 0.22);
+	}
 }
 
 .bubble-menu {

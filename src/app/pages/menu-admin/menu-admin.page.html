@@ -1,10 +1,10 @@
 <ion-content class="ion-padding menu-admin-page">
   <div class="admin-container">
-    <h1 class="titulo">Menu Administrador</h1>
-    <p class="subtitulo">Gerencie usuários e jogos</p>
+  <h1 class="titulo">Painel do administrador</h1>
+  <p class="subtitulo">Gerencie jogadores, jogos e sugestões</p>
 
     <div class="menu-opcoes">
-      <ion-card class="opcao-card" routerLink="/users-list">
+      <ion-card class="opcao-card" routerLink="/users">
         <ion-card-header>
           <ion-icon name="people-outline" class="icone-opcao"></ion-icon>
           <ion-card-title>Gerenciar Usuários</ion-card-title>
@@ -12,11 +12,19 @@
         </ion-card-header>
       </ion-card>
 
-      <ion-card class="opcao-card" routerLink="/games-list">
+      <ion-card class="opcao-card" routerLink="/games">
         <ion-card-header>
           <ion-icon name="game-controller-outline" class="icone-opcao"></ion-icon>
           <ion-card-title>Gerenciar Jogos</ion-card-title>
           <ion-card-subtitle>Adicionar e editar jogos</ion-card-subtitle>
+        </ion-card-header>
+      </ion-card>
+
+      <ion-card class="opcao-card" routerLink="/admin/recomendacoes">
+        <ion-card-header>
+          <ion-icon name="bulb-outline" class="icone-opcao"></ion-icon>
+          <ion-card-title>Recomendações de jogadores</ion-card-title>
+          <ion-card-subtitle>Aprovar ou rejeitar sugestões enviadas</ion-card-subtitle>
         </ion-card-header>
       </ion-card>
 
