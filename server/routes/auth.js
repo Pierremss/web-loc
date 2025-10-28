@@ -6,7 +6,7 @@ import { body, validationResult } from 'express-validator';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { pool } from '../db.js';
-import { issueVerificationCode, CODE_EXPIRATION_MINUTES } from '../services/email-verification.js';
+import { issueVerificationCodeForPending, CODE_EXPIRATION_MINUTES } from '../services/email-verification.js';
 
 const router = Router();
 
@@ -124,28 +124,46 @@ router.post('/register',
         .map((row) => row.name);
       platformsString = platformNames.join(',');
 
-      const [exists] = await pool.query('SELECT id FROM users WHERE email = ?', [email]);
-      if (exists.length) return res.status(409).json({ error: 'E-mail já cadastrado' });
+      email = String(email ?? '').trim().toLowerCase();
+      const [existingUsers] = await pool.query('SELECT id, is_verified FROM users WHERE email = ?', [email]);
+      if (existingUsers.length) {
+        const existing = existingUsers[0];
+        return res.status(409).json({
+          error: existing.is_verified
+            ? 'E-mail já cadastrado. Faça login para acessar.'
+            : 'Um cadastro para este e-mail já existe. Finalize a verificação para concluir o acesso.'
+        });
+      }
+
+      const [pendingExisting] = await pool.query('SELECT id FROM pending_users WHERE email = ?', [email]);
+      if (pendingExisting.length) {
+        return res.status(409).json({
+          error: 'Já existe um cadastro aguardando verificação para este e-mail. Utilize o código recebido ou solicite um novo.'
+        });
+      }
+
       const password_hash = await bcrypt.hash(password, 10);
       let avatar_url = null;
       if (req.file) {
         avatar_url = `/uploads/avatars/${req.file.filename}`.replace(/\\/g,'/');
       }
       const [result] = await pool.query(
-        'INSERT INTO users (name, nickname, email, password_hash, is_admin, platforms, game_style, available_times, profile, avatar_url) VALUES (?,?,?,?,0,?,?,?,?,?)',
+        'INSERT INTO pending_users (name, nickname, email, password_hash, platforms, game_style, available_times, profile, avatar_url) VALUES (?,?,?,?,?,?,?,?,?)',
         [name, nickname, email, password_hash, platformsString, game_style, available_times, profile, avatar_url]
       );
-      const userId = result.insertId;
-      // Salvar jogos favoritos na tabela user_games
+      const pendingUserId = result.insertId;
       if (favoriteGameIds.length > 0) {
-        for (const gameId of favoriteGameIds) {
-          await pool.query('INSERT INTO user_games (user_id, game_id) VALUES (?,?)', [userId, gameId]);
-        }
+        const values = favoriteGameIds.map(() => '(?, ?)').join(', ');
+        const params = [];
+        favoriteGameIds.forEach((gameId) => {
+          params.push(pendingUserId, gameId);
+        });
+        await pool.query(`INSERT IGNORE INTO pending_user_games (pending_user_id, game_id) VALUES ${values}`, params);
       }
       let delivered = false;
       let expiresAt = null;
       try {
-        const issued = await issueVerificationCode(userId, email);
+        const issued = await issueVerificationCodeForPending(pendingUserId, email);
         delivered = issued.delivered;
         expiresAt = issued.expiresAt;
       } catch (err) {
@@ -154,7 +172,7 @@ router.post('/register',
 
       return res.status(201).json({
         success: true,
-        userId,
+        pendingUserId,
         email,
         requiresVerification: true,
         delivered,
@@ -182,6 +200,7 @@ router.post('/login',
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
     const { email, password } = req.body;
+    const normalizedEmail = String(email ?? '').trim().toLowerCase();
 
     // Admin login (predefinido)
     if (email === process.env.ADMIN_EMAIL) {
@@ -194,7 +213,16 @@ router.post('/login',
     }
 
     try {
-      const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
+      const [pendingRows] = await pool.query('SELECT id FROM pending_users WHERE email = ?', [normalizedEmail]);
+      if (pendingRows.length) {
+        return res.status(403).json({
+          error: 'Cadastro aguardando verificação de e-mail. Confirme o código enviado para prosseguir.',
+          requiresVerification: true,
+          pending: true
+        });
+      }
+
+      const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [normalizedEmail]);
       if (!rows.length) return res.status(401).json({ error: 'Credenciais inválidas' });
       const user = rows[0];
       const ok = await bcrypt.compare(password, user.password_hash);
@@ -207,7 +235,7 @@ router.post('/login',
         });
       }
 
-      const token = jwt.sign({ id: user.id, email: user.email, is_admin: !!user.is_admin, name: user.name }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '2h' });
+  const token = jwt.sign({ id: user.id, email: user.email, is_admin: !!user.is_admin, name: user.name }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '2h' });
       let avatar = user.avatar_url;
       if (avatar && !/^https?:/i.test(avatar)) {
         avatar = `${req.protocol}://${req.get('host')}${avatar}`;

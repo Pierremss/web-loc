@@ -57,3 +57,30 @@ const port = process.env.PORT || 3333;
 // Criar HTTP server e anexar Socket.IO
 const { server } = attachRealtime(app);
 server.listen(port, () => console.log(`WebLoc API + Realtime em http://localhost:${port}`));
+
+
+
+
+/*
+const nodemailer = require('nodemailer')
+const transport = nodemailer.createTransport({
+	host: 'smtp.gmail.com',
+	port: 465,
+	secure: true,
+	auth: {
+		user: 'webloc00@gmail.com',
+		pass: 'pomo cnlo urqz gyou'
+	}
+})
+	
+transport.sendMail({
+from:'Manual do Dev <webloc00@gmail.com>',
+to: 'pedrolucasmc6@gmail.com',
+subject: 'Enviando email com Nodemailer',
+html: '<h1> Olá dev </h1> <p> Esse é um email de teste </p>',
+text: 'Olá, Dev este é um email de teste',
+})
+.then((response ) => console.log ('Email enviado com sucesso !!'))
+.catch({err}  => console.log('Erro ao enviar email: ', err));
+
+*/

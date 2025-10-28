@@ -31,6 +31,7 @@ export class RecomendarJogoPage implements OnInit {
   ngOnInit() {
     if (this.auth.isAdmin()) {
       this.router.navigateByUrl('/menu-admin');
+      return;
     }
   }
 

@@ -28,6 +28,23 @@
       </ion-chip>
     </section>
 
+    <section class="order-controls" *ngIf="!loading && recommendations.length">
+      <ion-segment [value]="selectedOrder" (ionChange)="onOrderChange($event.detail.value)">
+        <ion-segment-button value="created-desc">
+          <ion-label>Mais recentes</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="created-asc">
+          <ion-label>Mais antigas</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="name-asc">
+          <ion-label>A–Z</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="name-desc">
+          <ion-label>Z–A</ion-label>
+        </ion-segment-button>
+      </ion-segment>
+    </section>
+
     <ion-note color="danger" class="error" *ngIf="error && !loading">
       {{ error }}
     </ion-note>
@@ -58,7 +75,7 @@
       </ion-card-content>
     </ion-card>
 
-    <ion-list *ngIf="!loading && recommendations.length" lines="none">
+  <ion-list *ngIf="!loading && recommendations.length" lines="none">
       <ion-card *ngFor="let rec of recommendations; trackBy: trackById" [class.pending]="rec.status === 'pending'">
         <ion-card-header>
           <div class="header-row">

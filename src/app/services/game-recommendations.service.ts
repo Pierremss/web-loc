@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
@@ -24,6 +24,10 @@ export interface GameRecommendation {
   };
 }
 
+export interface GameRecommendationUpdateResponse extends GameRecommendation {
+  message?: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class GameRecommendationsService {
   private readonly http = inject(HttpClient);
@@ -33,11 +37,19 @@ export class GameRecommendationsService {
     return this.http.post<GameRecommendation>(this.base, payload);
   }
 
-  list(): Observable<GameRecommendation[]> {
-    return this.http.get<GameRecommendation[]>(this.base);
+  list(params?: { order?: 'created-desc' | 'created-asc' | 'name-asc' | 'name-desc' }): Observable<GameRecommendation[]> {
+    let httpParams = new HttpParams();
+    if (params?.order) {
+      httpParams = httpParams.set('order', params.order);
+    }
+    return this.http.get<GameRecommendation[]>(this.base, { params: httpParams });
   }
 
-  update(id: number, payload: { status?: 'pending' | 'accepted' | 'rejected'; adminNotes?: string | null }): Observable<GameRecommendation> {
-    return this.http.patch<GameRecommendation>(`${this.base}/${id}`, payload);
+  listMine(): Observable<GameRecommendation[]> {
+    return this.list({ order: 'created-desc' });
+  }
+
+  update(id: number, payload: { status?: 'pending' | 'accepted' | 'rejected'; adminNotes?: string | null }): Observable<GameRecommendationUpdateResponse> {
+    return this.http.patch<GameRecommendationUpdateResponse>(`${this.base}/${id}`, payload);
   }
 }

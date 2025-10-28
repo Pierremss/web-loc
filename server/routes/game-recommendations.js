@@ -5,12 +5,14 @@ import { ensureAuth, ensureAdmin } from '../middleware/auth.js';
 
 const router = Router();
 
-const RECOMMENDATION_WITH_USER_QUERY = `
+const ADMIN_RECOMMENDATION_SELECT = `
   SELECT gr.id, gr.user_id, gr.game_name, gr.platform, gr.genre, gr.game_type, gr.notes, gr.status,
-         gr.admin_notes, gr.resolved_at, gr.created_at, gr.updated_at,
+    gr.admin_notes, gr.resolved_at, gr.created_game_id, gr.created_at, gr.updated_at,
          u.name AS user_name, u.nickname AS user_nickname, u.email AS user_email
   FROM game_recommendations gr
-  JOIN users u ON u.id = gr.user_id
+  JOIN users u ON u.id = gr.user_id`;
+
+const RECOMMENDATION_WITH_USER_QUERY = `${ADMIN_RECOMMENDATION_SELECT}
   WHERE gr.id = ?`;
 
 const GAME_NAME_MAX_LENGTH = 160;
@@ -54,15 +56,39 @@ router.post('/', ensureAuth, createValidators, async (req, res) => {
   }
 });
 
-router.get('/', ensureAuth, ensureAdmin, async (req, res) => {
+router.get('/mine', ensureAuth, async (req, res) => {
   try {
+    const userId = extractUserId(req.user);
+    if (!userId) {
+      return res.status(401).json({ error: 'Usuário não autenticado' });
+    }
+
+    const rows = await listRecommendationsForUser(userId);
+    return res.json(rows.map(formatRecommendation));
+  } catch (err) {
+    console.error('Erro ao listar recomendações do jogador', err);
+    return res.status(500).json({ error: 'Não foi possível carregar suas recomendações' });
+  }
+});
+
+router.get('/', ensureAuth, async (req, res) => {
+  try {
+    const isAdmin = Boolean(req.user?.is_admin);
+    if (!isAdmin) {
+      const userId = extractUserId(req.user);
+      if (!userId) {
+        return res.status(401).json({ error: 'Usuário não autenticado' });
+      }
+      const rows = await listRecommendationsForUser(userId);
+      return res.json(rows.map(formatRecommendation));
+    }
+
+    const order = typeof req.query?.order === 'string' ? req.query.order.toLowerCase() : '';
+    const orderClause = buildAdminOrderClause(order);
+
     const [rows] = await pool.query(
-      `SELECT gr.id, gr.user_id, gr.game_name, gr.platform, gr.genre, gr.game_type, gr.notes, gr.status,
-              gr.admin_notes, gr.resolved_at, gr.created_at, gr.updated_at,
-              u.name AS user_name, u.nickname AS user_nickname, u.email AS user_email
-       FROM game_recommendations gr
-       JOIN users u ON u.id = gr.user_id
-       ORDER BY gr.created_at DESC`
+      `${ADMIN_RECOMMENDATION_SELECT}
+       ORDER BY ${orderClause}`
     );
 
     return res.json(rows.map(formatRecommendation));
@@ -90,14 +116,15 @@ router.patch('/:id', ensureAuth, ensureAdmin, updateValidators, async (req, res)
       return res.status(400).json({ error: 'Identificador inválido' });
     }
 
-    const status = req.body.status ?? null;
+    const rawStatus = typeof req.body.status === 'string' ? req.body.status.trim().toLowerCase() : null;
+    const status = rawStatus && ['pending', 'accepted', 'rejected'].includes(rawStatus) ? rawStatus : null;
     const hasAdminNotes = Object.prototype.hasOwnProperty.call(req.body, 'adminNotes');
     const adminNotes = typeof req.body.adminNotes === 'string' && req.body.adminNotes.trim().length
       ? req.body.adminNotes.trim()
       : null;
 
     const [existingRows] = await pool.query(
-      'SELECT id, status, game_name, platform, genre, game_type FROM game_recommendations WHERE id = ?',
+      'SELECT id, status, game_name, platform, genre, game_type, created_game_id FROM game_recommendations WHERE id = ?',
       [id]
     );
     if (!existingRows.length) {
@@ -106,25 +133,90 @@ router.patch('/:id', ensureAuth, ensureAdmin, updateValidators, async (req, res)
 
     const recommendation = existingRows[0];
     const updateFragments = buildRecommendationUpdateFragments({ status, adminNotes, hasAdminNotes });
+  const wasAccepted = recommendation.status === 'accepted';
+  const isAcceptingNow = status === 'accepted' && !wasAccepted;
+  const isRejectingNow = status === 'rejected';
+  const isLeavingAccepted = wasAccepted && isRejectingNow;
 
-    if (!updateFragments.updates.length) {
-      return res.status(200).json({ message: 'Nada para atualizar' });
+    if (!updateFragments.updates.length && !isLeavingAccepted) {
+      const current = await fetchRecommendationWithUser(id);
+      if (!current) {
+        return res.status(404).json({ error: 'Recomendação não encontrada' });
+      }
+      const recommendationPayload = formatRecommendation(current);
+      return res.json({
+        ...recommendationPayload,
+        message: 'Nenhuma alteração aplicada.'
+      });
     }
 
-    const shouldCreateGame = status === 'accepted' && recommendation.status !== 'accepted';
-    let createdGameId = null;
+    let createdGameId = recommendation.created_game_id ?? null;
+    let gameCreated = false;
+    let gameRemoved = false;
 
-    if (shouldCreateGame) {
+    if (isAcceptingNow) {
       conn = await pool.getConnection();
-      await conn.beginTransaction();
-      createdGameId = await ensureGameFromRecommendation(conn, recommendation);
-      await conn.query(
-        `UPDATE game_recommendations SET ${updateFragments.updates.join(', ')} WHERE id = ?`,
-        [...updateFragments.params, id]
-      );
-      await conn.commit();
-      conn.release();
-      conn = null;
+      try {
+        await conn.beginTransaction();
+        const { gameId, created } = await ensureGameFromRecommendation(conn, recommendation);
+        if (created) {
+          updateFragments.updates.push('created_game_id = ?');
+          updateFragments.params.push(gameId);
+          createdGameId = gameId;
+          gameCreated = true;
+        }
+        await conn.query(
+          `UPDATE game_recommendations SET ${updateFragments.updates.join(', ')} WHERE id = ?`,
+          [...updateFragments.params, id]
+        );
+        await conn.commit();
+      } catch (error) {
+        await conn.rollback();
+        throw error;
+      } finally {
+        conn.release();
+        conn = null;
+      }
+    } else if (isLeavingAccepted) {
+      // Re-fetch current created_game_id under lock and remove only that specific game
+      conn = await pool.getConnection();
+      try {
+        await conn.beginTransaction();
+
+        // lock the recommendation row to read the current created_game_id
+        const [lockRows] = await conn.query('SELECT created_game_id FROM game_recommendations WHERE id = ? FOR UPDATE', [id]);
+        const currentCreatedId = (lockRows[0] && lockRows[0].created_game_id) ? lockRows[0].created_game_id : null;
+
+        // always clear created_game_id on this recommendation
+        updateFragments.updates.push('created_game_id = NULL');
+        await conn.query(
+          `UPDATE game_recommendations SET ${updateFragments.updates.join(', ')} WHERE id = ?`,
+          [...updateFragments.params, id]
+        );
+
+        if (currentCreatedId) {
+          // check if other recommendations reference this same created_game_id
+          const [refRows] = await conn.query('SELECT COUNT(*) AS cnt FROM game_recommendations WHERE created_game_id = ?', [currentCreatedId]);
+          const refs = refRows[0] && typeof refRows[0].cnt !== 'undefined' ? Number(refRows[0].cnt) : 0;
+          if (refs === 0) {
+            // safe to delete the game (no other recommendation keeps it)
+            await conn.query('DELETE FROM games WHERE id = ?', [currentCreatedId]);
+            gameRemoved = true;
+            createdGameId = null;
+          } else {
+            // another recommendation still references the same game_id; do not delete
+            gameRemoved = false;
+          }
+        }
+
+        await conn.commit();
+      } catch (error) {
+        await conn.rollback();
+        throw error;
+      } finally {
+        conn.release();
+        conn = null;
+      }
     } else {
       await pool.query(
         `UPDATE game_recommendations SET ${updateFragments.updates.join(', ')} WHERE id = ?`,
@@ -137,12 +229,13 @@ router.patch('/:id', ensureAuth, ensureAdmin, updateValidators, async (req, res)
       return res.status(404).json({ error: 'Recomendação não encontrada' });
     }
 
-    const payload = formatRecommendation(updatedRow);
-    if (createdGameId) {
-      payload.createdGameId = createdGameId;
-    }
+    const recommendationPayload = formatRecommendation(updatedRow);
+    const message = buildStatusMessage(updatedRow.status, { gameCreated, gameRemoved });
 
-    return res.json(payload);
+    return res.json({
+      ...recommendationPayload,
+      message
+    });
   } catch (err) {
     if (conn) {
       try {
@@ -169,6 +262,7 @@ function formatRecommendation(row) {
     status: row.status,
     adminNotes: row.admin_notes,
     resolvedAt: row.resolved_at,
+  createdGameId: row.created_game_id ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     user: {
@@ -200,9 +294,61 @@ function buildRecommendationUpdateFragments({ status, adminNotes, hasAdminNotes 
   return { updates, params };
 }
 
+function buildStatusMessage(status, { gameCreated = false, gameRemoved = false } = {}) {
+  switch (status) {
+    case 'accepted':
+      return gameCreated
+        ? 'Recomendação aceita. Jogo criado e vinculado com sucesso.'
+        : 'Recomendação aceita.';
+    case 'rejected':
+      return gameRemoved
+        ? 'Recomendação rejeitada. Jogo criado anteriormente foi removido.'
+        : 'Recomendação rejeitada.';
+    case 'pending':
+      return 'Recomendação marcada como pendente.';
+    default:
+      return 'Recomendação atualizada.';
+  }
+}
+
+function buildAdminOrderClause(order) {
+  switch (order) {
+    case 'created-asc':
+      return 'gr.created_at ASC, gr.id ASC';
+    case 'name-asc':
+      return 'gr.game_name ASC, gr.created_at DESC';
+    case 'name-desc':
+      return 'gr.game_name DESC, gr.created_at DESC';
+    case 'created-desc':
+    default:
+      return 'gr.created_at DESC, gr.id DESC';
+  }
+}
+
 async function fetchRecommendationWithUser(id) {
   const [rows] = await pool.query(RECOMMENDATION_WITH_USER_QUERY, [id]);
   return rows[0] ?? null;
+}
+
+function extractUserId(user) {
+  if (!user) return null;
+  const raw = typeof user.id === 'string' ? Number.parseInt(user.id, 10) : user.id;
+  if (!Number.isInteger(raw) || raw <= 0) return null;
+  return raw;
+}
+
+async function listRecommendationsForUser(userId) {
+  const [rows] = await pool.query(
+    `SELECT gr.id, gr.user_id, gr.game_name, gr.platform, gr.genre, gr.game_type, gr.notes, gr.status,
+            gr.admin_notes, gr.resolved_at, gr.created_game_id, gr.created_at, gr.updated_at,
+            u.name AS user_name, u.nickname AS user_nickname, u.email AS user_email
+     FROM game_recommendations gr
+     LEFT JOIN users u ON u.id = gr.user_id
+     WHERE gr.user_id = ?
+     ORDER BY gr.created_at DESC`,
+    [userId]
+  );
+  return rows;
 }
 
 async function ensureGameFromRecommendation(conn, recommendation) {
@@ -211,7 +357,7 @@ async function ensureGameFromRecommendation(conn, recommendation) {
     throw new Error('Nome do jogo ausente na recomendação');
   }
 
-  const gameId = await findOrCreateGame(conn, gameName);
+  const { id: gameId, created } = await findOrCreateGame(conn, gameName);
 
   const platformNames = uniqueCaseInsensitive(splitNameList(recommendation.platform, CATALOG_NAME_MAX_LENGTH));
   const genreNames = uniqueCaseInsensitive(splitNameList(recommendation.genre, CATALOG_NAME_MAX_LENGTH));
@@ -239,24 +385,30 @@ async function ensureGameFromRecommendation(conn, recommendation) {
     await conn.query(`INSERT IGNORE INTO game_game_types (game_id, type_id) VALUES ${placeholders}`, values);
   }
 
-  return gameId;
+  return { gameId, created };
 }
 
 async function findOrCreateGame(conn, name) {
   const normalized = name.toUpperCase();
   const [existing] = await conn.query('SELECT id FROM games WHERE UPPER(name) = ? LIMIT 1', [normalized]);
-  if (existing.length) return existing[0].id;
+  if (existing.length) return { id: existing[0].id, created: false };
 
   try {
     const [result] = await conn.query('INSERT INTO games (name) VALUES (?)', [name]);
-    return result.insertId;
+    return { id: result.insertId, created: true };
   } catch (error) {
     if (error?.code === 'ER_DUP_ENTRY') {
       const [rows] = await conn.query('SELECT id FROM games WHERE UPPER(name) = ? LIMIT 1', [normalized]);
-      if (rows.length) return rows[0].id;
+      if (rows.length) return { id: rows[0].id, created: false };
     }
     throw error;
   }
+}
+
+async function removeCreatedGame(conn, gameId) {
+  const numericId = typeof gameId === 'string' ? Number.parseInt(gameId, 10) : gameId;
+  if (!Number.isInteger(numericId) || numericId <= 0) return;
+  await conn.query('DELETE FROM games WHERE id = ?', [numericId]);
 }
 
 async function resolveCatalogIds(conn, names, resolver) {

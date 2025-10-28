@@ -79,17 +79,27 @@
 		}
 
 		/* Forçar nome legível no tema claro */
-		.bubble .header .name {
+		.bubble:not(.mine) .header .name {
 			color: rgba(15, 23, 42, 0.95);
 			text-shadow: none;
 		}
 
-		.bubble .header .time {
+		.bubble:not(.mine) .header .time {
 			color: rgba(75,85,99,0.9);
 		}
 
-		.bubble .header .date {
+		.bubble:not(.mine) .header .date {
 			color: rgba(99,102,121,0.8);
+		}
+
+		.bubble.mine .header .name {
+			color: rgba(248, 250, 255, 0.98);
+			text-shadow: 0 1px 0 rgba(30, 41, 59, 0.28);
+		}
+
+		.bubble.mine .header .time,
+		.bubble.mine .header .date {
+			color: rgba(224, 231, 255, 0.82);
 		}
 	}
 }

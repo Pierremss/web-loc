@@ -18,6 +18,21 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
+CREATE TABLE IF NOT EXISTS pending_users (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  name VARCHAR(120) NOT NULL,
+  nickname VARCHAR(50),
+  email VARCHAR(160) NOT NULL UNIQUE,
+  password_hash VARCHAR(255) NOT NULL,
+  platforms VARCHAR(100),
+  game_style VARCHAR(20),
+  available_times TEXT,
+  profile TEXT,
+  avatar_url VARCHAR(500) NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id)
+) ENGINE=InnoDB;
+
 -- =============================================
 -- Group conversations (salas) schema
 -- Keeps existing direct messages intact; groups use separate tables
@@ -178,16 +193,28 @@ CREATE TABLE IF NOT EXISTS user_games (
   CONSTRAINT fk_ug_game FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
+CREATE TABLE IF NOT EXISTS pending_user_games (
+  pending_user_id INT UNSIGNED NOT NULL,
+  game_id INT NOT NULL,
+  PRIMARY KEY (pending_user_id, game_id),
+  CONSTRAINT fk_pug_pending_user FOREIGN KEY (pending_user_id) REFERENCES pending_users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_pug_game FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 CREATE TABLE IF NOT EXISTS verification_codes (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  user_id INT NOT NULL,
+  user_id INT NULL,
+  pending_user_id INT UNSIGNED NULL,
   email VARCHAR(255) NOT NULL,
   code CHAR(6) NOT NULL,
   expires_at DATETIME NOT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   KEY idx_verification_codes_user (user_id),
-  CONSTRAINT fk_verification_codes_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  KEY idx_verification_codes_pending (pending_user_id),
+  KEY idx_verification_codes_email (email),
+  CONSTRAINT fk_verification_codes_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_verification_codes_pending FOREIGN KEY (pending_user_id) REFERENCES pending_users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS game_recommendations (
@@ -201,11 +228,13 @@ CREATE TABLE IF NOT EXISTS game_recommendations (
   status ENUM('pending', 'accepted', 'rejected') NOT NULL DEFAULT 'pending',
   admin_notes TEXT NULL,
   resolved_at DATETIME NULL,
+  created_game_id INT UNSIGNED NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   KEY idx_game_recommendations_status (status),
   KEY idx_game_recommendations_created_at (created_at),
+  CONSTRAINT fk_game_recommendations_created_game FOREIGN KEY (created_game_id) REFERENCES games(id) ON DELETE SET NULL,
   CONSTRAINT fk_game_recommendations_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 

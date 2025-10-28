@@ -1,7 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { AlertController, ToastController } from '@ionic/angular';
 import { finalize } from 'rxjs/operators';
-import { GameRecommendation, GameRecommendationsService } from '../../services/game-recommendations.service';
+import { GameRecommendation, GameRecommendationsService, GameRecommendationUpdateResponse } from '../../services/game-recommendations.service';
 
 @Component({
   selector: 'app-admin-recomendacoes',
@@ -18,6 +18,7 @@ export class AdminRecomendacoesPage implements OnInit {
   loading = false;
   error = '';
   counts = { pending: 0, accepted: 0, rejected: 0 };
+  selectedOrder: 'created-desc' | 'created-asc' | 'name-asc' | 'name-desc' = 'created-desc';
 
   private readonly dateFormatter = new Intl.DateTimeFormat('pt-BR', {
     day: '2-digit',
@@ -33,7 +34,7 @@ export class AdminRecomendacoesPage implements OnInit {
 
   load(event?: CustomEvent) {
     if (!event) this.loading = true;
-    this.service.list()
+    this.service.list({ order: this.selectedOrder })
       .pipe(finalize(() => {
         this.loading = false;
         if (event && 'detail' in event && typeof (event as any).detail?.complete === 'function') {
@@ -54,6 +55,17 @@ export class AdminRecomendacoesPage implements OnInit {
 
   trackById(_: number, item: GameRecommendation) {
     return item.id;
+  }
+
+  onOrderChange(order: string | number | null | undefined) {
+    const allowed = ['created-desc', 'created-asc', 'name-asc', 'name-desc'] as const;
+    const input = typeof order === 'string' ? order : '';
+    const value = (allowed as readonly string[]).includes(input)
+      ? (input as typeof allowed[number])
+      : this.selectedOrder;
+    if (this.selectedOrder === value) return;
+    this.selectedOrder = value;
+    this.load();
   }
 
   statusLabel(status: GameRecommendation['status']) {
@@ -139,14 +151,15 @@ export class AdminRecomendacoesPage implements OnInit {
     }
 
     this.service.update(rec.id, payload).subscribe({
-      next: (updated) => {
-        this.updateLocal(updated);
-        const successMessage = status === 'pending'
+      next: (updated: GameRecommendationUpdateResponse) => {
+        const { message, ...recommendation } = updated;
+        this.updateLocal(recommendation);
+        const fallbackMessage = status === 'pending'
           ? 'Recomendação reaberta.'
           : status === 'accepted'
             ? 'Recomendação marcada como aceita.'
             : 'Recomendação marcada como rejeitada.';
-        this.presentToast(successMessage, 'success');
+        this.presentToast(message || fallbackMessage, 'success');
       },
       error: (err) => {
         const message = err?.error?.error || 'Não foi possível atualizar a recomendação.';
@@ -156,15 +169,9 @@ export class AdminRecomendacoesPage implements OnInit {
   }
 
   private applyData(list: GameRecommendation[]) {
-    const sorted = [...list].sort((a, b) => {
-      const order = this.statusPriority(a.status) - this.statusPriority(b.status);
-      if (order !== 0) return order;
-      const aTime = new Date(a.createdAt || '').getTime();
-      const bTime = new Date(b.createdAt || '').getTime();
-      return bTime - aTime;
-    });
+    const sorted = this.sortRecommendations(list);
     this.recommendations = sorted;
-    this.counts = sorted.reduce((acc, item) => {
+    this.counts = list.reduce((acc, item) => {
       acc[item.status] = (acc[item.status] || 0) + 1;
       return acc;
     }, { pending: 0, accepted: 0, rejected: 0 } as { pending: number; accepted: number; rejected: number });
@@ -180,13 +187,28 @@ export class AdminRecomendacoesPage implements OnInit {
   this.applyData([...this.recommendations]);
   }
 
-  private statusPriority(status: GameRecommendation['status']) {
-    switch (status) {
-      case 'pending': return 0;
-      case 'accepted': return 1;
-      case 'rejected': return 2;
-      default: return 3;
+  private sortRecommendations(list: GameRecommendation[]) {
+    const copy = [...list];
+    switch (this.selectedOrder) {
+      case 'created-asc':
+        return copy.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      case 'name-asc':
+        return copy.sort((a, b) => this.localeCompare(a.gameName, b.gameName) || this.resolveDateFallback(a, b, false));
+      case 'name-desc':
+        return copy.sort((a, b) => this.localeCompare(b.gameName, a.gameName) || this.resolveDateFallback(a, b, true));
+      case 'created-desc':
+      default:
+        return copy.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     }
+  }
+
+  private resolveDateFallback(a: GameRecommendation, b: GameRecommendation, desc = false) {
+    const diff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    return desc ? -diff : diff;
+  }
+
+  private localeCompare(a: string, b: string) {
+    return (a || '').localeCompare(b || '', 'pt-BR', { sensitivity: 'base' });
   }
 
   private async presentToast(message: string, color: 'success' | 'danger' | 'primary' | 'warning' = 'primary') {
