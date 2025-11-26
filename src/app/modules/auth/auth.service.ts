@@ -43,6 +43,20 @@ export class AuthService {
     return this.http.post(`${this.base}/register`, data);
   }
 
+  requestPasswordReset(email: string) {
+    return this.http.post<{ success: boolean; message: string; delivered?: boolean; expiresAt?: string; expiresInMinutes?: number }>(
+      `${this.base}/forgot-password`,
+      { email }
+    );
+  }
+
+  resetPassword(payload: { email: string; code: string; password: string }) {
+    return this.http.post<{ success: boolean; message: string }>(
+      `${this.base}/reset-password`,
+      payload
+    );
+  }
+
   sendVerificationCode(email: string) {
     return this.http.post<{ success: boolean; delivered: boolean; message?: string; expiresAt?: string; expiresInMinutes?: number }>(
       `/api/verification/send`,

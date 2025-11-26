@@ -123,29 +123,8 @@ export class AdminRecomendacoesPage implements OnInit {
 
     await alert.present();
   }
-
-  async reopen(rec: GameRecommendation) {
-    const alert = await this.alert.create({
-      header: 'Reabrir recomendação',
-      message: 'Deseja mover esta recomendação de volta para pendente?',
-      buttons: [
-        { text: 'Cancelar', role: 'cancel' },
-        {
-          text: 'Reabrir',
-          handler: () => this.applyDecision(rec, 'pending')
-        }
-      ]
-    });
-
-    await alert.present();
-  }
-
-  get hasPending() {
-    return this.counts.pending > 0;
-  }
-
-  private applyDecision(rec: GameRecommendation, status: GameRecommendation['status'], adminNotes?: string) {
-    const payload: { status?: GameRecommendation['status']; adminNotes?: string | null } = { status };
+  private applyDecision(rec: GameRecommendation, status: 'accepted' | 'rejected', adminNotes?: string) {
+    const payload: { status?: 'accepted' | 'rejected'; adminNotes?: string | null } = { status };
     if (adminNotes !== undefined) {
       payload.adminNotes = adminNotes.length ? adminNotes : null;
     }
@@ -154,11 +133,9 @@ export class AdminRecomendacoesPage implements OnInit {
       next: (updated: GameRecommendationUpdateResponse) => {
         const { message, ...recommendation } = updated;
         this.updateLocal(recommendation);
-        const fallbackMessage = status === 'pending'
-          ? 'Recomendação reaberta.'
-          : status === 'accepted'
-            ? 'Recomendação marcada como aceita.'
-            : 'Recomendação marcada como rejeitada.';
+        const fallbackMessage = status === 'accepted'
+          ? 'Recomendação marcada como aceita.'
+          : 'Recomendação marcada como rejeitada.';
         this.presentToast(message || fallbackMessage, 'success');
       },
       error: (err) => {

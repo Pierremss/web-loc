@@ -99,7 +99,7 @@ router.get('/', ensureAuth, async (req, res) => {
 });
 
 const updateValidators = [
-  body('status').optional().isIn(['pending', 'accepted', 'rejected']).withMessage('Status inválido'),
+  body('status').optional().isIn(['accepted', 'rejected']).withMessage('Status inválido'),
   body('adminNotes').optional({ nullable: true }).isLength({ max: 4000 }).withMessage('Notas administrativas muito extensas'),
 ];
 
@@ -132,13 +132,19 @@ router.patch('/:id', ensureAuth, ensureAdmin, updateValidators, async (req, res)
     }
 
     const recommendation = existingRows[0];
-    const updateFragments = buildRecommendationUpdateFragments({ status, adminNotes, hasAdminNotes });
-  const wasAccepted = recommendation.status === 'accepted';
-  const isAcceptingNow = status === 'accepted' && !wasAccepted;
-  const isRejectingNow = status === 'rejected';
-  const isLeavingAccepted = wasAccepted && isRejectingNow;
 
-    if (!updateFragments.updates.length && !isLeavingAccepted) {
+    const isPendingStatus = recommendation.status === 'pending';
+    if (status && !isPendingStatus) {
+      return res.status(409).json({ error: 'Esta recomendação já foi finalizada.' });
+    }
+
+    const updateFragments = buildRecommendationUpdateFragments({ status, adminNotes, hasAdminNotes });
+    const isAcceptingNow = status === 'accepted' && isPendingStatus;
+    const isRejectingNow = status === 'rejected' && isPendingStatus;
+    const hadCreatedGame = recommendation.created_game_id !== null && typeof recommendation.created_game_id !== 'undefined';
+    const needsGameRemoval = isRejectingNow && hadCreatedGame;
+
+    if (!updateFragments.updates.length && !needsGameRemoval) {
       const current = await fetchRecommendationWithUser(id);
       if (!current) {
         return res.status(404).json({ error: 'Recomendação não encontrada' });
@@ -177,17 +183,14 @@ router.patch('/:id', ensureAuth, ensureAdmin, updateValidators, async (req, res)
         conn.release();
         conn = null;
       }
-    } else if (isLeavingAccepted) {
-      // Re-fetch current created_game_id under lock and remove only that specific game
+    } else if (needsGameRemoval) {
       conn = await pool.getConnection();
       try {
         await conn.beginTransaction();
 
-        // lock the recommendation row to read the current created_game_id
         const [lockRows] = await conn.query('SELECT created_game_id FROM game_recommendations WHERE id = ? FOR UPDATE', [id]);
-        const currentCreatedId = (lockRows[0] && lockRows[0].created_game_id) ? lockRows[0].created_game_id : null;
+        const currentCreatedId = lockRows[0]?.created_game_id ?? null;
 
-        // always clear created_game_id on this recommendation
         updateFragments.updates.push('created_game_id = NULL');
         await conn.query(
           `UPDATE game_recommendations SET ${updateFragments.updates.join(', ')} WHERE id = ?`,
@@ -195,17 +198,34 @@ router.patch('/:id', ensureAuth, ensureAdmin, updateValidators, async (req, res)
         );
 
         if (currentCreatedId) {
-          // check if other recommendations reference this same created_game_id
-          const [refRows] = await conn.query('SELECT COUNT(*) AS cnt FROM game_recommendations WHERE created_game_id = ?', [currentCreatedId]);
-          const refs = refRows[0] && typeof refRows[0].cnt !== 'undefined' ? Number(refRows[0].cnt) : 0;
-          if (refs === 0) {
-            // safe to delete the game (no other recommendation keeps it)
+          await conn.query('DELETE FROM game_platforms WHERE game_id = ?', [currentCreatedId]);
+          await conn.query('DELETE FROM game_genres WHERE game_id = ?', [currentCreatedId]);
+          await conn.query('DELETE FROM game_game_types WHERE game_id = ?', [currentCreatedId]);
+
+          const [[refCounts]] = await conn.query(
+            `SELECT
+               (SELECT COUNT(*) FROM game_recommendations WHERE created_game_id = ?) AS recommendations,
+               (SELECT COUNT(*) FROM user_games WHERE game_id = ?) AS userGames,
+               (SELECT COUNT(*) FROM pending_user_games WHERE game_id = ?) AS pendingUserGames,
+               (SELECT COUNT(*) FROM game_platforms WHERE game_id = ?) AS platforms,
+               (SELECT COUNT(*) FROM game_genres WHERE game_id = ?) AS genres,
+               (SELECT COUNT(*) FROM game_game_types WHERE game_id = ?) AS types`,
+            [currentCreatedId, currentCreatedId, currentCreatedId, currentCreatedId, currentCreatedId, currentCreatedId]
+          );
+
+          const hasReferences = ['recommendations', 'userGames', 'pendingUserGames', 'platforms', 'genres', 'types']
+            .some((key) => Number(refCounts?.[key] || 0) > 0);
+
+          if (!hasReferences) {
             await conn.query('DELETE FROM games WHERE id = ?', [currentCreatedId]);
-            gameRemoved = true;
             createdGameId = null;
+            gameRemoved = true;
           } else {
-            // another recommendation still references the same game_id; do not delete
-            gameRemoved = false;
+            console.log('[game-recommendations] Jogo não removido; ainda possui referências', {
+              recommendationId: id,
+              gameId: currentCreatedId,
+              references: refCounts,
+            });
           }
         }
 
@@ -281,9 +301,7 @@ function buildRecommendationUpdateFragments({ status, adminNotes, hasAdminNotes 
   if (status) {
     updates.push('status = ?');
     params.push(status);
-    updates.push(status === 'accepted' || status === 'rejected'
-      ? 'resolved_at = CURRENT_TIMESTAMP'
-      : 'resolved_at = NULL');
+    updates.push('resolved_at = CURRENT_TIMESTAMP');
   }
 
   if (hasAdminNotes) {

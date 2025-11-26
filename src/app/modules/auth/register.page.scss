@@ -191,8 +191,20 @@
     color: var(--ion-text-color);
   }
 
+  ion-select {
+    --placeholder-color: rgba(var(--ion-text-color-rgb), 0.6);
+    --placeholder-opacity: 1;
+    color: rgba(var(--ion-text-color-rgb), 0.9);
+  }
+
   ion-select::part(icon) {
     color: rgba(var(--ion-text-color-rgb), 0.5);
+  }
+
+  /* Melhor legibilidade do texto selecionado/placeholder nos selects */
+  ion-select::part(text),
+  ion-select::part(placeholder) {
+    color: rgba(var(--ion-text-color-rgb), 0.92);
   }
 
   .btn-primary {
@@ -395,6 +407,94 @@
   ion-item {
     --background: rgba(255,255,255,0.05);
     --border-color: rgba(138,156,214,0.18);
+    /* Força a cor do conteúdo dos itens (rótulo + valor) no dark mode */
+    --color: #e9eefc;
+    color: #e9eefc;
+  }
+
+  ion-select {
+    color: rgba(233, 238, 252, 0.96);
+    --placeholder-color: rgba(233, 238, 252, 0.72);
+    --placeholder-opacity: 1;
+    --color: rgba(233, 238, 252, 0.96);
+  }
+
+  /* Texto dos selects (rótulo/valor) mais claro no dark mode */
+  ion-label,
+  ion-select::part(text),
+  ion-select::part(placeholder) {
+    color: rgba(233, 238, 252, 0.95);
+  }
+
+  ion-select::part(icon) {
+    color: rgba(233, 238, 252, 0.75);
+  }
+
+  /* Estilo do overlay do ion-select (interface=alert) apenas nesta tela */
+  /* ::ng-deep é necessário para atingir o overlay gerado fora da árvore do componente */
+  :host ::ng-deep ion-alert.webloc-select {
+    --background: #101831;
+    --ion-background-color: #101831;
+    --ion-text-color: rgba(255, 255, 255, 0.94);
+    --ion-text-color-rgb: 255, 255, 255;
+    --ion-color-step-400: #dfe6ff;
+    --ion-color-step-600: #c6d2ff;
+    --ion-color-step-850: #acbdff;
+    --color: rgba(255, 255, 255, 0.94);
+  }
+
+  :host ::ng-deep ion-alert.webloc-select .alert-wrapper {
+    background: var(--ion-background-color);
+    color: var(--ion-text-color);
+  }
+
+  :host ::ng-deep ion-alert.webloc-select .alert-title,
+  :host ::ng-deep ion-alert.webloc-select .alert-message,
+  :host ::ng-deep ion-alert.webloc-select .alert-radio-label,
+  :host ::ng-deep ion-alert.webloc-select .alert-checkbox-label {
+    color: rgba(255, 255, 255, 0.94) !important;
+    font-weight: 500;
+  }
+
+  :host ::ng-deep ion-alert.webloc-select .alert-input,
+  :host ::ng-deep ion-alert.webloc-select .alert-checkbox,
+  :host ::ng-deep ion-alert.webloc-select .alert-radio {
+    color: #f6f8ff;
+  }
+
+  :host ::ng-deep ion-alert.webloc-select .alert-checkbox-icon,
+  :host ::ng-deep ion-alert.webloc-select .alert-radio-icon,
+  :host ::ng-deep ion-alert.webloc-select .alert-checkbox-inner,
+  :host ::ng-deep ion-alert.webloc-select .alert-radio-inner {
+    border-color: rgba(167, 139, 250, 0.75);
+    background: rgba(167, 139, 250, 0.14);
+  }
+
+  :host ::ng-deep ion-alert.webloc-select .alert-checkbox-group,
+  :host ::ng-deep ion-alert.webloc-select .alert-radio-group {
+    background: rgba(19, 27, 52, 0.88);
+    border-radius: 12px;
+  }
+
+  :host ::ng-deep ion-alert.webloc-select .alert-tappable {
+    color: rgba(255, 255, 255, 0.92);
+  }
+
+  :host ::ng-deep ion-alert.webloc-select .alert-tappable:hover,
+  :host ::ng-deep ion-alert.webloc-select .alert-tappable[aria-checked="true"],
+  :host ::ng-deep ion-alert.webloc-select .alert-tappable[aria-selected="true"] {
+    background: rgba(167, 139, 250, 0.22);
+  }
+
+  :host ::ng-deep ion-alert.webloc-select .alert-tappable:hover .alert-checkbox-label,
+  :host ::ng-deep ion-alert.webloc-select .alert-tappable:hover .alert-radio-label,
+  :host ::ng-deep ion-alert.webloc-select .alert-tappable[aria-checked="true"] .alert-checkbox-label,
+  :host ::ng-deep ion-alert.webloc-select .alert-tappable[aria-selected="true"] .alert-radio-label {
+    color: #ffffff !important;
+  }
+
+  :host ::ng-deep ion-alert.webloc-select .alert-button {
+    color: #a78bfa; /* primária suave para os botões do alerta */
   }
 
   ion-label {

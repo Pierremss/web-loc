@@ -7,6 +7,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { pool } from '../db.js';
 import { issueVerificationCodeForPending, CODE_EXPIRATION_MINUTES } from '../services/email-verification.js';
+import { requestPasswordReset, resetPasswordWithCode, RESET_CODE_EXPIRATION_MINUTES } from '../services/password-reset.js';
 
 const router = Router();
 
@@ -44,6 +45,12 @@ function normalizeNumericIds(value) {
 async function fetchPlatformsByIds(ids) {
   if (!ids.length) return [];
   const [rows] = await pool.query('SELECT id, name FROM platforms WHERE id IN (?)', [ids]);
+  return rows;
+}
+
+async function fetchTypesByIds(ids) {
+  if (!ids.length) return [];
+  const [rows] = await pool.query('SELECT id, name FROM game_types WHERE id IN (?)', [ids]);
   return rows;
 }
 
@@ -87,6 +94,7 @@ router.post('/register',
   body('email').isEmail().withMessage('E-mail inválido'),
   body('password').isLength({min:6}).withMessage('Senha mínima de 6'),
   body('platforms').custom(val => Array.isArray(val) || typeof val === 'string').withMessage('Plataformas inválidas'),
+  body('types').optional().custom(val => Array.isArray(val) || typeof val === 'string').withMessage('Tipos de jogo inválidos'),
   body('game_style').isString().withMessage('Estilo de jogo inválido'),
   body('available_times').isString().withMessage('Horários inválidos'),
   body('profile').isString().withMessage('Perfil inválido'),
@@ -99,11 +107,15 @@ router.post('/register',
       return res.status(400).json({ error: arr[0]?.msg || 'Dados inválidos', errors: arr });
     }
 
-  let { name, nickname, email, password, platforms, game_style, available_times, profile, jogos_favoritos } = req.body;
+  let { name, nickname, email, password, platforms, game_style, available_times, profile, jogos_favoritos, types } = req.body;
   const platformIds = normalizeNumericIds(platforms);
   const favoriteGameIds = normalizeNumericIds(jogos_favoritos);
+  const typeIds = normalizeNumericIds(types);
   if (!platformIds.length) {
     return res.status(400).json({ error: 'Selecione ao menos uma plataforma válida' });
+  }
+  if (!typeIds.length) {
+    return res.status(400).json({ error: 'Selecione ao menos um tipo de jogo válido' });
   }
   let platformsString = '';
     // Garante que os demais campos não sejam undefined
@@ -123,6 +135,20 @@ router.post('/register',
         .sort((a, b) => a.name.localeCompare(b.name))
         .map((row) => row.name);
       platformsString = platformNames.join(',');
+
+      const typeRows = await fetchTypesByIds(typeIds);
+      const foundTypeIds = new Set(typeRows.map((row) => row.id));
+      const missingTypes = typeIds.filter((id) => !foundTypeIds.has(id));
+      if (missingTypes.length) {
+        return res.status(400).json({ error: 'Tipos de jogo inválidos', missing: missingTypes });
+      }
+      const orderedTypes = typeIds
+        .map((id) => typeRows.find((row) => row.id === id)?.name)
+        .filter((name) => typeof name === 'string' && name.trim().length);
+      game_style = orderedTypes[0] || game_style || '';
+      if (game_style.length > 80) {
+        game_style = game_style.slice(0, 80);
+      }
 
       email = String(email ?? '').trim().toLowerCase();
       const [existingUsers] = await pool.query('SELECT id, is_verified FROM users WHERE email = ?', [email]);
@@ -159,6 +185,14 @@ router.post('/register',
           params.push(pendingUserId, gameId);
         });
         await pool.query(`INSERT IGNORE INTO pending_user_games (pending_user_id, game_id) VALUES ${values}`, params);
+      }
+      if (typeIds.length > 0) {
+        const values = typeIds.map(() => '(?, ?)').join(', ');
+        const params = [];
+        typeIds.forEach((typeId) => {
+          params.push(pendingUserId, typeId);
+        });
+        await pool.query(`INSERT IGNORE INTO pending_user_types (pending_user_id, type_id) VALUES ${values}`, params);
       }
       let delivered = false;
       let expiresAt = null;
@@ -256,5 +290,64 @@ router.post('/login',
       return res.status(500).json({ error: 'Erro no login', detail: e.message });
     }
 });
+
+  router.post(
+    '/forgot-password',
+    body('email').isEmail().withMessage('Informe um e-mail válido.'),
+    async (req, res) => {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
+
+      const email = String(req.body.email ?? '').trim().toLowerCase();
+
+      try {
+        const result = await requestPasswordReset(email);
+        return res.json({
+          success: true,
+          message: 'Se encontrarmos uma conta para este e-mail, enviaremos um código de redefinição.',
+          delivered: result.delivered,
+          expiresAt: result.expiresAt,
+          expiresInMinutes: RESET_CODE_EXPIRATION_MINUTES
+        });
+      } catch (err) {
+        console.error('[auth] Falha ao iniciar redefinição de senha', err);
+        return res.status(err.status ?? 500).json({
+          error: err.status ? err.message : 'Não foi possível iniciar o processo de redefinição de senha. Tente novamente em instantes.'
+        });
+      }
+    }
+  );
+
+  router.post(
+    '/reset-password',
+    body('email').isEmail().withMessage('Informe um e-mail válido.'),
+    body('code').isLength({ min: 6, max: 6 }).withMessage('Código inválido.'),
+    body('password').isLength({ min: 6 }).withMessage('A nova senha deve ter pelo menos 6 caracteres.'),
+    async (req, res) => {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
+
+      const email = String(req.body.email ?? '').trim().toLowerCase();
+      const code = String(req.body.code ?? '').trim();
+      const password = String(req.body.password ?? '');
+
+      try {
+        await resetPasswordWithCode({ email, code, newPassword: password });
+        return res.json({
+          success: true,
+          message: 'Senha atualizada com sucesso. Você já pode fazer login com a nova senha.'
+        });
+      } catch (err) {
+        console.error('[auth] Falha ao redefinir senha', err);
+        return res.status(err.status ?? 500).json({
+          error: err.status ? err.message : 'Não foi possível redefinir a senha. Verifique os dados e tente novamente.'
+        });
+      }
+    }
+  );
 
 export default router;

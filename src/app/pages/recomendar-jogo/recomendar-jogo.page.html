@@ -24,17 +24,28 @@
         </ion-item>
         <ion-note *ngIf="showError('gameName')" color="danger">Informe o nome do jogo.</ion-note>
 
-        <ion-item [class.invalid]="showError('platform')">
-          <ion-label position="stacked">Plataforma</ion-label>
-          <ion-input formControlName="platform" type="text" autocomplete="off" maxlength="255"></ion-input>
-        </ion-item>
-        <ion-note *ngIf="showError('platform')" color="danger">Informe a plataforma.</ion-note>
+        <div class="option-card" [class.invalid]="showError('platforms')">
+          <div class="option-header">Plataformas</div>
+          <p class="option-hint">Escolha uma ou mais plataformas onde o jogo está disponível.</p>
+          <div class="option-list">
+            <ion-item lines="none" class="option-item" *ngFor="let option of platformOptions">
+              <ion-checkbox slot="start" [checked]="isPlatformSelected(option)" (ionChange)="onTogglePlatform(option, $event.detail.checked)"></ion-checkbox>
+              <ion-label>{{ option }}</ion-label>
+            </ion-item>
+          </div>
+        </div>
+        <ion-note *ngIf="showError('platforms')" color="danger">Selecione ao menos uma plataforma.</ion-note>
 
-        <ion-item [class.invalid]="showError('gameType')">
-          <ion-label position="stacked">Tipo</ion-label>
-          <ion-input formControlName="gameType" type="text" autocomplete="off" maxlength="255"></ion-input>
-        </ion-item>
-        <ion-note *ngIf="showError('gameType')" color="danger">Informe o tipo do jogo.</ion-note>
+        <div class="option-card" [class.invalid]="showError('gameType')">
+          <div class="option-header">Tipo</div>
+          <ion-radio-group formControlName="gameType">
+            <ion-item lines="none" class="option-item" *ngFor="let option of typeOptions">
+              <ion-radio slot="start" [value]="option"></ion-radio>
+              <ion-label>{{ option }}</ion-label>
+            </ion-item>
+          </ion-radio-group>
+        </div>
+        <ion-note *ngIf="showError('gameType')" color="danger">Selecione o tipo do jogo.</ion-note>
 
         <ion-item [class.invalid]="showError('genre')">
           <ion-label position="stacked">Gênero</ion-label>

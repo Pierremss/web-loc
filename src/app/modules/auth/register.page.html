@@ -62,6 +62,16 @@
           Próximo
           <ion-icon name="arrow-forward-outline" slot="end"></ion-icon>
         </ion-button>
+        <ion-button
+          expand="block"
+          color="medium"
+          class="btn-secondary"
+          type="button"
+          routerLink="/home"
+        >
+          <ion-icon name="arrow-back-outline" slot="start"></ion-icon>
+          Voltar
+        </ion-button>
       </form>
 
     <form *ngIf="etapaAtual === 2" (ngSubmit)="avancarEtapa()" class="form-stage surface-ghost stack">
@@ -81,31 +91,52 @@
 
       <ion-item>
         <ion-label>Jogos Favoritos</ion-label>
-        <ion-select multiple="true" [(ngModel)]="form.jogos_favoritos" name="jogos_favoritos">
+        <ion-select
+          multiple="true"
+          interface="alert"
+          [interfaceOptions]="{ cssClass: 'webloc-select' }"
+          [(ngModel)]="form.jogos_favoritos"
+          name="jogos_favoritos">
           <ion-select-option *ngFor="let g of jogos" [value]="g.id">{{g.name}}</ion-select-option>
         </ion-select>
       </ion-item>
       <div *ngIf="erros['jogos_favoritos']" class="error-message">{{ erros['jogos_favoritos'] }}</div>
       <ion-item>
         <ion-label>Plataformas</ion-label>
-        <ion-select multiple="true" [(ngModel)]="form.platforms" name="platforms">
+        <ion-select
+          multiple="true"
+          interface="alert"
+          [interfaceOptions]="{ cssClass: 'webloc-select' }"
+          [(ngModel)]="form.platforms"
+          name="platforms">
           <ion-select-option *ngFor="let p of platformOptions" [value]="p.id">{{ p.name }}</ion-select-option>
         </ion-select>
       </ion-item>
       <div *ngIf="erros['platforms']" class="error-message">{{ erros['platforms'] }}</div>
       <ion-item>
         <ion-label>Tipo de Jogo</ion-label>
-        <ion-select [(ngModel)]="form.game_style" name="game_style">
-          <ion-select-option *ngFor="let t of typeOptions" [value]="t.name">{{ t.name }}</ion-select-option>
+        <ion-select
+          [multiple]="true"
+          interface="alert"
+          [interfaceOptions]="{ cssClass: 'webloc-select' }"
+          [(ngModel)]="form.types"
+          name="types"
+          (ionChange)="onTypeSelectionChange($event)">
+          <ion-select-option *ngFor="let t of typeOptions" [value]="t.id">{{ t.name }}</ion-select-option>
         </ion-select>
       </ion-item>
+      <div *ngIf="erros['types']" class="error-message">{{ erros['types'] }}</div>
       <ion-item>
         <ion-label>Gêneros Preferidos</ion-label>
-        <ion-select multiple="true" [(ngModel)]="form.genres" name="genres">
+        <ion-select
+          multiple="true"
+          interface="alert"
+          [interfaceOptions]="{ cssClass: 'webloc-select' }"
+          [(ngModel)]="form.genres"
+          name="genres">
           <ion-select-option *ngFor="let g of genreOptions" [value]="g.id">{{ g.name }}</ion-select-option>
         </ion-select>
       </ion-item>
-      <div *ngIf="erros['game_style']" class="error-message">{{ erros['game_style'] }}</div>
 
       <ion-item>
         <ion-label position="floating">Descrição</ion-label>
@@ -224,6 +255,7 @@
         Reenviar código
       </ion-button>
 
+
       <div class="mensagens-retorno">
         <div *ngIf="verificationSuccess" class="sucesso-global">
           E-mail verificado! Redirecionando para o login...
@@ -232,4 +264,6 @@
     </form>
     </section>
   </div>
+  
+  
 </ion-content>

@@ -35,6 +35,24 @@ async function ensureStructures() {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
       `);
       await pool.query(`
+        CREATE TABLE IF NOT EXISTS pending_user_types (
+          pending_user_id INT UNSIGNED NOT NULL,
+          type_id INT NOT NULL,
+          PRIMARY KEY (pending_user_id, type_id),
+          CONSTRAINT fk_put_pending_user FOREIGN KEY (pending_user_id) REFERENCES pending_users(id) ON DELETE CASCADE,
+          CONSTRAINT fk_put_type FOREIGN KEY (type_id) REFERENCES game_types(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+      `);
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS user_types (
+          user_id INT NOT NULL,
+          type_id INT NOT NULL,
+          PRIMARY KEY (user_id, type_id),
+          CONSTRAINT fk_ut_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+          CONSTRAINT fk_ut_type FOREIGN KEY (type_id) REFERENCES game_types(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+      `);
+      await pool.query(`
         CREATE TABLE IF NOT EXISTS verification_codes (
           id INT UNSIGNED NOT NULL AUTO_INCREMENT,
           user_id INT NULL,
@@ -312,6 +330,15 @@ export async function verifyEmailCode(email, code) {
           params.push(userId, game_id);
         });
         await conn.query(`INSERT IGNORE INTO user_games (user_id, game_id) VALUES ${values}`, params);
+      }
+      const [pendingTypes] = await conn.query('SELECT type_id FROM pending_user_types WHERE pending_user_id = ?', [record.pending_user_id]);
+      if (pendingTypes.length) {
+        const values = pendingTypes.map(() => '(?, ?)').join(', ');
+        const params = [];
+        pendingTypes.forEach(({ type_id }) => {
+          params.push(userId, type_id);
+        });
+        await conn.query(`INSERT IGNORE INTO user_types (user_id, type_id) VALUES ${values}`, params);
       }
     }
 

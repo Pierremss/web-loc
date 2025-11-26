@@ -1,13 +1,117 @@
-<ion-header [translucent]="true">
+<ion-header>
   <ion-toolbar>
-    <ion-title>RecuperarSenha</ion-title>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/login"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Redefinir senha</ion-title>
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">RecuperarSenha</ion-title>
-    </ion-toolbar>
-  </ion-header>
+<ion-content class="ion-padding">
+  <div class="reset-wrapper">
+    <ion-card class="reset-card surface-card">
+      <ion-card-header>
+        <ion-card-subtitle *ngIf="stepLabel">
+          {{ stepLabel }}
+        </ion-card-subtitle>
+        <ion-card-title>
+          {{ stage === 'success' ? 'Senha atualizada' : 'Vamos recuperar o acesso' }}
+        </ion-card-title>
+      </ion-card-header>
+
+      <ion-card-content>
+        <ng-container [ngSwitch]="stage">
+          <form *ngSwitchCase="'request'" [formGroup]="requestForm" (ngSubmit)="submitEmail()" novalidate>
+            <p class="helper-text">
+              Informe o e-mail cadastrado. Enviaremos um código de segurança para confirmar a redefinição.
+            </p>
+
+            <ion-item class="input-elevated" lines="full">
+              <ion-label position="floating">E-mail</ion-label>
+              <ion-input type="email" formControlName="email" autocomplete="email" [disabled]="sending"></ion-input>
+            </ion-item>
+            <ion-note color="danger" *ngIf="emailControl?.touched && emailControl?.invalid">
+              Informe um e-mail válido.
+            </ion-note>
+
+            <ion-button expand="block" class="pill" type="submit" [disabled]="sending">
+              Enviar código
+              <ion-spinner slot="end" name="crescent" *ngIf="sending"></ion-spinner>
+            </ion-button>
+          </form>
+
+          <form *ngSwitchCase="'code'" [formGroup]="codeForm" (ngSubmit)="submitCode()" novalidate>
+            <p class="helper-text">
+              Enviamos um código para <strong>{{ emailSent }}</strong>. Digite-o abaixo para avançar.
+            </p>
+            <ion-item class="input-elevated" lines="full">
+              <ion-label position="floating">Código de 6 dígitos</ion-label>
+              <ion-input type="text" inputmode="numeric" formControlName="code" maxlength="6" [disabled]="resetting"></ion-input>
+            </ion-item>
+            <ion-note color="danger" *ngIf="codeControl?.touched && codeControl?.invalid">
+              O código deve conter 6 números.
+            </ion-note>
+
+            <div class="actions">
+              <ion-button fill="clear" size="small" type="button" (click)="backToEmail()" [disabled]="resetting">
+                Usar outro e-mail
+              </ion-button>
+              <ion-button fill="outline" size="small" type="button" (click)="resendCode()" [disabled]="sending || resetting">
+                Reenviar código
+              </ion-button>
+            </div>
+
+            <ion-button expand="block" class="pill" type="submit" [disabled]="resetting">
+              Confirmar código
+            </ion-button>
+          </form>
+
+          <form *ngSwitchCase="'password'" [formGroup]="passwordForm" (ngSubmit)="submitReset()" novalidate>
+            <p class="helper-text">
+              Código confirmado. Agora defina uma nova senha para a sua conta.
+            </p>
+
+            <ion-item class="input-elevated" lines="full">
+              <ion-label position="floating">Nova senha</ion-label>
+              <ion-input type="password" formControlName="password" minlength="6" [disabled]="resetting"></ion-input>
+            </ion-item>
+            <ion-note color="danger" *ngIf="passwordControl?.touched && passwordControl?.invalid">
+              A senha deve ter pelo menos 6 caracteres.
+            </ion-note>
+
+            <ion-item class="input-elevated" lines="full">
+              <ion-label position="floating">Confirmar nova senha</ion-label>
+              <ion-input type="password" formControlName="confirmPassword" [disabled]="resetting"></ion-input>
+            </ion-item>
+            <ion-note color="danger" *ngIf="passwordMismatch">
+              As senhas não coincidem.
+            </ion-note>
+
+            <div class="actions">
+              <ion-button fill="clear" size="small" type="button" (click)="backToCode()" [disabled]="resetting">
+                Voltar ao código
+              </ion-button>
+              <ion-button fill="outline" size="small" type="button" (click)="resendCode()" [disabled]="sending || resetting">
+                Reenviar código
+              </ion-button>
+            </div>
+
+            <ion-button expand="block" class="pill" type="submit" [disabled]="resetting">
+              Atualizar senha
+              <ion-spinner slot="end" name="crescent" *ngIf="resetting"></ion-spinner>
+            </ion-button>
+          </form>
+
+          <div *ngSwitchCase="'success'" class="success-state">
+            <ion-icon name="shield-checkmark-outline"></ion-icon>
+            <h2>Tudo certo!</h2>
+            <p>Sua senha foi redefinida com sucesso. Acesse novamente usando a nova senha.</p>
+            <ion-button expand="block" class="pill" (click)="goToLogin()">
+              Voltar para o login
+            </ion-button>
+          </div>
+        </ng-container>
+      </ion-card-content>
+    </ion-card>
+  </div>
 </ion-content>

@@ -26,7 +26,8 @@ const routes: Routes = [
   { path: 'jogador-perfil', loadChildren: () => import('./pages/jogador-perfil/jogador-perfil.module').then(m => m.JogadorPerfilPageModule) },
   { path: 'editar-perfil', loadChildren: () => import('./pages/editar-perfil/editar-perfil.module').then(m => m.EditarPerfilPageModule) },
   { path: 'swipe', loadChildren: () => import('./pages/swipe/swipe.module').then(m => m.SwipePageModule) },
-  { path: 'recomendar-jogo', loadChildren: () => import('./pages/recomendar-jogo/recomendar-jogo.module').then(m => m.RecomendarJogoPageModule) }
+  { path: 'recomendar-jogo', loadChildren: () => import('./pages/recomendar-jogo/recomendar-jogo.module').then(m => m.RecomendarJogoPageModule) },
+  { path: 'recuperarsenha', loadChildren: () => import('./pages/recuperar-senha/recuperar-senha.module').then(m => m.RecuperarSenhaPageModule) }
 ];
 
 @NgModule({

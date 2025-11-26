@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS users (
   is_admin TINYINT(1) NOT NULL DEFAULT 0,
   is_verified TINYINT(1) NOT NULL DEFAULT 0,
   platforms VARCHAR(100),
-  game_style VARCHAR(20),
+  game_style VARCHAR(80),
   available_times TEXT,
   profile TEXT,
   avatar_url VARCHAR(500) NULL,
@@ -25,13 +25,13 @@ CREATE TABLE IF NOT EXISTS pending_users (
   email VARCHAR(160) NOT NULL UNIQUE,
   password_hash VARCHAR(255) NOT NULL,
   platforms VARCHAR(100),
-  game_style VARCHAR(20),
-  available_times TEXT,
+  game_style VARCHAR(80),
   profile TEXT,
   avatar_url VARCHAR(500) NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id)
 ) ENGINE=InnoDB;
+
 
 -- =============================================
 -- Group conversations (salas) schema
@@ -115,6 +115,32 @@ CREATE TABLE IF NOT EXISTS conversation_invites (
   CONSTRAINT fk_ci_conversation FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
   CONSTRAINT fk_ci_inviter FOREIGN KEY (inviter_id) REFERENCES users(id) ON DELETE CASCADE,
   CONSTRAINT fk_ci_invitee FOREIGN KEY (invitee_id) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS rooms (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  owner_id INT NOT NULL,
+  name VARCHAR(200) NOT NULL,
+  link VARCHAR(500) NULL,
+  description TEXT NULL,
+  avatar_url VARCHAR(500) NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  KEY idx_rooms_owner (owner_id),
+  CONSTRAINT fk_rooms_owner FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS room_members (
+  room_id BIGINT UNSIGNED NOT NULL,
+  user_id INT NOT NULL,
+  role ENUM('owner','admin','member') NOT NULL DEFAULT 'member',
+  added_by INT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (room_id, user_id),
+  KEY idx_room_members_user (user_id),
+  CONSTRAINT fk_room_members_room FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE CASCADE,
+  CONSTRAINT fk_room_members_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_room_members_added FOREIGN KEY (added_by) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
 -- Garante que os campos existam mesmo em bancos antigos
@@ -201,6 +227,22 @@ CREATE TABLE IF NOT EXISTS pending_user_games (
   CONSTRAINT fk_pug_game FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
+CREATE TABLE IF NOT EXISTS user_types (
+  user_id INT NOT NULL,
+  type_id INT NOT NULL,
+  PRIMARY KEY (user_id, type_id),
+  CONSTRAINT fk_ut_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_ut_type FOREIGN KEY (type_id) REFERENCES game_types(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS pending_user_types (
+  pending_user_id INT UNSIGNED NOT NULL,
+  type_id INT NOT NULL,
+  PRIMARY KEY (pending_user_id, type_id),
+  CONSTRAINT fk_put_pending_user FOREIGN KEY (pending_user_id) REFERENCES pending_users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_put_type FOREIGN KEY (type_id) REFERENCES game_types(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 CREATE TABLE IF NOT EXISTS verification_codes (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT,
   user_id INT NULL,
@@ -217,6 +259,20 @@ CREATE TABLE IF NOT EXISTS verification_codes (
   CONSTRAINT fk_verification_codes_pending FOREIGN KEY (pending_user_id) REFERENCES pending_users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
+CREATE TABLE IF NOT EXISTS password_reset_requests (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id INT NOT NULL,
+  email VARCHAR(255) NOT NULL,
+  code CHAR(6) NOT NULL,
+  expires_at DATETIME NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  consumed_at DATETIME NULL,
+  PRIMARY KEY (id),
+  KEY idx_password_reset_user (user_id),
+  KEY idx_password_reset_email (email),
+  CONSTRAINT fk_password_reset_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 CREATE TABLE IF NOT EXISTS game_recommendations (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT,
   user_id INT NOT NULL,
@@ -228,7 +284,7 @@ CREATE TABLE IF NOT EXISTS game_recommendations (
   status ENUM('pending', 'accepted', 'rejected') NOT NULL DEFAULT 'pending',
   admin_notes TEXT NULL,
   resolved_at DATETIME NULL,
-  created_game_id INT UNSIGNED NULL,
+  created_game_id INT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
@@ -316,3 +372,6 @@ CREATE TABLE IF NOT EXISTS user_blocks (
   CONSTRAINT fk_ub_blocker FOREIGN KEY (blocker_id) REFERENCES users(id) ON DELETE CASCADE,
   CONSTRAINT fk_ub_blocked FOREIGN KEY (blocked_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
+
+ALTER TABLE pending_users
+  ADD COLUMN available_times TEXT NULL AFTER game_style;

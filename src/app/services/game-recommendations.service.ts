@@ -49,7 +49,7 @@ export class GameRecommendationsService {
     return this.list({ order: 'created-desc' });
   }
 
-  update(id: number, payload: { status?: 'pending' | 'accepted' | 'rejected'; adminNotes?: string | null }): Observable<GameRecommendationUpdateResponse> {
+  update(id: number, payload: { status?: 'accepted' | 'rejected'; adminNotes?: string | null }): Observable<GameRecommendationUpdateResponse> {
     return this.http.patch<GameRecommendationUpdateResponse>(`${this.base}/${id}`, payload);
   }
 }

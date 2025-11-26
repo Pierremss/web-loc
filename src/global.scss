@@ -140,3 +140,57 @@ ion-list {
   padding: 0 clamp(16px, 4vw, 32px);
 }
 
+/* Ajustes globais para selects no tema escuro (alert interface) */
+body.dark ion-alert.webloc-select,
+body.dark .dark ion-alert.webloc-select {
+  --background: #101831;
+  --ion-background-color: #101831;
+  --ion-text-color: rgba(255, 255, 255, 0.94);
+  --ion-text-color-rgb: 255, 255, 255;
+  --color: rgba(255, 255, 255, 0.94);
+}
+
+body.dark ion-alert.webloc-select .alert-wrapper,
+body.dark .dark ion-alert.webloc-select .alert-wrapper {
+  background: #101831;
+  color: rgba(255, 255, 255, 0.94);
+}
+
+body.dark ion-alert.webloc-select .alert-title,
+body.dark ion-alert.webloc-select .alert-message,
+body.dark ion-alert.webloc-select .alert-radio-label,
+body.dark ion-alert.webloc-select .alert-checkbox-label,
+body.dark .dark ion-alert.webloc-select .alert-title,
+body.dark .dark ion-alert.webloc-select .alert-message,
+body.dark .dark ion-alert.webloc-select .alert-radio-label,
+body.dark .dark ion-alert.webloc-select .alert-checkbox-label {
+  color: rgba(255, 255, 255, 0.94) !important;
+  font-weight: 500;
+}
+
+body.dark ion-alert.webloc-select .alert-tappable,
+body.dark .dark ion-alert.webloc-select .alert-tappable {
+  color: rgba(255, 255, 255, 0.92);
+  transition: background 0.18s ease;
+}
+
+body.dark ion-alert.webloc-select .alert-tappable:hover,
+body.dark ion-alert.webloc-select .alert-tappable[aria-checked="true"],
+body.dark ion-alert.webloc-select .alert-tappable[aria-selected="true"],
+body.dark .dark ion-alert.webloc-select .alert-tappable:hover,
+body.dark .dark ion-alert.webloc-select .alert-tappable[aria-checked="true"],
+body.dark .dark ion-alert.webloc-select .alert-tappable[aria-selected="true"] {
+  background: rgba(167, 139, 250, 0.22);
+}
+
+body.dark ion-alert.webloc-select .alert-tappable:hover .alert-checkbox-label,
+body.dark ion-alert.webloc-select .alert-tappable:hover .alert-radio-label,
+body.dark ion-alert.webloc-select .alert-tappable[aria-checked="true"] .alert-checkbox-label,
+body.dark ion-alert.webloc-select .alert-tappable[aria-selected="true"] .alert-radio-label,
+body.dark .dark ion-alert.webloc-select .alert-tappable:hover .alert-checkbox-label,
+body.dark .dark ion-alert.webloc-select .alert-tappable:hover .alert-radio-label,
+body.dark .dark ion-alert.webloc-select .alert-tappable[aria-checked="true"] .alert-checkbox-label,
+body.dark .dark ion-alert.webloc-select .alert-tappable[aria-selected="true"] .alert-radio-label {
+  color: #ffffff !important;
+}
+

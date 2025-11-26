@@ -42,6 +42,7 @@ export class RegisterPage implements OnInit {
     jogos_favoritos: [],
     platforms: [],
     game_style: '',
+    types: [],
     available_times: '',
     profile: ''
   };
@@ -130,8 +131,12 @@ export class RegisterPage implements OnInit {
       if (!plataformasSelecionadas.length) {
         this.erros['platforms'] = 'Selecione pelo menos uma plataforma.';
       }
-      if (!this.form.game_style || this.form.game_style.trim() === '') {
-        this.erros['game_style'] = 'Estilo de jogo é obrigatório.';
+      const tiposSelecionados = this.normalizeIdArray(this.form.types);
+      this.form.types = tiposSelecionados;
+      if (!tiposSelecionados.length) {
+        this.erros['types'] = 'Selecione pelo menos um tipo de jogo.';
+      } else {
+        this.form.game_style = this.resolvePrimaryGameStyle(tiposSelecionados) || '';
       }
       if (!this.form.profile || this.form.profile.trim() === '') {
         this.erros['profile'] = 'Descrição é obrigatória.';
@@ -172,6 +177,16 @@ export class RegisterPage implements OnInit {
     return JSON.stringify(normalized);
   }
 
+  onTypeSelectionChange(event: CustomEvent): void {
+    const rawValue = Array.isArray(event?.detail?.value) ? event.detail.value : [];
+    const normalized = this.normalizeIdArray(rawValue);
+    this.form.types = normalized;
+    this.form.game_style = this.resolvePrimaryGameStyle(normalized) || '';
+    if (normalized.length) {
+      delete this.erros['types'];
+    }
+  }
+
   submit(): void {
     // Inclui horários selecionados como string JSON
     this.form.available_times = this.getAvailableTimes();
@@ -185,6 +200,7 @@ export class RegisterPage implements OnInit {
     }
     const platformIds = this.normalizeIdArray(this.form.platforms);
     const favoriteIds = this.normalizeIdArray(this.form.jogos_favoritos);
+    const typeIds = this.normalizeIdArray(this.form.types || []);
     if (!platformIds.length) {
       this.loading = false;
       this.error = 'Selecione pelo menos uma plataforma válida.';
@@ -192,11 +208,13 @@ export class RegisterPage implements OnInit {
     }
     this.form.platforms = platformIds;
     this.form.jogos_favoritos = favoriteIds;
+    this.form.types = typeIds;
     console.log('[REGISTER] Enviando cadastro...', {
       name: this.form.name,
       email: this.form.email,
       jogos_favoritos: favoriteIds,
       platforms: platformIds,
+      types: typeIds,
       hasAvatar: !!this.avatarFile
     });
 
@@ -206,17 +224,17 @@ export class RegisterPage implements OnInit {
     fd.append('nickname', this.form.nickname || '');
     fd.append('email', this.form.email || '');
     fd.append('password', this.form.password || '');
-    fd.append('game_style', this.form.game_style || '');
+    const primaryStyle = this.resolvePrimaryGameStyle(typeIds) || this.form.game_style || '';
+    fd.append('game_style', primaryStyle);
     fd.append('available_times', this.form.available_times || '');
     fd.append('profile', this.form.profile || '');
     // Arrays como JSON para o backend parsear
-  fd.append('platforms', JSON.stringify(platformIds));
-  fd.append('jogos_favoritos', JSON.stringify(favoriteIds));
-  // anexar gêneros e tipos selecionados (se existirem)
-  const genres = this.normalizeIdArray(this.form.genres || []);
-  const types = this.normalizeIdArray(this.form.types || []);
-  if (genres.length) fd.append('genres', JSON.stringify(genres));
-  if (types.length) fd.append('types', JSON.stringify(types));
+    fd.append('platforms', JSON.stringify(platformIds));
+    fd.append('jogos_favoritos', JSON.stringify(favoriteIds));
+    // anexar gêneros e tipos selecionados (se existirem)
+    const genres = this.normalizeIdArray(this.form.genres || []);
+    if (genres.length) fd.append('genres', JSON.stringify(genres));
+    if (typeIds.length) fd.append('types', JSON.stringify(typeIds));
     if (this.avatarFile) {
       fd.append('avatar', this.avatarFile, this.avatarFile.name);
     }
@@ -249,6 +267,15 @@ export class RegisterPage implements OnInit {
         console.warn('Erro ao cadastrar', { err, payload, mapped: this.error });
       }
     });
+  }
+
+  private resolvePrimaryGameStyle(typeIds: number[]): string {
+    if (!Array.isArray(typeIds) || !typeIds.length) {
+      return '';
+    }
+    const firstId = typeIds[0];
+    const match = this.typeOptions.find((type: any) => Number(type?.id) === Number(firstId));
+    return match?.name ?? '';
   }
 
   private handleVerificationResponse(resp: any): void {
@@ -410,8 +437,27 @@ export class RegisterPage implements OnInit {
   }
 
   private normalizeIdArray(value: any): number[] {
-    if (!Array.isArray(value)) return [];
-    const ids = value
+    let source: any[] = [];
+    if (Array.isArray(value)) {
+      source = value;
+    } else if (typeof value === 'string' && value.trim() !== '') {
+      try {
+        const parsed = JSON.parse(value.trim());
+        if (Array.isArray(parsed)) {
+          source = parsed;
+        } else {
+          source = value.split(',').map((item) => item.trim()).filter(Boolean);
+        }
+      } catch {
+        source = value.split(',').map((item) => item.trim()).filter(Boolean);
+      }
+    } else if (value && typeof value === 'object' && 'length' in value) {
+      source = Array.from(value as any[]);
+    } else {
+      return [];
+    }
+
+    const ids = source
       .map((item: any) => {
         if (typeof item === 'number') return item;
         if (typeof item === 'string' && item.trim() !== '') return Number(item);

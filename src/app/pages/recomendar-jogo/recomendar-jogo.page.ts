@@ -1,9 +1,14 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { FormBuilder, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, ValidationErrors, Validators } from '@angular/forms';
 import { ToastController } from '@ionic/angular';
 import { Router } from '@angular/router';
 import { AuthService } from '../../modules/auth/auth.service';
 import { GameRecommendationsService } from '../../services/game-recommendations.service';
+
+function requireNonEmptyArray(control: AbstractControl): ValidationErrors | null {
+  const value = control.value;
+  return Array.isArray(value) && value.length > 0 ? null : { required: true };
+}
 
 @Component({
   selector: 'app-recomendar-jogo',
@@ -19,11 +24,13 @@ export class RecomendarJogoPage implements OnInit {
   readonly auth = inject(AuthService);
 
   submitting = false;
+  readonly platformOptions = ['PC', 'Mobile', 'Nintendo', 'Xbox', 'PlayStation 5'];
+  readonly typeOptions = ['Casual', 'Competitivo'];
 
-  readonly form = this.fb.group({
+  readonly form = this.fb.nonNullable.group({
     gameName: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(255)]],
-    platform: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(255)]],
-    gameType: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(255)]],
+    platforms: this.fb.nonNullable.control<string[]>([], [requireNonEmptyArray]),
+    gameType: this.fb.nonNullable.control(this.typeOptions[0], [Validators.required, Validators.minLength(2), Validators.maxLength(255)]),
     genre: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(255)]],
     notes: ['', [Validators.maxLength(4000)]],
   });
@@ -39,20 +46,20 @@ export class RecomendarJogoPage implements OnInit {
     this.form.markAllAsTouched();
     if (this.form.invalid || this.submitting) return;
 
-    const value = this.form.value;
+    const { gameName, platforms, gameType, genre, notes } = this.form.getRawValue();
     const payload = {
-      gameName: (value.gameName ?? '').trim(),
-      platform: (value.platform ?? '').trim(),
-      gameType: (value.gameType ?? '').trim(),
-      genre: (value.genre ?? '').trim(),
-      notes: value.notes && value.notes.trim().length ? value.notes.trim() : undefined,
+      gameName: gameName.trim(),
+      platform: platforms.map((p) => p.trim()).filter(Boolean).join(', '),
+      gameType: gameType.trim(),
+      genre: genre.trim(),
+      notes: notes && notes.trim().length ? notes.trim() : undefined,
     };
 
     this.submitting = true;
     this.recommendations.create(payload).subscribe({
       next: () => {
         this.submitting = false;
-        this.form.reset({ gameName: '', platform: '', gameType: '', genre: '', notes: '' });
+        this.form.reset({ gameName: '', platforms: [] as string[], gameType: this.typeOptions[0], genre: '', notes: '' });
         this.presentToast('Recomendação enviada! Obrigado pela sua sugestão.', 'success');
       },
       error: (err) => {
@@ -63,9 +70,29 @@ export class RecomendarJogoPage implements OnInit {
     });
   }
 
-  showError(controlName: string) {
-    const control = this.form.get(controlName);
-    return !!control && control.invalid && (control.dirty || control.touched);
+  showError(controlName: 'gameName' | 'platforms' | 'gameType' | 'genre' | 'notes') {
+    const control = this.form.controls[controlName];
+    return control.invalid && (control.dirty || control.touched);
+  }
+
+  isPlatformSelected(option: string): boolean {
+    const control = this.form.controls.platforms;
+    return control.value.includes(option);
+  }
+
+  onTogglePlatform(option: string, checked: boolean) {
+    const control = this.form.controls.platforms;
+    const current = [...control.value];
+    const next = new Set<string>(current);
+    if (checked) {
+      next.add(option);
+    } else {
+      next.delete(option);
+    }
+    control.setValue(Array.from(next));
+    control.markAsDirty();
+    control.markAsTouched();
+    control.updateValueAndValidity();
   }
 
   private async presentToast(message: string, color: 'success' | 'danger') {
