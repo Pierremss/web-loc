@@ -20,6 +20,46 @@
 
   .subtitulo { font-size: 1rem; color: var(--ion-color-medium); margin-bottom: 24px; }
 
+  .perfil-card {
+    --background: var(--webloc-input-bg);
+    border-radius: 14px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+    text-align: left;
+  }
+
+  .avatar-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .admin-avatar {
+    width: 84px;
+    height: 84px;
+    border: 3px solid var(--ion-color-primary);
+    background: rgba(255,255,255,0.04);
+    border-radius: 50%;
+    overflow: hidden;
+  }
+
+  .admin-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .admin-info h2 { margin: 0; font-size: 1.2rem; color: var(--ion-text-color); font-weight: 600; }
+
+  .admin-info p { margin: 0; color: var(--ion-color-medium); font-size: 0.95rem; word-break: break-word; }
+
+  .perfil-card ion-button { margin-top: 8px; }
+
+  .hint { display: block; font-size: 0.85rem; margin-top: 4px; }
+
   .menu-opcoes { display: flex; flex-direction: column; gap: 16px; }
 
   .opcao-card { --background: var(--webloc-input-bg); border-radius: 12px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }

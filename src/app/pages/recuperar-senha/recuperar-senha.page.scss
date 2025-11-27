@@ -20,7 +20,16 @@
 	--background: var(--ion-color-light, #f8f9fc);
 	--padding-start: 16px;
 	--border-radius: 14px;
+	--color: #1d2530;
+	--placeholder-color: rgba(29, 37, 48, 0.5);
 	margin-bottom: 0.5rem;
+}
+
+:host-context(.dark) .input-elevated {
+	--background: rgba(255, 255, 255, 0.92);
+	--color: #1d2530;
+	--placeholder-color: rgba(29, 37, 48, 0.45);
+	box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
 }
 
 ion-note {
@@ -46,6 +55,20 @@ ion-note {
 	flex-direction: column;
 	align-items: center;
 	gap: 1rem;
+}
+
+.reset-card {
+	ion-card-title,
+	ion-card-subtitle {
+		color: inherit;
+	}
+}
+
+:host-context(.dark) .reset-card {
+	ion-card-title,
+	ion-card-subtitle {
+		color: #f4f6fa;
+	}
 }
 
 .success-state ion-icon {

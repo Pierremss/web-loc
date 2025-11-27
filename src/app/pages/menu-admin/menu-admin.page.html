@@ -3,6 +3,24 @@
   <h1 class="titulo">Painel do administrador</h1>
   <p class="subtitulo">Gerencie jogadores, jogos e sugestões</p>
 
+    <ion-card class="perfil-card" *ngIf="user">
+      <div class="avatar-wrapper">
+        <ion-avatar class="admin-avatar">
+          <img [src]="avatarUrl" alt="Avatar do administrador" (error)="onImgError($event)">
+        </ion-avatar>
+        <div class="admin-info">
+          <h2>{{ user.name }}</h2>
+          <p>{{ user.email }}</p>
+        </div>
+      </div>
+      <input #fileInput type="file" accept="image/*" (change)="onFileSelected($event)" hidden>
+      <ion-button expand="block" fill="outline" (click)="fileInput.click()" [disabled]="uploading">
+        <ion-icon name="cloud-upload-outline" slot="start"></ion-icon>
+        {{ uploading ? 'Enviando…' : 'Atualizar foto' }}
+      </ion-button>
+      <ion-note class="hint" color="medium">PNG ou JPG até 20MB</ion-note>
+    </ion-card>
+
     <div class="menu-opcoes">
       <ion-card class="opcao-card" routerLink="/users">
         <ion-card-header>

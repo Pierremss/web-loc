@@ -1,37 +1,36 @@
 .login-page {
-  --background: linear-gradient(180deg, #161a39 0%, #0f1126 100%);
-  color: #e9ebff;
+  --background: linear-gradient(180deg, #f2f4ff 0%, #e7ebff 100%);
+  color: #1d2240;
 
   .login-container {
-    background: linear-gradient(160deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
-    border: 1px solid var(--ion-border-color);
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(27, 34, 64, 0.08);
     border-radius: var(--app-radius);
-    padding: 32px 24px;
     max-width: 460px;
     margin: 0 auto;
     padding: clamp(28px, 6vw, 40px);
     text-align: center;
+    box-shadow: 0 18px 48px rgba(15, 18, 56, 0.14);
   }
 
   .logo {
     display: flex;
     flex-direction: column;
-  gap: 16px;
-  backdrop-filter: saturate(1.1) blur(8px);
-  -webkit-backdrop-filter: saturate(1.1) blur(8px);
-    animation: fadeSlide .34s ease both;
+    gap: 16px;
+    animation: fadeSlide 0.34s ease both;
   }
 
-  .logo {
+  .heading-highlight {
     font-family: 'Orbitron', sans-serif;
     font-size: 2.2rem;
-    color: #7a7df5;
+    color: #4f57ff;
     margin-bottom: 4px;
   }
 
   .subtitle {
     font-size: 0.95rem;
     margin: 0;
+    color: rgba(29, 34, 64, 0.66);
   }
 
   .button-group {
@@ -46,7 +45,7 @@
   .divider {
     position: relative;
     text-align: center;
-    color: #777;
+    color: rgba(29, 34, 64, 0.55);
     margin: 16px 0;
     font-size: 0.85rem;
   }
@@ -58,7 +57,7 @@
     top: 50%;
     width: 36%;
     height: 1px;
-    background: #444;
+    background: rgba(29, 34, 64, 0.12);
   }
 
   .divider::before {
@@ -69,11 +68,22 @@
     right: 0;
   }
 
-  ion-item { --background: rgba(255,255,255,.06); --color: #e9ebff; border-radius: 12px; margin-top: 8px; border: 1px solid var(--ion-border-color); }
+  ion-item {
+    --background: rgba(27, 34, 64, 0.06);
+    --color: #1d2240;
+    --placeholder-color: rgba(29, 34, 64, 0.45);
+    border-radius: 12px;
+    margin-top: 8px;
+    border: 1px solid rgba(27, 34, 64, 0.12);
+  }
 
-  ion-label { color: #b7bdff; }
+  ion-label {
+    color: rgba(29, 34, 64, 0.6);
+  }
 
-  ion-input { color: #fff; }
+  ion-input {
+    color: #1b2142;
+  }
 
   .forgot-password {
     text-align: right;
@@ -81,7 +91,7 @@
     font-size: 0.82rem;
 
     a {
-      color: #a18bff;
+      color: #4f57ff;
       text-decoration: none;
 
       &:hover {
@@ -90,7 +100,14 @@
     }
   }
 
-  .grad { --background: linear-gradient(90deg, #8c2ce2, #3c88f7); --border-radius: 12px; --box-shadow: 0 4px 12px rgba(0,0,0,.3); font-weight: 700; font-size: .95rem; margin-top: 8px; }
+  .grad {
+    --background: linear-gradient(90deg, #7a3cff, #3c88f7);
+    --border-radius: 12px;
+    --box-shadow: 0 8px 20px rgba(76, 87, 200, 0.28);
+    font-weight: 700;
+    font-size: 0.95rem;
+    margin-top: 8px;
+  }
 
   .segmento-claro {
   ion-segment-button {
@@ -113,5 +130,56 @@
 
   .fadein { animation: fadeSlide .34s ease both; }
   @keyframes fadeSlide { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+}
+
+:host-context(.dark) .login-page {
+  --background: linear-gradient(180deg, #161a39 0%, #0f1126 100%);
+  color: #e9ebff;
+
+  .login-container {
+    background: linear-gradient(160deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: none;
+  }
+
+  .heading-highlight {
+    color: #7a7df5;
+  }
+
+  .subtitle {
+    color: rgba(233, 235, 255, 0.68);
+  }
+
+  .divider {
+    color: rgba(233, 235, 255, 0.45);
+  }
+
+  .divider::before,
+  .divider::after {
+    background: rgba(233, 235, 255, 0.16);
+  }
+
+  ion-item {
+    --background: rgba(255, 255, 255, 0.06);
+    --color: #e9ebff;
+    --placeholder-color: rgba(233, 235, 255, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  ion-label {
+    color: #b7bdff;
+  }
+
+  ion-input {
+    color: #ffffff;
+  }
+
+  .forgot-password a {
+    color: #a18bff;
+  }
+
+  .grad {
+    --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
 }
 
