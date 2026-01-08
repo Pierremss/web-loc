@@ -20,7 +20,6 @@ export class JogadorPerfilPage implements OnInit {
   private readonly gamesService = inject(GamesService);
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
-  user: any = this.auth.user;
   novoFavorito: number | null = null;
   loading = false;
   error = '';
@@ -37,9 +36,16 @@ export class JogadorPerfilPage implements OnInit {
   }
 
   carregarFavoritos() {
+    const userId = this.resolveUserId();
+    if (!userId) {
+      this.error = 'Sessão inválida. Faça login novamente para visualizar os favoritos.';
+      this.loading = false;
+      return;
+    }
     this.loading = true;
-    this.http.get<any[]>(`/api/users/${this.user.id}/favoritos`, this.headers()).subscribe({
+    this.http.get<any[]>(`/api/users/${userId}/favoritos`, this.headers()).subscribe({
       next: favs => {
+        this.error = '';
         // Mapeia possíveis campos de data vindos do backend para _ts
         this.favoritos = (favs || []).map((f: any, idx: number) => {
           const rawTs = f.created_at || f.added_at || f.favorited_at || f.updated_at || f.timestamp;
@@ -79,13 +85,23 @@ export class JogadorPerfilPage implements OnInit {
   }
 
   adicionarFavorito(gameId: number) {
-    this.http.post(`/api/users/${this.user.id}/favoritos`, { gameId }, this.headers()).subscribe(() => {
+    const userId = this.resolveUserId();
+    if (!userId) {
+      this.error = 'Sessão inválida. Faça login novamente para continuar.';
+      return;
+    }
+    this.http.post(`/api/users/${userId}/favoritos`, { gameId }, this.headers()).subscribe(() => {
       this.carregarFavoritos();
     });
   }
 
   removerFavorito(gameId: number) {
-    this.http.delete(`/api/users/${this.user.id}/favoritos/${gameId}`, this.headers()).subscribe(() => {
+    const userId = this.resolveUserId();
+    if (!userId) {
+      this.error = 'Sessão inválida. Faça login novamente para continuar.';
+      return;
+    }
+    this.http.delete(`/api/users/${userId}/favoritos/${gameId}`, this.headers()).subscribe(() => {
       this.carregarFavoritos();
     });
   }
@@ -101,7 +117,12 @@ export class JogadorPerfilPage implements OnInit {
 
   excluirConta() {
     if (confirm('Tem certeza que deseja excluir sua conta?')) {
-      this.http.delete(`/api/users/${this.user.id}`, this.headers()).subscribe(() => {
+      const userId = this.resolveUserId();
+      if (!userId) {
+        this.error = 'Sessão inválida. Faça login novamente para continuar.';
+        return;
+      }
+      this.http.delete(`/api/users/${userId}`, this.headers()).subscribe(() => {
         this.auth.logout();
         this.router.navigate(['/login']);
       });
@@ -120,6 +141,19 @@ export class JogadorPerfilPage implements OnInit {
     if ((img as any).dataset && (img as any).dataset.fallbackApplied) return;
     try { (img as any).dataset.fallbackApplied = '1'; } catch {}
     img.src = 'assets/icon/favicon.png';
+  }
+
+  get user() {
+    return this.auth.user;
+  }
+
+  private resolveUserId(): number | null {
+    const raw = this.auth.user?.id;
+    const parsed = Number(raw);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      return null;
+    }
+    return parsed;
   }
 }
 

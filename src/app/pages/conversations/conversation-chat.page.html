@@ -1,44 +1,363 @@
-<ion-header>
+<ion-header class="chat-header">
   <ion-toolbar>
     <ion-buttons slot="start">
-      <ion-menu-button></ion-menu-button>
+      <ion-back-button defaultHref="/conversations" text="Salas"></ion-back-button>
+      <ion-avatar class="chat-header__avatar chat-header__avatar--sm" aria-label="Avatar da sala">
+        <img [src]="normalizeConversationAvatar(conversation?.avatar_url)" (error)="onAvatarError($event)" alt="Avatar da sala" />
+      </ion-avatar>
     </ion-buttons>
-    <ion-title>Sala #{{ convId }}</ion-title>
+
+    <div class="chat-header__center">
+      <h2 class="chat-header__title">{{ roomName }}</h2>
+      <p class="chat-header__subtitle">{{ roomStatus }}</p>
+    </div>
+
+    <ion-buttons slot="end">
+      <ion-button fill="clear" aria-label="Opções da sala" (click)="openConversationActions()">
+        <ion-icon name="ellipsis-vertical"></ion-icon>
+      </ion-button>
+    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
+<input
+  type="file"
+  accept="image/*"
+  data-conv-avatar
+  style="display:none"
+  (change)="onConversationAvatarSelected($event)"
+/>
+
 <ion-content class="chat-page conversation-chat" fullscreen>
-  <div class="layout-container chat-wrapper">
-    <div class="chat-container surface-card">
-      <div class="messages">
-        <div *ngFor="let m of messages" class="message-row" [class.mine]="m.sender_id === auth.user?.id">
-          <div class="avatar-col" *ngIf="m.sender_id !== auth.user?.id">
-            <div class="avatar-fallback">{{ m.sender_name || ('#' + m.sender_id) }}</div>
-          </div>
-          <div class="bubble" [class.mine]="m.sender_id === auth.user?.id">
-            <div class="header">
-              <div class="meta-left">
-                <span class="name">{{ m.sender_name || ('Jogador #' + m.sender_id) }}</span>
-              </div>
-              <div class="meta-right">
-                <span class="time" *ngIf="m.__displayTime">{{ m.__displayTime }}</span>
-                <span class="date" *ngIf="m.__displayDate">{{ m.__displayDate }}</span>
+  <div class="chat-layout chat-layout--clean">
+    <section class="chat-columns chat-columns--clean">
+      <div class="chat-main chat-main--clean">
+        <div class="chat-stream" [class.chat-stream--empty]="!hasMessages">
+          <ng-container *ngIf="hasMessages; else emptyState">
+            <div class="messages" (scroll)="onScroll($event)">
+              <ng-container *ngFor="let m of displayMessages">
+                <div class="date-divider" *ngIf="m.__isMarker">
+                  <span class="line"></span>
+                  <span class="label">{{ m.__label }}</span>
+                  <span class="line"></span>
+                </div>
+                <div *ngIf="!m.__isMarker" class="message-row" [class.mine]="m.sender_id === auth.user?.id">
+                  <div class="avatar-col" *ngIf="m.sender_id !== auth.user?.id">
+                    <ng-container *ngIf="m.sender_avatar && !m.__avatarError; else fallbackAvatar">
+                      <ion-avatar class="message-avatar">
+                        <img [src]="normalizeConversationAvatar(m.sender_avatar)" (error)="m.__avatarError = true" alt="Avatar do participante" />
+                      </ion-avatar>
+                    </ng-container>
+                    <ng-template #fallbackAvatar>
+                      <div class="avatar-fallback">{{ initialsFromName(m.sender_name || m.sender_id) }}</div>
+                    </ng-template>
+                  </div>
+                  <div class="bubble" [class.mine]="m.sender_id === auth.user?.id">
+                    <div class="bubble-head">
+                      <div class="bubble-sender">{{ senderLabel(m) }}</div>
+                      <div class="bubble-meta">
+                        <div class="bubble-time">
+                          <span>{{ m.__displayTime }}</span>
+                          <span *ngIf="m.__displayDate">• {{ m.__displayDate }}</span>
+                        </div>
+                        <ion-button
+                          *ngIf="!m.deleted_at"
+                          size="small"
+                          fill="clear"
+                          class="bubble-delete bubble-menu"
+                          aria-label="Opções da mensagem"
+                          (click)="openMessageOptions(m)"
+                        >
+                          <ion-icon slot="icon-only" name="ellipsis-horizontal"></ion-icon>
+                        </ion-button>
+                      </div>
+                    </div>
+                    <div class="bubble-text" *ngIf="!m.deleted_at; else deletedTpl">{{ m.content }}</div>
+                    <ng-template #deletedTpl>
+                      <div class="bubble-text" style="opacity: 0.75; font-style: italic;">Mensagem excluída</div>
+                    </ng-template>
+                    <ng-container *ngIf="receiptsFor(m) as receipts">
+                      <div class="read-receipts" *ngIf="receipts.length">
+                        <span class="read-receipts__label">Visualizado por</span>
+                        <div class="read-receipts__avatars">
+                          <div
+                            class="read-receipts__avatar"
+                            *ngFor="let reader of receipts | slice:0:4"
+                            [attr.title]="receiptLabel(reader)"
+                            [attr.aria-label]="receiptLabel(reader)"
+                          >
+                            <ion-avatar class="read-receipts__avatar-img" *ngIf="reader.avatar_url && !reader.__avatarError">
+                              <img [src]="normalizeConversationAvatar(reader.avatar_url)" (error)="reader.__avatarError = true" alt="Avatar de quem visualizou" />
+                            </ion-avatar>
+                            <div class="avatar-fallback avatar-fallback--tiny" *ngIf="!reader.avatar_url || reader.__avatarError">
+                              {{ initialsFromName(receiptLabel(reader)) }}
+                            </div>
+                          </div>
+                          <div class="read-receipts__more" *ngIf="receipts.length > 4">+{{ receipts.length - 4 }}</div>
+                        </div>
+                      </div>
+                    </ng-container>
+                  </div>
+                </div>
+              </ng-container>
+            </div>
+            <div class="scroll-bottom" *ngIf="!atBottom && newMessages > 0">
+              <ion-button size="small" (click)="scrollToBottom()">
+                {{ newMessages }} nova(s) mensagem(ns)
+              </ion-button>
+            </div>
+          </ng-container>
+          <ng-template #emptyState>
+            <div class="empty-state">
+              <ion-icon name="sparkles-outline"></ion-icon>
+              <h3>Nenhuma mensagem registrada</h3>
+              <p>Apresente o propósito da sala, compartilhe links importantes ou convide o time para começar uma conversa.</p>
+              <div class="empty-state__placeholders">
+                <div class="placeholder-card"></div>
+                <div class="placeholder-card"></div>
               </div>
             </div>
-            <div class="text">{{ m.content }}</div>
-          </div>
+          </ng-template>
+        </div>
+        <div class="typing" *ngIf="typingUsers.size">
+          <ion-icon name="pulse-outline"></ion-icon>
+          {{ typingUsers.size }} digitando…
         </div>
       </div>
-      <div class="typing" *ngIf="typingUsers.size">{{ typingUsers.size }} digitando…</div>
-    </div>
+    </section>
   </div>
 </ion-content>
 
-<ion-footer class="chat-input">
-  <ion-toolbar class="composer-toolbar">
+<ion-modal [isOpen]="detailsOpen" (didDismiss)="detailsOpen = false" class="room-details-modal">
+  <ng-template>
+    <ion-header>
+      <ion-toolbar>
+        <ion-title>Dados da sala</ion-title>
+        <ion-buttons slot="end">
+          <ion-button fill="clear" (click)="detailsOpen = false" aria-label="Fechar">
+            <ion-icon name="close"></ion-icon>
+          </ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+
+    <ion-content class="ion-padding room-details-content">
+      <div class="room-details">
+        <section class="room-card">
+          <div class="room-card__header">
+            <ion-avatar class="room-card__avatar">
+              <img [src]="normalizeConversationAvatar(conversation?.avatar_url)" (error)="onAvatarError($event)" alt="Avatar da sala" />
+            </ion-avatar>
+            <div class="room-card__title">
+              <h2>{{ roomName }}</h2>
+              <p>{{ roomStatus }}</p>
+            </div>
+          </div>
+          <p class="room-card__description">{{ conversation?.description || 'Sem descrição cadastrada.' }}</p>
+          <div class="room-card__tags">
+            <ion-badge color="medium" class="pill">
+              <ion-icon name="person-circle-outline"></ion-icon>
+              <span>Moderador: {{ conversation?.owner_name || 'Equipe' }}</span>
+            </ion-badge>
+            <ion-badge color="tertiary" class="pill">
+              <ion-icon name="people-outline"></ion-icon>
+              <span>{{ members.length }} integrante(s)</span>
+            </ion-badge>
+            <ion-badge color="success" class="pill">
+              <ion-icon name="chatbubbles-outline"></ion-icon>
+              <span>{{ messages.length || 0 }} mensagem(ns)</span>
+            </ion-badge>
+          </div>
+        </section>
+
+        <section class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-card__icon">
+              <ion-icon name="alarm-outline"></ion-icon>
+            </div>
+            <div class="stat-card__body">
+              <p>Última atividade</p>
+              <strong>{{ displayLastActivity }}</strong>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card__icon stat-card__icon--info">
+              <ion-icon name="flash-outline"></ion-icon>
+            </div>
+            <div class="stat-card__body">
+              <p>Participação</p>
+              <strong>{{ members.length ? (messages.length / members.length | number:'1.0-0') : messages.length }} msg / membro</strong>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card__icon stat-card__icon--accent">
+              <ion-icon name="shield-checkmark-outline"></ion-icon>
+            </div>
+            <div class="stat-card__body">
+              <p>Visibilidade</p>
+              <strong>{{ conversation?.is_public ? 'Pública' : 'Privada' }}</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="member-panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Time</p>
+              <h3>Integrantes ({{ members.length }})</h3>
+            </div>
+            <ion-button size="small" fill="outline" (click)="openMembersManager()" [disabled]="!canManageConversation">
+              Gerenciar
+            </ion-button>
+          </div>
+
+          <div class="member-list" *ngIf="members.length; else noMembersModal">
+            <div class="member-card" *ngFor="let member of members">
+              <div class="member-card__avatar member-card__avatar--solid">
+                {{ initialsFromName(member.nickname || member.name || member.email || '') }}
+              </div>
+              <div class="member-card__info">
+                <strong>{{ member.nickname || member.name || member.email }}</strong>
+                <span class="muted">{{ member.email || 'Sem e-mail' }}</span>
+              </div>
+              <div class="member-card__role">
+                <ion-badge [color]="member.role === 'owner' ? 'primary' : member.role === 'admin' ? 'tertiary' : 'medium'">
+                  {{ member.role || 'membro' }}
+                </ion-badge>
+              </div>
+              <div class="member-card__actions" *ngIf="canManageConversation">
+                <ion-button
+                  size="small"
+                  fill="clear"
+                  color="danger"
+                  (click)="confirmRemoveMember(member)"
+                  aria-label="Remover integrante"
+                >
+                  <ion-icon name="person-remove-outline"></ion-icon>
+                </ion-button>
+              </div>
+            </div>
+          </div>
+          <ng-template #noMembersModal>
+            <p class="empty-note">Nenhum integrante listado.</p>
+          </ng-template>
+        </section>
+      </div>
+    </ion-content>
+  </ng-template>
+</ion-modal>
+
+<ion-modal [isOpen]="membersManagerOpen" (didDismiss)="closeMembersManager()" class="members-manager-modal">
+  <ng-template>
+    <ion-header>
+      <ion-toolbar>
+        <ion-title>Gerenciar integrantes</ion-title>
+        <ion-buttons slot="end">
+          <ion-button fill="clear" (click)="closeMembersManager()" aria-label="Fechar">
+            <ion-icon name="close"></ion-icon>
+          </ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+
+    <ion-content class="ion-padding">
+      <div class="member-manager">
+        <div class="member-form">
+          <h4>Adicionar amigos</h4>
+          <p class="muted">Adicione participantes usando sua lista de amigos. Quem já estiver no grupo aparece indisponível.</p>
+
+          <ion-searchbar
+            placeholder="Buscar amigos"
+            [value]="friendSearch"
+            (ionInput)="onFriendSearch($event)"
+          ></ion-searchbar>
+
+          <ion-spinner name="crescent" *ngIf="friendsLoading"></ion-spinner>
+
+          <ng-container *ngIf="!friendsLoading && filteredFriendsForAdd().length; else noFriendsToAdd">
+            <div class="member-row" *ngFor="let friend of filteredFriendsForAdd()">
+              <div class="member-row__avatar">{{ initialsFromName(displayFriendName(friend)) }}</div>
+              <div class="member-row__meta">
+                <strong>{{ displayFriendName(friend) }}</strong>
+                <span class="muted">{{ friend.email }}</span>
+              </div>
+
+              <ion-badge color="medium" class="role-chip" *ngIf="isFriendAlreadyMember(friend.id)">
+                Já no grupo
+              </ion-badge>
+
+              <ion-button
+                size="small"
+                fill="outline"
+                (click)="addFriendToConversation(friend)"
+                [disabled]="isFriendAlreadyMember(friend.id) || addingFriend[friend.id]"
+                aria-label="Adicionar amigo ao grupo"
+              >
+                <ion-spinner slot="start" *ngIf="addingFriend[friend.id]" name="crescent"></ion-spinner>
+                Adicionar
+              </ion-button>
+            </div>
+          </ng-container>
+
+          <ng-template #noFriendsToAdd>
+            <p class="empty-note" *ngIf="!friendsLoading">Nenhum amigo encontrado para adicionar.</p>
+          </ng-template>
+        </div>
+
+        <div class="member-form">
+          <h4>Adicionar novo integrante</h4>
+          <p class="muted">Use o e-mail para convidar; apelido é opcional.</p>
+          <ion-item lines="full">
+            <ion-label position="stacked">Apelido (opcional)</ion-label>
+            <ion-input [(ngModel)]="newMemberNickname" placeholder="Ex: ProPlayer"></ion-input>
+          </ion-item>
+          <ion-item lines="full">
+            <ion-label position="stacked">E-mail</ion-label>
+            <ion-input [(ngModel)]="newMemberEmail" type="email" placeholder="email@exemplo.com"></ion-input>
+          </ion-item>
+          <div class="form-actions">
+            <ion-button expand="block" (click)="submitNewMember()">Adicionar</ion-button>
+          </div>
+        </div>
+
+        <div class="member-list panel-list" *ngIf="members.length; else emptyManager">
+          <div class="member-row" *ngFor="let member of members">
+            <div class="member-row__avatar">{{ initialsFromName(member.nickname || member.name || member.email || '') }}</div>
+            <div class="member-row__meta">
+              <strong>{{ member.nickname || member.name || member.email }}</strong>
+              <span class="muted">{{ member.email || 'Sem e-mail' }}</span>
+            </div>
+            <ion-badge [color]="member.role === 'owner' ? 'primary' : member.role === 'admin' ? 'tertiary' : 'medium'" class="role-chip">
+              {{ member.role || 'membro' }}
+            </ion-badge>
+            <ion-button
+              *ngIf="canManageConversation && member.user_id !== auth.user?.id && member.role !== 'owner'"
+              size="small"
+              fill="clear"
+              color="danger"
+              (click)="confirmRemoveMember(member)"
+              aria-label="Remover integrante"
+            >
+              <ion-icon name="trash-outline"></ion-icon>
+            </ion-button>
+          </div>
+        </div>
+        <ng-template #emptyManager>
+          <p class="empty-note">Nenhum integrante cadastrado ainda.</p>
+        </ng-template>
+      </div>
+    </ion-content>
+  </ng-template>
+</ion-modal>
+
+<ion-footer class="chat-footer">
+  <ion-toolbar>
     <div class="composer">
+      <ion-button fill="clear" color="medium" class="composer__action" aria-label="Adicionar anexo">
+        <ion-icon name="add-outline"></ion-icon>
+      </ion-button>
       <ion-input
-        placeholder="Digite uma mensagem elegante"
+        placeholder="Escreva uma atualização para a equipe"
         [(ngModel)]="content"
         (ionInput)="onTyping()"
         (keyup.enter)="send()"

@@ -1,12 +1,14 @@
 import { Component, OnInit, OnDestroy, inject } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { MessagesService } from '../../services/messages.service';
 import { SocketService } from '../../services/socket.service';
 import { AuthService } from '../../modules/auth/auth.service';
 import { UsersService } from '../../services/users.service';
+import { NotificationsBadgeSyncService } from '../../services/notifications-badge-sync.service';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { environment } from '../../../environments/environment';
-import { ActionSheetController, ActionSheetButton } from '@ionic/angular';
+import { ActionSheetController, ActionSheetButton, AlertController, ModalController } from '@ionic/angular';
+import { ReportUserModalComponent } from './report-user.modal';
 
 @Component({
   selector: 'app-chat',
@@ -19,6 +21,9 @@ export class ChatPage implements OnInit, OnDestroy {
   messages: any[] = [];
   content = '';
   isTyping = false;
+  blocked = false;
+  blockedByMe = false;
+  blockedMe = false;
   private typingTimer: any;
   private typingUiTimer: any;
   peerName = 'Amigo';
@@ -48,18 +53,24 @@ export class ChatPage implements OnInit, OnDestroy {
   private handlerTyping: any;
   private handlerEdited: any;
   private handlerDeleted: any;
+  private handlerHidden: any;
   private handlerDelivered: any;
   private handlerRead: any;
 
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly msgSvc = inject(MessagesService);
   private readonly socketSvc = inject(SocketService);
   readonly auth = inject(AuthService);
   private readonly users = inject(UsersService);
+  private readonly badgeSync = inject(NotificationsBadgeSyncService);
   private readonly actionSheet = inject(ActionSheetController);
+  private readonly alertCtrl = inject(AlertController);
+  private readonly modalCtrl = inject(ModalController);
 
   ngOnInit() {
     this.otherId = Number(this.route.snapshot.paramMap.get('id'));
+    this.loadBlockStatus();
     this.loadPeer();
     this.load();
     const socket = this.socketSvc.connect(this.auth.token!);
@@ -117,6 +128,20 @@ export class ChatPage implements OnInit, OnDestroy {
         this.injectDateMarkers();
       }
     };
+
+    this.handlerHidden = ({ id }: any) => {
+      const msgId = Number(id);
+      if (!Number.isFinite(msgId)) return;
+      const before = this.messages.length;
+      this.messages = (this.messages || []).filter((m: any) => m.__isMarker || Number(m?.id) !== msgId);
+      if (this.messages.length !== before) {
+        if (this.replyingTo?.id === msgId) {
+          this.replyingTo = null;
+        }
+        delete this.messageMap[msgId];
+        this.injectDateMarkers();
+      }
+    };
     this.handlerDelivered = ({ messageId }: any) => {
       const i = this.messages.findIndex(m => m.id === messageId);
       if (i >= 0) {
@@ -141,6 +166,7 @@ export class ChatPage implements OnInit, OnDestroy {
     socket.on('message:typing', this.handlerTyping);
     socket.on('message:edited', this.handlerEdited);
     socket.on('message:deleted', this.handlerDeleted);
+    socket.on('message:hidden', this.handlerHidden);
     socket.on('message:delivered', this.handlerDelivered);
     socket.on('message:read', this.handlerRead);
   }
@@ -151,43 +177,75 @@ export class ChatPage implements OnInit, OnDestroy {
     socket?.off('message:typing', this.handlerTyping);
     socket?.off('message:edited', this.handlerEdited);
     socket?.off('message:deleted', this.handlerDeleted);
+    socket?.off('message:hidden', this.handlerHidden);
     socket?.off('message:delivered', this.handlerDelivered);
     socket?.off('message:read', this.handlerRead);
   }
 
   load() {
-    this.msgSvc.getConversation(this.otherId).subscribe(list => {
-      this.messageMap = {};
-      this.messages = list.map(m => {
-        const decorated = this.decorateMessage(m);
-        this.registerMessage(decorated);
-        this.linkReplyPreview(decorated);
-        return decorated;
-      });
-      this.injectDateMarkers();
-      this.replyingTo = null;
-      const lastMessage = [...this.messages].reverse().find(m => !m.__isMarker && m.id != null);
-      if (lastMessage) {
-        this.msgSvc.markRead(lastMessage.id).subscribe();
-      }
-      setTimeout(() => this.scrollToBottom(true), 0);
+    this.msgSvc.getConversation(this.otherId).subscribe({
+      next: (list) => {
+        this.messageMap = {};
+        this.messages = list.map(m => {
+          const decorated = this.decorateMessage(m);
+          this.registerMessage(decorated);
+          this.linkReplyPreview(decorated);
+          return decorated;
+        });
+        this.injectDateMarkers();
+        this.replyingTo = null;
+
+        const meId = Number(this.auth.user?.id);
+        const hasUnreadIncoming = this.messages.some(m =>
+          !m?.__isMarker &&
+          Number(m?.sender_id) === Number(this.otherId) &&
+          Number(m?.receiver_id) === meId &&
+          !m?.read_at
+        );
+
+        if (hasUnreadIncoming && Number.isFinite(meId)) {
+          this.msgSvc.markConversationRead(this.otherId).subscribe({
+            next: () => {
+              // Atualiza menu/notificações após marcar tudo como lido.
+              this.badgeSync.requestRefresh();
+            },
+            error: () => {}
+          });
+        }
+        setTimeout(() => this.scrollToBottom(true), 0);
+      },
+      error: () => {}
     });
   }
 
   send() {
     const text = this.content.trim();
-    if (!text) return;
+    if (!text || this.blocked) return;
     const replyToId = this.replyingTo?.id != null ? Number(this.replyingTo.id) : undefined;
-    this.msgSvc.send(this.otherId, text, replyToId).subscribe((msg: any) => {
-      const decorated = this.decorateMessage(msg);
-      this.registerMessage(decorated);
-      this.linkReplyPreview(decorated);
-      this.messages.push(decorated);
-      this.injectDateMarkers();
-      this.content = '';
-      this.replyingTo = null;
-      Haptics.impact({ style: ImpactStyle.Medium }).catch(() => {});
-      setTimeout(() => this.scrollToBottom(), 0);
+    this.msgSvc.send(this.otherId, text, replyToId).subscribe({
+      next: (msg: any) => {
+        const decorated = this.decorateMessage(msg);
+        this.registerMessage(decorated);
+        this.linkReplyPreview(decorated);
+        this.messages.push(decorated);
+        this.injectDateMarkers();
+        this.content = '';
+        this.replyingTo = null;
+        Haptics.impact({ style: ImpactStyle.Medium }).catch(() => {});
+        setTimeout(() => this.scrollToBottom(), 0);
+      },
+      error: (err) => {
+        const blocked = err?.status === 403 && (err?.error?.error === 'blocked');
+        if (blocked) {
+          this.blocked = true;
+          this.blockedByMe = false;
+          this.blockedMe = true;
+          this.presentBlockingMessage('Envio de mensagens indisponível',
+            'Este jogador bloqueou o contato. Por isso, não é possível enviar mensagens neste chat.');
+        } else {
+          this.presentBlockingMessage('Falha ao enviar', 'Não foi possível enviar a mensagem agora. Tente novamente em instantes.');
+        }
+      }
     });
   }
 
@@ -217,7 +275,6 @@ export class ChatPage implements OnInit, OnDestroy {
   }
 
   remove(m: any) {
-    if (!confirm('Excluir mensagem?')) return;
     this.msgSvc.remove(m.id).subscribe({
       next: () => {
         m.deleted_at = new Date();
@@ -226,6 +283,28 @@ export class ChatPage implements OnInit, OnDestroy {
       },
       error: (e) => alert('Não foi possível excluir: ' + (e?.error?.error || e.message))
     });
+  }
+
+  async confirmRemove(m: any) {
+    const id = Number(m?.id);
+    if (!Number.isFinite(id)) return;
+    if (m?.deleted_at) return;
+    const isMine = Number(m?.sender_id) === Number(this.auth.user?.id);
+    if (!isMine) return;
+
+    const dialog = await this.alertCtrl.create({
+      header: 'Apagar mensagem',
+      message: 'Deseja apagar esta mensagem? Ela ficará como “Mensagem excluída”.',
+      buttons: [
+        { text: 'Cancelar', role: 'cancel' },
+        {
+          text: 'Apagar',
+          role: 'destructive',
+          handler: () => this.remove(m),
+        },
+      ],
+    });
+    await dialog.present();
   }
 
   loadPeer() {
@@ -283,6 +362,192 @@ export class ChatPage implements OnInit, OnDestroy {
 
   clearReply() {
     this.replyingTo = null;
+  }
+
+  async openChatActions() {
+    const buttons: ActionSheetButton[] = this.blocked
+      ? (
+        this.blockedByMe
+          ? [
+              {
+                text: 'Desbloquear usuário',
+                icon: 'lock-open-outline',
+                handler: () => this.unblockPeer(),
+              },
+              {
+                text: 'Denunciar jogador',
+                icon: 'flag-outline',
+                handler: () => this.reportPeer(),
+              },
+              {
+                text: 'Ver perfil',
+                icon: 'person-circle-outline',
+                handler: () => this.viewProfile(),
+              },
+              {
+                text: 'Cancelar',
+                role: 'cancel',
+                icon: 'close',
+              }
+            ]
+          : [
+              {
+                text: 'Bloquear de volta',
+                role: 'destructive',
+                icon: 'ban',
+                handler: () => this.blockPeer(),
+              },
+              {
+                text: 'Denunciar jogador',
+                icon: 'flag-outline',
+                handler: () => this.reportPeer(),
+              },
+              {
+                text: 'Ver perfil',
+                icon: 'person-circle-outline',
+                handler: () => this.viewProfile(),
+              },
+              {
+                text: 'Cancelar',
+                role: 'cancel',
+                icon: 'close',
+              }
+            ]
+      ) : [
+        {
+          text: 'Bloquear usuário',
+          role: 'destructive',
+          icon: 'ban',
+          handler: () => this.blockPeer(),
+        },
+        {
+          text: 'Denunciar jogador',
+          icon: 'flag-outline',
+          handler: () => this.reportPeer(),
+        },
+        {
+          text: 'Ver perfil',
+          icon: 'person-circle-outline',
+          handler: () => this.viewProfile(),
+        },
+        {
+          text: 'Limpar mensagens',
+          icon: 'trash-outline',
+          handler: () => this.clearMessages(),
+        },
+        {
+          text: 'Cancelar',
+          role: 'cancel',
+          icon: 'close',
+        }
+      ];
+
+    const sheet = await this.actionSheet.create({
+      header: this.peerName || 'Opções',
+      buttons,
+      cssClass: 'chat-action-sheet'
+    });
+    await sheet.present();
+  }
+
+  private async reportPeer() {
+    const modal = await this.modalCtrl.create({
+      component: ReportUserModalComponent,
+      componentProps: {
+        reportedUserId: this.otherId,
+        reportedUserName: this.peerName || null,
+      },
+      backdropDismiss: false,
+    });
+
+    await modal.present();
+    const { data, role } = await modal.onWillDismiss();
+    if (role !== 'done' || !data?.ok) return;
+
+    // Recomendação pós-denúncia: sugerir bloquear
+    const confirm = await this.alertCtrl.create({
+      header: 'Denúncia enviada',
+      message: 'Para sua segurança, recomendamos bloquear este jogador para evitar novos contatos.',
+      buttons: [
+        { text: 'Agora não', role: 'cancel', cssClass: 'report-sent-cancel' },
+        {
+          text: 'Bloquear jogador',
+          role: 'destructive',
+          cssClass: 'report-sent-block',
+          handler: () => this.blockPeer(),
+        }
+      ],
+      cssClass: 'report-sent-alert',
+      mode: 'ios'
+    });
+    await confirm.present();
+  }
+
+  private blockPeer() {
+    this.msgSvc.block(this.otherId).subscribe({
+      next: () => {
+        this.blocked = true;
+        this.blockedByMe = true;
+        this.blockedMe = false;
+        this.presentBlockingMessage(
+          'Jogador bloqueado',
+          'Você bloqueou este jogador. Para sua segurança, o envio de mensagens foi desativado. Você pode desbloquear a qualquer momento.'
+        );
+        this.router.navigate(['/home']);
+      },
+      error: () => this.presentBlockingMessage('Não foi possível bloquear', 'Tente novamente em instantes.')
+    });
+  }
+
+  private unblockPeer() {
+    this.msgSvc.unblock(this.otherId).subscribe({
+      next: () => {
+        this.blocked = false;
+        this.blockedByMe = false;
+        this.blockedMe = false;
+        this.presentBlockingMessage('Jogador desbloqueado', 'Pronto! Você já pode voltar a conversar normalmente.');
+        this.load();
+      },
+      error: () => this.presentBlockingMessage('Não foi possível desbloquear', 'Tente novamente em instantes.')
+    });
+  }
+
+  private loadBlockStatus() {
+    this.msgSvc.getBlockStatus(this.otherId).subscribe({
+      next: (s) => {
+        this.blocked = s.blockedByMe || s.blockedMe;
+        this.blockedByMe = s.blockedByMe;
+        this.blockedMe = s.blockedMe;
+      },
+      error: () => {}
+    });
+  }
+
+  private async presentBlockingMessage(header: string, message: string) {
+    const alert = await this.alertCtrl.create({
+      header,
+      message,
+      buttons: ['OK'],
+    });
+    await alert.present();
+  }
+
+  private viewProfile() {
+    this.router.navigate(['/user-profile', this.otherId]);
+  }
+
+  private clearMessages() {
+    this.msgSvc.clearConversation(this.otherId).subscribe({
+      next: () => {
+        this.messages = [];
+        this.messageMap = {};
+        this.replyingTo = null;
+        this.newMessages = 0;
+        this.injectDateMarkers();
+        this.load();
+      },
+      error: () => alert('Não foi possível limpar as mensagens agora.')
+    });
   }
 
   onBubblePointerDown(ev: PointerEvent, message: any) {
@@ -454,6 +719,20 @@ export class ChatPage implements OnInit, OnDestroy {
       },
     ];
 
+    buttons.push({
+      text: 'Apagar para mim',
+      icon: 'eye-off-outline',
+      role: 'destructive',
+      handler: () => {
+        const msgId = Number(message?.id);
+        if (!Number.isFinite(msgId)) return;
+        this.msgSvc.hide(msgId).subscribe({
+          next: () => this.handlerHidden?.({ id: msgId }),
+          error: (e) => alert('Não foi possível apagar: ' + (e?.error?.error || e.message))
+        });
+      },
+    });
+
     if (isMine) {
       buttons.push(
         {
@@ -462,10 +741,10 @@ export class ChatPage implements OnInit, OnDestroy {
           handler: () => this.edit(message),
         },
         {
-          text: 'Excluir',
+          text: 'Apagar para todos',
           icon: 'trash-outline',
           role: 'destructive',
-          handler: () => this.remove(message),
+          handler: () => this.confirmRemove(message),
         },
       );
     }
@@ -476,6 +755,7 @@ export class ChatPage implements OnInit, OnDestroy {
       header: 'Opções da mensagem',
       buttons,
       mode: 'ios',
+      cssClass: 'chat-action-sheet',
     });
 
     await sheet.present();

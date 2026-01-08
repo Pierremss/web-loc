@@ -42,6 +42,9 @@ export class EditarPerfilPage implements OnInit {
 
   ngOnInit() {
     this.form = { ...this.auth.user };
+    if (this.auth.user?.id) {
+      this.form.id = this.auth.user.id;
+    }
     this.genresService.list().subscribe(list => this.form.genreOptions = list);
     this.typesService.list().subscribe(list => this.form.typeOptions = list);
     this.inicializarHorarios();
@@ -62,10 +65,23 @@ export class EditarPerfilPage implements OnInit {
   }
 
   async salvar() {
+    if (!this.hasAtLeastOneScheduleSlot()) {
+      this.error = 'Selecione pelo menos um dia e horário em que joga';
+      const t = await this.toastCtrl.create({ message: this.error, color: 'warning', duration: 2500 });
+      await t.present();
+      return;
+    }
+    const userId = this.getLoggedUserId();
+    if (!userId) {
+      this.error = 'Sessão inválida. Faça login novamente para continuar.';
+      const toast = await this.toastCtrl.create({ message: this.error, color: 'danger', duration: 2500 });
+      await toast.present();
+      return;
+    }
     this.loading = true;
     const loader = await this.loadingCtrl.create({ message: 'Salvando…' });
     await loader.present();
-    this.http.put(`/api/users/${this.form.id}`, this.form, this.headers()).subscribe({
+    this.http.put(`/api/users/${userId}`, this.form, this.headers()).subscribe({
       next: async (updated: any) => {
         // Atualiza estado local (form)
         this.form = { ...updated };
@@ -99,9 +115,16 @@ export class EditarPerfilPage implements OnInit {
       await t.present();
       return;
     }
+    const userId = this.getLoggedUserId();
+    if (!userId) {
+      this.error = 'Sessão inválida. Faça login novamente para continuar.';
+      const toast = await this.toastCtrl.create({ message: this.error, color: 'danger', duration: 2500 });
+      await toast.present();
+      return;
+    }
     const loader = await this.loadingCtrl.create({ message: 'Enviando imagem…' });
     await loader.present();
-    this.users.uploadAvatar(this.form.id, file).subscribe({
+    this.users.uploadAvatar(userId, file).subscribe({
       next: async res => {
         this.form.avatar_url = res.avatar_url;
         if (this.auth.user) {
@@ -202,6 +225,10 @@ export class EditarPerfilPage implements OnInit {
     return normalized;
   }
 
+  private hasAtLeastOneScheduleSlot(): boolean {
+    return Object.values(this.horariosSelecionados || {}).some((periods) => Array.isArray(periods) && periods.length > 0);
+  }
+
   private normalizePeriodValue(value: string): string {
     const trimmed = String(value ?? '').trim();
     if (!trimmed) return '';
@@ -255,5 +282,14 @@ export class EditarPerfilPage implements OnInit {
       'Madrugada': 'moon-outline'
     };
     return icons[periodo] || 'time-outline';
+  }
+
+  private getLoggedUserId(): number | null {
+    const raw = this.auth.user?.id ?? this.form?.id;
+    const parsed = Number(raw);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      return null;
+    }
+    return parsed;
   }
 }

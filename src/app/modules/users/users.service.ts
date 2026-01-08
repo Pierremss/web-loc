@@ -17,4 +17,20 @@ export class UsersService {
   create(dto: any) { return this.http.post(this.base, dto, this.headers()); }
   update(id: number, dto: any) { return this.http.put(`${this.base}/${id}`, dto, this.headers()); }
   delete(id: number) { return this.http.delete(`${this.base}/${id}`, this.headers()); }
+
+  ban(id: number, minutes = 24 * 60, reason?: string) {
+    return this.http.post(
+      `${this.base}/${id}/ban`,
+      { minutes, reason: reason || undefined },
+      this.headers()
+    );
+  }
+
+  unban(id: number, reason?: string) {
+    return this.http.post(
+      `${this.base}/${id}/unban`,
+      { reason: reason || undefined },
+      this.headers()
+    );
+  }
 }

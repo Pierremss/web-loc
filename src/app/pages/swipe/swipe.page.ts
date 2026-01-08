@@ -3,6 +3,7 @@ import { IonModal, ToastController } from '@ionic/angular';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { PlatformsService } from '../../services/platforms.service';
+import { GenresService, Genre } from '../../services/genres.service';
 import { SwipeDeckFilters, SwipeDeckItem, SwipeProfile, SwipeService } from '../../services/swipe.service';
 import { Platform } from '../../model/platform';
 
@@ -27,11 +28,13 @@ export class SwipePage implements OnInit {
   angle = 0;
   Math = Math;
 
-  filters: SwipeDeckFilters = { limit: 20, minCompatibility: 0 };
+  filters: SwipeDeckFilters = { limit: 20, minCompatibility: 0, genreIds: [] };
   platformOptions: Platform[] = [];
+  genreOptions: Genre[] = [];
   styleOptions = ['Casual', 'Competitivo', 'Cooperativo'];
   periodOptions = ['Manha', 'Tarde', 'Noite', 'Madrugada'];
   compatibilityFloor = 0;
+  filterPopoverOptions = { cssClass: 'webloc-filter-popover' };
   private readonly dayOrder = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
   private readonly dayLabels: Record<string, string> = {
     Segunda: 'Seg.',
@@ -62,12 +65,14 @@ export class SwipePage implements OnInit {
 
   private readonly swipe = inject(SwipeService);
   private readonly platforms = inject(PlatformsService);
+  private readonly genres = inject(GenresService);
   private readonly toast = inject(ToastController);
   @ViewChild('profileModal') profileModal?: IonModal;
   @ViewChild('filterModal') filterModal?: IonModal;
 
   ngOnInit() {
     this.loadPlatforms();
+    this.loadGenres();
     void this.load('initial');
   }
 
@@ -75,6 +80,14 @@ export class SwipePage implements OnInit {
     this.platforms.list().subscribe({
       next: (platforms) => {
         this.platformOptions = [...platforms].sort((a, b) => a.name.localeCompare(b.name));
+      },
+    });
+  }
+
+  private loadGenres() {
+    this.genres.list().subscribe({
+      next: (genres) => {
+        this.genreOptions = [...genres].sort((a, b) => a.name.localeCompare(b.name));
       },
     });
   }
@@ -245,6 +258,11 @@ export class SwipePage implements OnInit {
     this.filters.platformIds = (this.filters.platformIds || [])
       .map((v) => Number(v))
       .filter((v) => Number.isFinite(v) && v > 0);
+    this.filters.genreIds = (this.filters.genreIds || [])
+      .map((v) => Number(v))
+      .filter((v) => Number.isFinite(v) && v > 0);
+    this.filters.gameStyle = this.filters.gameStyle || undefined;
+    this.filters.period = this.filters.period || undefined;
     this.filters.limit = 20;
     void this.load('refresh');
     this.isFilterOpen = false;
@@ -252,7 +270,7 @@ export class SwipePage implements OnInit {
   }
 
   resetFilters() {
-    this.filters = { limit: 20, minCompatibility: 0 };
+    this.filters = { limit: 20, minCompatibility: 0, genreIds: [] };
     this.compatibilityFloor = 0;
     void this.load('refresh');
     this.isFilterOpen = false;
@@ -398,6 +416,20 @@ export class SwipePage implements OnInit {
       .map((period) => this.normalizePeriodLabel(String(period)))
       .filter(Boolean);
     return this.uniqueSequence(formatted);
+  }
+
+  selectedGenreNames(): string[] {
+    if (!this.filters.genreIds?.length) return [];
+    const selected = new Set(this.filters.genreIds);
+    return this.genreOptions.filter((genre) => selected.has(genre.id)).map((genre) => genre.name);
+  }
+
+  genreFilterLabel(): string {
+    const names = this.selectedGenreNames();
+    if (!names.length) return '';
+    if (names.length === 1) return names[0];
+    if (names.length === 2) return names.join(', ');
+    return `${names.slice(0, 2).join(', ')} +${names.length - 2}`;
   }
 
   private normalizePeriodLabel(period: string): string {

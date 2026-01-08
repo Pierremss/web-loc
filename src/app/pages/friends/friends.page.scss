@@ -117,10 +117,14 @@
 
 	ion-searchbar {
 		--background: rgba(15, 23, 42, 0.65);
+		--color: var(--ion-text-color);
+		--placeholder-color: rgba(var(--ion-text-color-rgb), 0.7);
 		--box-shadow: none;
 		--border-radius: 18px;
 		--placeholder-opacity: 0.52;
 		--icon-color: rgba(148, 163, 184, 0.86);
+		--clear-button-color: rgba(var(--ion-text-color-rgb), 0.85);
+		--cancel-button-color: rgba(var(--ion-text-color-rgb), 0.85);
 		flex: 1 1 auto;
 		min-height: 52px;
 		box-shadow: 0 0 0 0 transparent;
@@ -189,6 +193,57 @@
 		gap: 10px;
 	}
 
+	.friends-section {
+		display: grid;
+		gap: 12px;
+	}
+
+	.friends-section + .friends-section {
+		margin-top: 18px;
+		padding-top: 18px;
+		border-top: 1px solid rgba(255, 255, 255, 0.06);
+	}
+
+	.friends-section__head {
+		display: inline-flex;
+		align-items: center;
+		gap: 10px;
+		padding: 10px 12px;
+		border-radius: 14px;
+		background: rgba(148, 163, 184, 0.06);
+		border: 1px solid rgba(255, 255, 255, 0.06);
+		color: rgba(226, 232, 240, 0.92);
+		font-weight: 700;
+		letter-spacing: 0.01em;
+	}
+
+	.friends-section__head ion-icon {
+		font-size: 1.05rem;
+		opacity: 0.9;
+	}
+
+	.friends-section__head--warn {
+		background: rgba(248, 113, 113, 0.08);
+		border-color: rgba(248, 113, 113, 0.18);
+		color: rgba(254, 226, 226, 0.92);
+	}
+
+	.friends-section__count {
+		margin-left: auto;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 30px;
+		height: 26px;
+		padding: 0 10px;
+		border-radius: 999px;
+		background: rgba(15, 23, 42, 0.45);
+		border: 1px solid rgba(255, 255, 255, 0.08);
+		color: rgba(226, 232, 240, 0.9);
+		font-size: 0.82rem;
+		font-weight: 700;
+	}
+
 	.list-row,
 	.friend-row {
 		--background: rgba(148, 163, 184, 0.04);
@@ -209,6 +264,32 @@
 
 	.friend-row {
 		--min-height: 72px;
+		&--blocked {
+			border-color: rgba(var(--ion-color-warning-rgb), 0.38);
+			background: linear-gradient(
+				120deg,
+				rgba(var(--ion-color-warning-rgb), 0.12),
+				rgba(var(--ion-color-warning-rgb), 0.04)
+			);
+			box-shadow: 0 18px 34px rgba(var(--ion-color-warning-rgb), 0.18);
+		}
+	}
+
+	.blocked-chip {
+		margin-left: 8px;
+		--background: rgba(var(--ion-color-warning-rgb), 0.16);
+		--color: rgba(var(--ion-text-color-rgb), 0.92);
+		font-weight: 600;
+
+		ion-icon {
+			margin-right: 4px;
+		}
+	}
+
+	.friend-info .helper {
+		margin-top: 4px;
+		font-size: 0.82rem;
+		color: rgba(var(--ion-text-color-rgb), 0.72);
 	}
 
 	.friend-info h3,
@@ -253,6 +334,27 @@
 	.avatar-lg {
 		width: 60px;
 		height: 60px;
+	}
+
+	.friend-info h3 {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		flex-wrap: wrap;
+	}
+
+	.friend-info .unread-bar {
+		display: inline-block;
+		width: 5px;
+		height: 18px;
+		border-radius: 999px;
+		background: var(--ion-color-success);
+		opacity: 0.95;
+		flex: 0 0 auto;
+	}
+
+	.friend-info .friend-name {
+		min-width: 0;
 	}
 
 	.row-actions {
@@ -381,7 +483,7 @@
 			--background: linear-gradient(180deg, rgba(248, 250, 252, 1) 0%, rgba(237, 242, 247, 0.96) 100%);
 		}
 
-		&::before {
+		.friends-page::before {
 			background: radial-gradient(circle at top, rgba(99, 102, 241, 0.16), transparent 58%),
 				radial-gradient(circle at bottom right, rgba(56, 189, 248, 0.18), transparent 48%),
 				linear-gradient(180deg, rgba(248, 250, 252, 0.96), rgba(236, 239, 244, 0.96));
@@ -453,9 +555,45 @@
 			box-shadow: 0 20px 40px rgba(148, 163, 184, 0.16);
 		}
 
+		.friends-section + .friends-section {
+			border-top-color: rgba(203, 213, 225, 0.6);
+		}
+
+		.friends-section__head {
+			background: rgba(226, 232, 240, 0.85);
+			border-color: rgba(203, 213, 225, 0.65);
+			color: rgba(15, 23, 42, 0.92);
+		}
+
+		.friends-section__head--warn {
+			background: rgba(248, 113, 113, 0.12);
+			border-color: rgba(248, 113, 113, 0.22);
+			color: rgba(127, 29, 29, 0.92);
+		}
+
+		.friends-section__count {
+			background: rgba(241, 245, 249, 0.98);
+			border-color: rgba(203, 213, 225, 0.7);
+			color: rgba(15, 23, 42, 0.78);
+		}
+
+		.friend-row--blocked {
+			background: linear-gradient(120deg, rgba(248, 113, 113, 0.12), rgba(248, 113, 113, 0.04));
+			border-color: rgba(248, 113, 113, 0.38);
+		}
+
 		.friend-info h3,
 		.list-row h3 {
 			color: rgba(15, 23, 42, 0.9);
+		}
+
+		.blocked-chip {
+			--color: rgba(159, 18, 57, 0.9);
+			--background: rgba(248, 113, 113, 0.14);
+		}
+
+		.friend-info .helper {
+			color: rgba(71, 85, 105, 0.82);
 		}
 
 		.friend-info .muted,

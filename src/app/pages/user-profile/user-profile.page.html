@@ -18,12 +18,60 @@
     <ion-text color="danger" class="erro" *ngIf="!loading && error">{{ error }}</ion-text>
 
     <ng-container *ngIf="!loading && user as u">
-      <ion-card class="card-section">
+      <ion-card class="card-section profile-card">
         <ion-card-content class="profile-head">
-          <div class="avatar-xl">{{ (u.name || u.nickname || '?')[0] }}</div>
+          <div class="avatar-xl" [style.background-image]="avatarBg(u.avatar_url)">
+            <span *ngIf="!u.avatar_url">{{ initials(u) }}</span>
+          </div>
           <div class="info">
-            <h2>{{ u.name }}</h2>
+            <div class="name-row">
+              <h2>{{ u.name || 'Jogador' }}</h2>
+              <span class="tag">Desde {{ joinedDate(u) }}</span>
+            </div>
             <p *ngIf="u.nickname" class="nickname">{{ '@' + u.nickname }}</p>
+            <p class="profile-text" *ngIf="u.profile">{{ u.profile }}</p>
+          </div>
+        </ion-card-content>
+      </ion-card>
+
+      <ion-card class="card-section">
+        <ion-card-header>
+          <ion-card-title>Preferências</ion-card-title>
+          <ion-card-subtitle>Plataformas, estilo e jogos favoritos</ion-card-subtitle>
+        </ion-card-header>
+        <ion-card-content class="pill-grid">
+          <div class="pill-group">
+            <p class="label">Plataformas</p>
+            <div class="pills">
+              <span class="pill" *ngFor="let p of platformList(u)">{{ p }}</span>
+              <span class="pill muted" *ngIf="!platformList(u).length">Não informado</span>
+            </div>
+          </div>
+          <div class="pill-group">
+            <p class="label">Estilo de jogo</p>
+            <div class="pills">
+              <span class="pill">{{ u.game_style || 'Não informado' }}</span>
+            </div>
+          </div>
+          <div class="pill-group">
+            <p class="label">Gênero favorito</p>
+            <div class="pills">
+              <span class="pill">{{ u.favorite_genre || 'Não informado' }}</span>
+            </div>
+          </div>
+          <div class="pill-group">
+            <p class="label">Disponibilidade</p>
+            <div class="pills">
+              <span class="pill" *ngFor="let a of availabilityChips(u)">{{ a }}</span>
+              <span class="pill muted" *ngIf="!availabilityChips(u).length">Não informado</span>
+            </div>
+          </div>
+          <div class="pill-group">
+            <p class="label">Jogos favoritos</p>
+            <div class="pills">
+              <span class="pill" *ngFor="let g of favorites">{{ g.name }}</span>
+              <span class="pill muted" *ngIf="!favorites.length">Nenhum favorito visível</span>
+            </div>
           </div>
         </ion-card-content>
       </ion-card>
@@ -32,11 +80,7 @@
         <ion-card-header>
           <ion-card-title>Ações</ion-card-title>
         </ion-card-header>
-        <ion-card-content>
-          <ion-button expand="block" class="btn-primary" (click)="sendFriendRequest()" *ngIf="meId !== u.id">
-            <ion-icon name="person-add-outline" slot="start"></ion-icon>
-            Enviar pedido de amizade
-          </ion-button>
+        <ion-card-content class="actions">
           <ion-button expand="block" [routerLink]="['/chat', u.id]" *ngIf="meId !== u.id">
             <ion-icon name="chatbubble-ellipses-outline" slot="start"></ion-icon>
             Conversar

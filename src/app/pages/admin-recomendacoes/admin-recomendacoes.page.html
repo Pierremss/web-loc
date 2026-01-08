@@ -1,11 +1,25 @@
 <ion-header>
   <ion-toolbar>
     <ion-buttons slot="start">
-      <ion-back-button defaultHref="/menu-admin"></ion-back-button>
+      <ion-back-button defaultHref="/home" text="Voltar"></ion-back-button>
     </ion-buttons>
     <ion-title>Recomendações de Jogos</ion-title>
+    <ion-buttons slot="end">
+      <ion-button
+        *ngIf="!loading && recommendations.length"
+        size="small"
+        color="danger"
+        fill="outline"
+        (click)="confirmClearAll()"
+        aria-label="Apagar todas as recomendações"
+      >
+        <ion-icon slot="start" name="trash-outline"></ion-icon>
+        Apagar tudo
+      </ion-button>
+    </ion-buttons>
   </ion-toolbar>
 </ion-header>
+
 
 <ion-content>
   <ion-refresher slot="fixed" (ionRefresh)="load($event)">
@@ -118,6 +132,11 @@
             <ion-button size="small" color="danger" (click)="decide(rec, 'rejected')" *ngIf="rec.status === 'pending'">
               <ion-icon slot="start" name="close-outline"></ion-icon>
               Rejeitar
+            </ion-button>
+
+            <ion-button size="small" fill="clear" color="danger" (click)="confirmDelete(rec)" aria-label="Apagar recomendação">
+              <ion-icon slot="start" name="trash-outline"></ion-icon>
+              Apagar
             </ion-button>
           </div>
         </ion-card-content>

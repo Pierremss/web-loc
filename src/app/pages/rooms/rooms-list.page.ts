@@ -4,6 +4,8 @@ import { FriendsService } from '../../services/friends.service';
 import { ConversationsService } from '../../services/conversations.service';
 import { AuthService } from '../../modules/auth/auth.service';
 import { environment } from '../../../environments/environment';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 @Component({
   selector: 'app-rooms-list',
@@ -32,9 +34,13 @@ export class RoomsListPage implements OnInit, OnDestroy {
   friendsLoading = false;
   private friendsLoaded = false;
   showFriendPicker: Record<number, boolean> = {};
-  showCreateCard = true;
   searchTerm = '';
   expandedRoomId?: string;
+  isCreateModalOpen = false;
+  participantSearch = '';
+  manualInviteInput = '';
+  manualInvitees: string[] = [];
+  private selectedFriendIds = new Set<number>();
 
   private readonly mediaBase = environment.socketUrl.replace(/\/$/, '');
 
@@ -144,13 +150,16 @@ export class RoomsListPage implements OnInit, OnDestroy {
     };
     this.createLoading = true;
     this.roomsService.create(payload, this.newAvatarFile || undefined).subscribe({
-      next: () => {
-        this.name = '';
-        this.link = '';
-        this.description = '';
-        this.clearNewAvatar();
-        this.load();
-        this.createLoading = false;
+      next: (room) => {
+        const emails = this.collectInviteEmails();
+        if (!emails.length) {
+          this.handleCreateFinished();
+          return;
+        }
+        this.inviteBatch(room.id, emails).subscribe({
+          next: () => this.handleCreateFinished(),
+          error: () => this.handleCreateFinished()
+        });
       },
       error: (err) => {
         this.createLoading = false;
@@ -360,8 +369,126 @@ export class RoomsListPage implements OnInit, OnDestroy {
     }
   }
 
-  toggleCreateCard() {
-    this.showCreateCard = !this.showCreateCard;
+  openCreateModal() {
+    this.isCreateModalOpen = true;
+    this.loadFriends();
+  }
+
+  closeCreateModal(reset = false) {
+    this.isCreateModalOpen = false;
+    if (reset) {
+      this.resetCreateForm();
+    }
+  }
+
+  onParticipantSearch(event: Event) {
+    const detail = (event as CustomEvent<{ value?: string }>).detail;
+    this.participantSearch = (detail?.value || '').trim();
+  }
+
+  toggleFriendSelection(friendId: number) {
+    if (this.selectedFriendIds.has(friendId)) {
+      this.selectedFriendIds.delete(friendId);
+    } else {
+      this.selectedFriendIds.add(friendId);
+    }
+  }
+
+  removeFriendSelection(friendId: number) {
+    this.selectedFriendIds.delete(friendId);
+  }
+
+  selectedFriendsList(): FriendSummary[] {
+    const selected = new Set(this.selectedFriendIds);
+    return this.friends.filter((friend) => selected.has(friend.id));
+  }
+
+  filteredFriendsForSelection(): FriendSummary[] {
+    const term = this.participantSearch.toLowerCase();
+    return this.friends.filter((friend) => {
+      if (!term) return true;
+      return [friend.nickname, friend.name, friend.email]
+        .filter(Boolean)
+        .some((value) => value!.toLowerCase().includes(term));
+    });
+  }
+
+  addManualInvite() {
+    const email = this.manualInviteInput.trim();
+    if (!email) {
+      return;
+    }
+    if (!this.manualInvitees.includes(email)) {
+      this.manualInvitees.push(email);
+    }
+    this.manualInviteInput = '';
+  }
+
+  removeManualInvite(email: string) {
+    this.manualInvitees = this.manualInvitees.filter((item) => item !== email);
+  }
+
+  isFriendSelected(friendId: number): boolean {
+    return this.selectedFriendIds.has(friendId);
+  }
+
+  private collectInviteEmails(): string[] {
+    const fromFriends = this.friends
+      .filter((friend) => this.selectedFriendIds.has(friend.id))
+      .map((friend) => friend.email);
+    const combined = [...fromFriends, ...this.manualInvitees];
+    return Array.from(new Set(combined.filter((email) => !!email)));
+  }
+
+  private inviteBatch(roomId: number, emails: string[]) {
+    const requests = emails.map((email) =>
+      this.roomsService.addMember(roomId, email).pipe(
+        catchError((err) => {
+          console.warn('[rooms] Falha ao convidar', email, err?.error || err);
+          return of(null);
+        })
+      )
+    );
+    return forkJoin(requests);
+  }
+
+  displayFriendName(friend: FriendSummary): string {
+    const candidate = (friend.nickname || friend.name || '').trim();
+    if (candidate.length) return candidate;
+    const email = (friend.email || '').trim();
+    if (!email) return 'Jogador';
+    const local = email.split('@')[0] || email;
+    return local;
+  }
+
+  initialsFromName(source?: string | number | null): string {
+    if (source == null) return '??';
+    const value = String(source).trim();
+    if (!value.length) return '??';
+    const clean = value.replace(/[^A-Za-z0-9 ]+/g, ' ').trim();
+    if (!clean.length) return '??';
+    const parts = clean.split(/\s+/).filter((p) => p.trim().length);
+    const first = parts[0]?.[0] ?? '';
+    const last = parts.length > 1 ? parts[parts.length - 1]?.[0] ?? '' : parts[0]?.[1] ?? '';
+    const initials = `${first}${last}`.toUpperCase();
+    return initials || value.substring(0, 2).toUpperCase();
+  }
+
+  private handleCreateFinished() {
+    this.createLoading = false;
+    this.closeCreateModal(true);
+    this.load();
+  }
+
+  private resetCreateForm() {
+    this.name = '';
+    this.link = '';
+    this.description = '';
+    this.manualInviteInput = '';
+    this.manualInvitees = [];
+    this.participantSearch = '';
+    this.selectedFriendIds.clear();
+    this.clearNewAvatar();
   }
 }
 

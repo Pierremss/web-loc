@@ -25,7 +25,16 @@
         <ion-label>
           <h2>{{u.name}} <small *ngIf="u.is_admin">(admin)</small></h2>
           <p>{{u.email}}</p>
+          <p *ngIf="!u.is_admin && isBanned(u)">Suspenso até: {{u.banned_until}}</p>
         </ion-label>
+
+        <ion-button *ngIf="!u.is_admin && !isBanned(u)" color="warning" (click)="ban(u)">
+          Banir
+        </ion-button>
+        <ion-button *ngIf="!u.is_admin && isBanned(u)" color="medium" (click)="unban(u)">
+          Desbanir
+        </ion-button>
+
         <ion-button color="danger" (click)="remove(u.id)" class="btn-remove">
           <ion-icon name="trash-outline" slot="start"></ion-icon>
           Excluir

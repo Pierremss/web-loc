@@ -1,0 +1,150 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home" text="Voltar"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Denúncias</ion-title>
+    <ion-buttons slot="end">
+      <ion-button
+        *ngIf="!loading && reports.length"
+        size="small"
+        color="danger"
+        fill="outline"
+        (click)="confirmClearAll()"
+        aria-label="Apagar todas as denúncias"
+      >
+        <ion-icon slot="start" name="trash-outline"></ion-icon>
+        Apagar tudo
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-refresher slot="fixed" (ionRefresh)="load($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <div class="page-container">
+    <section class="summary">
+      <ion-chip color="danger" *ngIf="!loading && reports.length">
+        <ion-icon name="flag-outline"></ion-icon>
+        <ion-label>{{ reports.length }} denúncia(s)</ion-label>
+      </ion-chip>
+      <ion-chip color="medium" *ngIf="!loading && !reports.length">
+        <ion-icon name="checkmark-circle-outline"></ion-icon>
+        <ion-label>Nenhuma denúncia</ion-label>
+      </ion-chip>
+    </section>
+
+    <ion-card class="quick-action" *ngIf="!loading">
+      <ion-card-content>
+        <div class="quick-action__row">
+          <div class="quick-action__text">
+            <div class="quick-action__title">Gerenciar usuários</div>
+            <div class="quick-action__subtitle">Banir, desbanir e excluir contas diretamente</div>
+          </div>
+          <ion-button routerLink="/users" color="primary">
+            <ion-icon name="people-outline" slot="start"></ion-icon>
+            Abrir
+          </ion-button>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <section class="order-controls" *ngIf="!loading && reports.length">
+      <ion-segment [value]="selectedOrder" (ionChange)="onOrderChange($event.detail.value)">
+        <ion-segment-button value="created-desc">
+          <ion-label>Mais recentes</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="created-asc">
+          <ion-label>Mais antigas</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="name-asc">
+          <ion-label>A–Z</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="name-desc">
+          <ion-label>Z–A</ion-label>
+        </ion-segment-button>
+      </ion-segment>
+    </section>
+
+    <ion-note color="danger" class="error" *ngIf="error && !loading">
+      {{ error }}
+    </ion-note>
+
+    <section *ngIf="loading" class="skeleton-list">
+      <ion-card *ngFor="let idx of [1,2,3]">
+        <ion-card-header>
+          <ion-skeleton-text animated style="width: 140px; height: 18px; border-radius: 8px;"></ion-skeleton-text>
+          <ion-skeleton-text animated style="width: 70%; height: 22px; border-radius: 10px; margin-top: 12px;"></ion-skeleton-text>
+        </ion-card-header>
+        <ion-card-content>
+          <ion-skeleton-text animated style="width: 90%; height: 16px; border-radius: 8px; margin-bottom: 8px;"></ion-skeleton-text>
+          <ion-skeleton-text animated style="width: 80%; height: 16px; border-radius: 8px; margin-bottom: 8px;"></ion-skeleton-text>
+          <ion-skeleton-text animated style="width: 55%; height: 14px; border-radius: 8px; margin-bottom: 16px;"></ion-skeleton-text>
+        </ion-card-content>
+      </ion-card>
+    </section>
+
+    <ion-card color="light" *ngIf="!loading && !reports.length">
+      <ion-card-content class="empty-state">
+        <ion-icon name="flag-outline"></ion-icon>
+        <p>Nenhuma denúncia recebida até o momento.</p>
+        <p class="hint">Quando jogadores denunciarem alguém pelo chat, elas aparecerão aqui para revisão.</p>
+      </ion-card-content>
+    </ion-card>
+
+    <ion-list *ngIf="!loading && reports.length" lines="none">
+      <ion-card *ngFor="let rep of reports; trackBy: trackById">
+        <ion-card-header>
+          <div class="header-row">
+            <ion-badge color="danger">Denúncia</ion-badge>
+            <ion-button fill="clear" color="danger" size="small" (click)="confirmDelete(rep)" aria-label="Apagar denúncia">
+              <ion-icon name="trash-outline"></ion-icon>
+            </ion-button>
+            <ng-container *ngIf="formatDateTime(rep.created_at) as dt">
+              <span class="date">{{ dt.datePart }}<ng-container *ngIf="dt.timePart"> · {{ dt.timePart }}</ng-container></span>
+            </ng-container>
+          </div>
+          <ion-card-title>
+            {{ displayUser(rep.reported_name, rep.reported_nickname, rep.reported_id) }}
+          </ion-card-title>
+          <ion-card-subtitle>
+            <span class="subtitle-line">{{ formatContext(rep.context) }}</span>
+          </ion-card-subtitle>
+        </ion-card-header>
+
+        <ion-card-content>
+          <div class="people-grid">
+            <div class="person">
+              <div class="label">Denunciado</div>
+              <div class="value">{{ displayUser(rep.reported_name, rep.reported_nickname, rep.reported_id) }}</div>
+              <div class="hint" *ngIf="rep.reported_email">{{ rep.reported_email }}</div>
+            </div>
+
+            <div class="person">
+              <div class="label">Denunciante</div>
+              <div class="value">{{ displayUser(rep.reporter_name, rep.reporter_nickname, rep.reporter_id) }}</div>
+              <div class="hint" *ngIf="rep.reporter_email">{{ rep.reporter_email }}</div>
+            </div>
+          </div>
+
+          <div class="field">
+            <strong>Descrição</strong>
+            <p class="reason">{{ rep.reason || 'Sem descrição (denúncia enviada sem motivo).' }}</p>
+          </div>
+
+          <div class="field" *ngIf="rep.attachments?.length">
+            <strong>Evidências</strong>
+            <div class="evidence-grid">
+              <a class="evidence" *ngFor="let a of rep.attachments" [href]="a.url" target="_blank" rel="noopener">
+                <img [src]="a.url" alt="Evidência" />
+              </a>
+            </div>
+          </div>
+        </ion-card-content>
+      </ion-card>
+    </ion-list>
+  </div>
+</ion-content>

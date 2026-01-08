@@ -21,6 +21,7 @@ import gameRecommendationRoutes from './routes/game-recommendations.js';
 import emailVerificationRoutes from './routes/email-verification.js';
 import { attachRealtime } from './realtime.js';
 import { createServer } from 'http';
+import { pool } from './db.js';
 
 const app = express();
 app.use(cors({ origin: true, credentials: true }));
@@ -38,6 +39,40 @@ app.use('/uploads', (req, res, next) => {
 }, express.static(path.resolve(process.cwd(), 'uploads')));
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
+
+// Suporte a "apagar mensagens" apenas para o usuário que solicitou
+// (marca mensagens como ocultas para um usuário sem apagar do outro lado).
+try {
+	await pool.query(`
+		CREATE TABLE IF NOT EXISTS message_deletions (
+			user_id INT NOT NULL,
+			message_id BIGINT UNSIGNED NOT NULL,
+			deleted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			PRIMARY KEY (user_id, message_id),
+			KEY idx_md_user (user_id),
+			KEY idx_md_message (message_id)
+		) ENGINE=InnoDB;
+	`);
+} catch (e) {
+	console.error('[db] Falha ao garantir tabela message_deletions', e);
+}
+
+// Suporte a "apagar mensagens" em salas APENAS para o usuário que solicitou
+// (oculta a mensagem para um usuário, sem apagar para os demais).
+try {
+	await pool.query(`
+		CREATE TABLE IF NOT EXISTS conversation_message_deletions (
+			user_id INT NOT NULL,
+			message_id BIGINT UNSIGNED NOT NULL,
+			deleted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			PRIMARY KEY (user_id, message_id),
+			KEY idx_cmd_user (user_id),
+			KEY idx_cmd_message (message_id)
+		) ENGINE=InnoDB;
+	`);
+} catch (e) {
+	console.error('[db] Falha ao garantir tabela conversation_message_deletions', e);
+}
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);

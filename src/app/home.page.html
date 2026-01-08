@@ -75,6 +75,11 @@
           Recomendações dos jogadores
         </ion-button>
 
+        <ion-button *ngIf="auth.isAdmin() && !loading" expand="block" routerLink="/admin/denuncias" class="btn-primary pill">
+          <ion-icon name="flag-outline" slot="start"></ion-icon>
+          Denúncias de jogadores
+        </ion-button>
+
         <ion-button *ngIf="!auth.isAdmin() && !loading" expand="block" routerLink="/jogador-perfil" class="btn-primary pill">
           <ion-icon name="person-outline" slot="start"></ion-icon>
           Meu Perfil

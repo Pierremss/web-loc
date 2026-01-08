@@ -11,6 +11,32 @@ import { requestPasswordReset, resetPasswordWithCode, RESET_CODE_EXPIRATION_MINU
 
 const router = Router();
 
+let ensured;
+async function ensureAccountStructures() {
+  if (ensured) return;
+  ensured = (async () => {
+    try {
+      await pool.query(`ALTER TABLE users ADD COLUMN banned_until DATETIME NULL`);
+    } catch (err) {
+      if (err?.code !== 'ER_DUP_FIELDNAME') throw err;
+    }
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS deleted_accounts (
+        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        email VARCHAR(255) NOT NULL,
+        deleted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        deleted_by INT NULL,
+        reason VARCHAR(200) NULL,
+        source VARCHAR(32) NOT NULL,
+        INDEX idx_da_email (email),
+        INDEX idx_da_deleted (deleted_at)
+      ) ENGINE=InnoDB
+    `);
+  })();
+  return ensured;
+}
+
 function coerceArray(value) {
   if (Array.isArray(value)) return value;
   if (typeof value === 'string') {
@@ -233,6 +259,8 @@ router.post('/login',
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
+    await ensureAccountStructures();
+
     const { email, password } = req.body;
     const normalizedEmail = String(email ?? '').trim().toLowerCase();
 
@@ -257,7 +285,21 @@ router.post('/login',
       }
 
       const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [normalizedEmail]);
-      if (!rows.length) return res.status(401).json({ error: 'Credenciais inválidas' });
+      if (!rows.length) {
+        const [deleted] = await pool.query(
+          'SELECT deleted_at, source FROM deleted_accounts WHERE email = ? ORDER BY deleted_at DESC LIMIT 1',
+          [normalizedEmail]
+        );
+        if (deleted.length) {
+          return res.status(403).json({
+            error: 'deleted',
+            message: 'Sua conta foi excluída e não está mais disponível.',
+            deleted_at: deleted[0].deleted_at,
+            source: deleted[0].source
+          });
+        }
+        return res.status(401).json({ error: 'Credenciais inválidas' });
+      }
       const user = rows[0];
       const ok = await bcrypt.compare(password, user.password_hash);
       if (!ok) return res.status(401).json({ error: 'Credenciais inválidas' });
@@ -266,6 +308,15 @@ router.post('/login',
         return res.status(403).json({
           error: 'E-mail não verificado. Confirme o código enviado para o seu e-mail.',
           requiresVerification: true
+        });
+      }
+
+      const bannedUntil = user.banned_until ? new Date(user.banned_until) : null;
+      if (bannedUntil && Number.isFinite(bannedUntil.getTime()) && bannedUntil.getTime() > Date.now()) {
+        return res.status(403).json({
+          error: 'banned',
+          banned_until: user.banned_until,
+          message: 'Sua conta está suspensa temporariamente.'
         });
       }
 

@@ -2,11 +2,49 @@ import { Router } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import { body, validationResult } from 'express-validator';
+import { body, param, validationResult } from 'express-validator';
 import { pool } from '../db.js';
 import { ensureAuth, ensureAdmin } from '../middleware/auth.js';
 
 const router = Router();
+
+let ensured;
+async function ensureAccountStructures() {
+  if (ensured) return;
+  ensured = (async () => {
+    try {
+      await pool.query(`ALTER TABLE users ADD COLUMN banned_until DATETIME NULL`);
+    } catch (err) {
+      if (err?.code !== 'ER_DUP_FIELDNAME') throw err;
+    }
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS user_account_events (
+        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NULL,
+        type VARCHAR(32) NOT NULL,
+        message VARCHAR(500) NOT NULL,
+        meta JSON NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_uae_user (user_id),
+        INDEX idx_uae_created (created_at)
+      ) ENGINE=InnoDB
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS deleted_accounts (
+        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        email VARCHAR(255) NOT NULL,
+        deleted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        deleted_by INT NULL,
+        reason VARCHAR(200) NULL,
+        source VARCHAR(32) NOT NULL,
+        INDEX idx_da_email (email),
+        INDEX idx_da_deleted (deleted_at)
+      ) ENGINE=InnoDB
+    `);
+  })();
+  return ensured;
+}
 
 function enrichAvatar(row, req) {
   if (!row) return row;
@@ -56,7 +94,28 @@ function avatarUploadHandler(req, res, next) {
 router.get('/:id/public', async (req, res) => {
   const id = Number(req.params.id);
   const [rows] = await pool.query(
-    'SELECT id, name, nickname, platforms, game_style, available_times, profile, avatar_url, created_at FROM users WHERE id = ? LIMIT 1',
+    `SELECT u.id,
+            u.name,
+            u.nickname,
+            u.platforms,
+            u.game_style,
+            u.available_times,
+            u.profile,
+            u.avatar_url,
+            (
+              SELECT ge.name
+                FROM user_games ug
+                JOIN game_genres gg ON gg.game_id = ug.game_id
+                JOIN genres ge ON ge.id = gg.genre_id
+               WHERE ug.user_id = u.id
+               GROUP BY gg.genre_id
+               ORDER BY COUNT(*) DESC, ge.name ASC
+               LIMIT 1
+            ) AS favorite_genre,
+            u.created_at
+       FROM users u
+      WHERE u.id = ?
+      LIMIT 1`,
     [id]
   );
   if (!rows.length) return res.status(404).json({ error: 'Não encontrado' });
@@ -82,11 +141,25 @@ router.get('/search', ensureAuth, async (req, res) => {
 router.get('/:id/favoritos', ensureAuth, async (req, res) => {
   const id = Number(req.params.id);
   const userId = Number(req.user.id);
-  if (!req.user.is_admin && userId !== id) return res.status(403).json({ error: 'Acesso negado' });
+
+  if (!req.user.is_admin && userId !== id) {
+    const [[friendship]] = await pool.query(
+      'SELECT 1 FROM friendships WHERE user_min = LEAST(?, ?) AND user_max = GREATEST(?, ?) LIMIT 1',
+      [userId, id, userId, id]
+    );
+    if (!friendship) return res.status(403).json({ error: 'Acesso negado' });
+    const [blocked] = await pool.query(
+      'SELECT 1 FROM user_blocks WHERE (blocker_id = ? AND blocked_id = ?) OR (blocker_id = ? AND blocked_id = ?) LIMIT 1',
+      [userId, id, id, userId]
+    );
+    if (blocked.length) return res.status(403).json({ error: 'blocked' });
+  }
+
   const [rows] = await pool.query(
     `SELECT g.id, g.name FROM user_games ug
      JOIN games g ON ug.game_id = g.id
-     WHERE ug.user_id = ?`, [id]
+     WHERE ug.user_id = ?
+     ORDER BY g.name ASC`, [id]
   );
   res.json(rows);
 });
@@ -140,16 +213,131 @@ router.delete('/:id/favoritos/:gameId', ensureAuth, async (req, res) => {
 
 // Listar usuários (admin)
 router.get('/', ensureAuth, ensureAdmin, async (req, res) => {
-  const [rows] = await pool.query('SELECT id, name, email, is_admin, created_at FROM users ORDER BY id DESC');
+  await ensureAccountStructures();
+  const [rows] = await pool.query('SELECT id, name, email, is_admin, banned_until, created_at FROM users ORDER BY id DESC');
   res.json(rows);
 });
+
+// Banir usuário (admin) - suspende temporariamente
+router.post(
+  '/:id/ban',
+  ensureAuth,
+  ensureAdmin,
+  param('id').isInt({ min: 1 }),
+  body('minutes').optional().isInt({ min: 1, max: 43200 }),
+  body('until').optional().isISO8601(),
+  body('reason').optional().isString().isLength({ max: 200 }),
+  async (req, res) => {
+    await ensureAccountStructures();
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+    const userId = Number(req.params.id);
+    const minutes = req.body.minutes !== undefined ? Number(req.body.minutes) : null;
+    const untilRaw = req.body.until ? String(req.body.until) : null;
+    const reason = req.body.reason ? String(req.body.reason).trim() : '';
+
+    let until = null;
+    if (untilRaw) {
+      const d = new Date(untilRaw);
+      if (Number.isFinite(d.getTime())) until = d;
+    } else if (Number.isFinite(minutes) && minutes && minutes > 0) {
+      until = new Date(Date.now() + minutes * 60_000);
+    } else {
+      until = new Date(Date.now() + 24 * 60 * 60_000); // padrão 24h
+    }
+
+    const untilSql = new Date(until.getTime() - until.getTimezoneOffset() * 60_000)
+      .toISOString()
+      .slice(0, 19)
+      .replace('T', ' ');
+
+    const [[u]] = await pool.query('SELECT id, is_admin FROM users WHERE id = ? LIMIT 1', [userId]);
+    if (!u) return res.status(404).json({ error: 'Não encontrado' });
+    if (u.is_admin) return res.status(400).json({ error: 'Não é permitido banir administradores' });
+
+    await pool.query('UPDATE users SET banned_until = ? WHERE id = ?', [untilSql, userId]);
+
+    const msg = reason
+      ? `Sua conta foi suspensa temporariamente até ${untilSql}. Motivo: ${reason}`
+      : `Sua conta foi suspensa temporariamente até ${untilSql}.`;
+
+    await pool.query(
+      'INSERT INTO user_account_events (user_id, type, message, meta) VALUES (?, ?, ?, JSON_OBJECT(\'until\', ?, \'reason\', ?))',
+      [userId, 'ban', msg, untilSql, reason || null]
+    );
+
+    res.json({ ok: true, banned_until: untilSql });
+  }
+);
+
+// Remover ban (admin)
+router.post(
+  '/:id/unban',
+  ensureAuth,
+  ensureAdmin,
+  param('id').isInt({ min: 1 }),
+  body('reason').optional().isString().isLength({ max: 200 }),
+  async (req, res) => {
+    await ensureAccountStructures();
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+    const userId = Number(req.params.id);
+    const reason = req.body.reason ? String(req.body.reason).trim() : '';
+
+    const [[u]] = await pool.query('SELECT id, is_admin FROM users WHERE id = ? LIMIT 1', [userId]);
+    if (!u) return res.status(404).json({ error: 'Não encontrado' });
+    if (u.is_admin) return res.status(400).json({ error: 'Não é permitido alterar administradores' });
+
+    await pool.query('UPDATE users SET banned_until = NULL WHERE id = ?', [userId]);
+
+    const msg = reason
+      ? `Sua suspensão foi removida. Observação: ${reason}`
+      : 'Sua suspensão foi removida. Você já pode acessar o sistema novamente.';
+
+    await pool.query(
+      'INSERT INTO user_account_events (user_id, type, message, meta) VALUES (?, ?, ?, JSON_OBJECT(\'reason\', ?))',
+      [userId, 'unban', msg, reason || null]
+    );
+
+    res.json({ ok: true });
+  }
+);
 
 // Obter por id (admin ou o próprio usuário)
 router.get('/:id', ensureAuth, async (req, res) => {
   const id = Number(req.params.id);
   const userId = Number(req.user.id);
   if (!req.user.is_admin && userId !== id) return res.status(403).json({ error: 'Acesso negado' });
-  const [rows] = await pool.query('SELECT id, name, email, nickname, platforms, game_style, available_times, profile, avatar_url, is_admin, created_at FROM users WHERE id = ?', [id]);
+  const [rows] = await pool.query(
+    `SELECT u.id,
+            u.name,
+            u.email,
+            u.nickname,
+            u.platforms,
+            u.game_style,
+            u.available_times,
+            u.profile,
+            u.avatar_url,
+            (
+              SELECT ge.name
+                FROM user_games ug
+                JOIN game_genres gg ON gg.game_id = ug.game_id
+                JOIN genres ge ON ge.id = gg.genre_id
+               WHERE ug.user_id = u.id
+               GROUP BY gg.genre_id
+               ORDER BY COUNT(*) DESC, ge.name ASC
+               LIMIT 1
+            ) AS favorite_genre,
+            u.is_admin,
+            u.created_at
+       FROM users u
+      WHERE u.id = ?`,
+    [id]
+  );
   if (!rows.length) return res.status(404).json({ error: 'Não encontrado' });
   res.json(enrichAvatar(rows[0], req));
 });
@@ -224,9 +412,26 @@ router.post('/:id/avatar', ensureAuth, avatarUploadHandler, async (req, res) => 
 
 // Deletar usuário (admin ou o próprio)
 router.delete('/:id', ensureAuth, async (req, res) => {
+  await ensureAccountStructures();
   const id = Number(req.params.id);
   const userId = Number(req.user.id);
   if (!req.user.is_admin && userId !== id) return res.status(403).json({ error: 'Acesso negado' });
+
+  const [[u]] = await pool.query('SELECT id, email, is_admin FROM users WHERE id = ? LIMIT 1', [id]);
+  if (!u) return res.status(404).json({ error: 'Não encontrado' });
+  if (u.is_admin) return res.status(400).json({ error: 'Não é permitido excluir administradores' });
+
+  const source = req.user.is_admin ? 'admin_delete' : 'self_delete';
+  await pool.query(
+    'INSERT INTO deleted_accounts (email, deleted_by, reason, source) VALUES (?, ?, ?, ?)',
+    [String(u.email || '').toLowerCase(), req.user.is_admin ? userId : null, null, source]
+  );
+
+  await pool.query(
+    'INSERT INTO user_account_events (user_id, type, message, meta) VALUES (?, ?, ?, JSON_OBJECT(\'source\', ?))',
+    [id, 'delete', 'Sua conta foi excluída.', source]
+  );
+
   await pool.query('DELETE FROM users WHERE id = ?', [id]);
   res.status(204).send();
 });

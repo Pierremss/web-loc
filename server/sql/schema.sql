@@ -10,12 +10,25 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash VARCHAR(255) NOT NULL,
   is_admin TINYINT(1) NOT NULL DEFAULT 0,
   is_verified TINYINT(1) NOT NULL DEFAULT 0,
+  banned_until DATETIME NULL,
   platforms VARCHAR(100),
   game_style VARCHAR(80),
   available_times TEXT,
   profile TEXT,
   avatar_url VARCHAR(500) NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+-- Eventos/notificações de conta (ban, unban, exclusão)
+CREATE TABLE IF NOT EXISTS user_account_events (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NULL,
+  type VARCHAR(32) NOT NULL,
+  message VARCHAR(500) NOT NULL,
+  meta JSON NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_uae_user (user_id),
+  INDEX idx_uae_created (created_at)
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS pending_users (
@@ -44,6 +57,7 @@ CREATE TABLE IF NOT EXISTS conversations (
   description TEXT NULL,
   owner_id INT NULL,
   is_public TINYINT(1) NOT NULL DEFAULT 0,
+  avatar_url VARCHAR(500) NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   KEY idx_owner (owner_id),
@@ -340,6 +354,16 @@ CREATE TABLE IF NOT EXISTS messages (
   CONSTRAINT fk_msg_reply_to FOREIGN KEY (reply_to_id) REFERENCES messages(id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
+-- Mensagens apagadas por um usuário (visibilidade local), sem apagar do outro lado
+CREATE TABLE IF NOT EXISTS message_deletions (
+  user_id INT NOT NULL,
+  message_id BIGINT UNSIGNED NOT NULL,
+  deleted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (user_id, message_id),
+  KEY idx_md_user (user_id),
+  KEY idx_md_message (message_id)
+) ENGINE=InnoDB;
+
 -- Anexos e reações para mensagens diretas
 CREATE TABLE IF NOT EXISTS message_attachments (
   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -371,6 +395,20 @@ CREATE TABLE IF NOT EXISTS user_blocks (
   PRIMARY KEY (blocker_id, blocked_id),
   CONSTRAINT fk_ub_blocker FOREIGN KEY (blocker_id) REFERENCES users(id) ON DELETE CASCADE,
   CONSTRAINT fk_ub_blocked FOREIGN KEY (blocked_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- Denúncias de usuários
+CREATE TABLE IF NOT EXISTS user_reports (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  reporter_id INT NOT NULL,
+  reported_id INT NOT NULL,
+  context VARCHAR(32) NOT NULL DEFAULT 'direct_chat',
+  reason VARCHAR(1000) NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_user_reports_reporter (reporter_id),
+  INDEX idx_user_reports_reported (reported_id),
+  CONSTRAINT fk_ur_reporter FOREIGN KEY (reporter_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_ur_reported FOREIGN KEY (reported_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 ALTER TABLE pending_users

@@ -197,4 +197,73 @@ export class AdminRecomendacoesPage implements OnInit {
     });
     await toast.present();
   }
+
+  async confirmClearAll() {
+    if (this.loading || !this.recommendations.length) return;
+
+    const alert = await this.alert.create({
+      header: 'Apagar recomendações',
+      message: 'Confirme para apagar todas as recomendações de jogos. Esta ação não pode ser desfeita.',
+      buttons: [
+        { text: 'Cancelar', role: 'cancel' },
+        {
+          text: 'Apagar tudo',
+          role: 'destructive',
+          handler: () => this.clearAll(),
+        }
+      ]
+    });
+
+    await alert.present();
+  }
+
+  private clearAll() {
+    this.loading = true;
+    this.service.adminClearAll()
+      .pipe(finalize(() => { this.loading = false; }))
+      .subscribe({
+        next: (res) => {
+          const deleted = Number(res?.deleted ?? 0);
+          this.recommendations = [];
+          this.applyData([]);
+          this.error = '';
+          this.presentToast(`Recomendações apagadas (${deleted}).`, 'success');
+        },
+        error: (err) => {
+          const message = err?.error?.error || 'Não foi possível apagar as recomendações.';
+          this.presentToast(message, 'danger');
+        }
+      });
+  }
+
+  async confirmDelete(rec: GameRecommendation) {
+    if (!rec?.id) return;
+    const alert = await this.alert.create({
+      header: 'Apagar recomendação',
+      message: `Confirme para apagar a recomendação <strong>${rec.gameName}</strong>. Esta ação não pode ser desfeita.`,
+      buttons: [
+        { text: 'Cancelar', role: 'cancel' },
+        {
+          text: 'Apagar',
+          role: 'destructive',
+          handler: () => this.deleteRecommendation(rec),
+        }
+      ]
+    });
+    await alert.present();
+  }
+
+  private deleteRecommendation(rec: GameRecommendation) {
+    this.service.delete(rec.id).subscribe({
+      next: () => {
+        this.recommendations = this.recommendations.filter(r => r.id !== rec.id);
+        this.applyData([...this.recommendations]);
+        this.presentToast('Recomendação apagada.', 'success');
+      },
+      error: (err) => {
+        const message = err?.error?.error || 'Não foi possível apagar a recomendação.';
+        this.presentToast(message, 'danger');
+      }
+    });
+  }
 }

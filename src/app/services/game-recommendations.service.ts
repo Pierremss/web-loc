@@ -52,4 +52,12 @@ export class GameRecommendationsService {
   update(id: number, payload: { status?: 'accepted' | 'rejected'; adminNotes?: string | null }): Observable<GameRecommendationUpdateResponse> {
     return this.http.patch<GameRecommendationUpdateResponse>(`${this.base}/${id}`, payload);
   }
+
+  delete(id: number): Observable<{ ok: boolean; deleted?: number }> {
+    return this.http.delete<{ ok: boolean; deleted?: number }>(`${this.base}/${id}`);
+  }
+
+  adminClearAll(): Observable<{ ok: boolean; deleted?: number }> {
+    return this.http.delete<{ ok: boolean; deleted?: number }>(`${this.base}/admin/clear`);
+  }
 }

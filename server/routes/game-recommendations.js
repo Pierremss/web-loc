@@ -98,6 +98,17 @@ router.get('/', ensureAuth, async (req, res) => {
   }
 });
 
+// Apagar todas as recomendações (admin)
+router.delete('/admin/clear', ensureAuth, ensureAdmin, async (req, res) => {
+  try {
+    const [result] = await pool.query('DELETE FROM game_recommendations');
+    res.json({ ok: true, deleted: result?.affectedRows ?? 0 });
+  } catch (err) {
+    console.error('[game-recommendations] admin clear failed', err);
+    res.status(500).json({ error: 'recommendations_delete_failed' });
+  }
+});
+
 const updateValidators = [
   body('status').optional().isIn(['accepted', 'rejected']).withMessage('Status inválido'),
   body('adminNotes').optional({ nullable: true }).isLength({ max: 4000 }).withMessage('Notas administrativas muito extensas'),
@@ -268,6 +279,27 @@ router.patch('/:id', ensureAuth, ensureAdmin, updateValidators, async (req, res)
     }
     console.error('Erro ao atualizar recomendação de jogo', err);
     return res.status(500).json({ error: 'Não foi possível atualizar a recomendação' });
+  }
+});
+
+// Apagar uma recomendação específica (admin)
+router.delete('/:id', ensureAuth, ensureAdmin, async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      return res.status(400).json({ error: 'Identificador inválido' });
+    }
+
+    const [result] = await pool.query('DELETE FROM game_recommendations WHERE id = ?', [id]);
+    const deleted = result?.affectedRows ?? 0;
+    if (!deleted) {
+      return res.status(404).json({ error: 'Recomendação não encontrada' });
+    }
+
+    return res.json({ ok: true, deleted: 1 });
+  } catch (err) {
+    console.error('[game-recommendations] delete one failed', err);
+    return res.status(500).json({ error: 'Não foi possível apagar a recomendação' });
   }
 });
 

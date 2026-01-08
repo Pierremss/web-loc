@@ -16,7 +16,25 @@ router.post('/request', ensureAuth,
     if (fromId === toId) return res.status(400).json({ error: 'Não é possível adicionar a si mesmo' });
 
     try {
-      await pool.query('INSERT IGNORE INTO friend_requests (requester_id, receiver_id) VALUES (?, ?)', [fromId, toId]);
+      const [[blocked]] = await pool.query(
+        'SELECT 1 FROM user_blocks WHERE (blocker_id = ? AND blocked_id = ?) OR (blocker_id = ? AND blocked_id = ?) LIMIT 1',
+        [fromId, toId, toId, fromId]
+      );
+      if (blocked) return res.status(403).json({ error: 'Usuário bloqueado' });
+
+      const [[friendship]] = await pool.query(
+        'SELECT 1 FROM friendships WHERE user_min = LEAST(?, ?) AND user_max = GREATEST(?, ?) LIMIT 1',
+        [fromId, toId, fromId, toId]
+      );
+      if (friendship) return res.status(200).json({ message: 'Já são amigos' });
+
+      // Se já existiu um pedido no passado (accepted/declined), reativa como pending.
+      await pool.query(
+        `INSERT INTO friend_requests (requester_id, receiver_id, status, created_at)
+         VALUES (?, ?, 'pending', CURRENT_TIMESTAMP)
+         ON DUPLICATE KEY UPDATE status = 'pending', created_at = CURRENT_TIMESTAMP`,
+        [fromId, toId]
+      );
       // Notificar destinatário em tempo real
       req.app.get('io')?.to(`user:${toId}`).emit('friend:request', { fromUserId: fromId });
       return res.status(201).json({ message: 'Pedido enviado' });
@@ -89,17 +107,42 @@ router.delete('/:friendId', ensureAuth, async (req, res) => {
   return res.status(204).send();
 });
 
-// Listar amigos do usuário atual
+// Listar conexões (amigos + bloqueados pelo usuário atual)
 router.get('/', ensureAuth, async (req, res) => {
   const userId = Number(req.user.id);
+
+  // Conexões são a união de amizades existentes e usuários bloqueados pelo próprio usuário.
   const [rows] = await pool.query(
-    `SELECT u.id, u.name, u.nickname, u.email
-     FROM friendships f
-     JOIN users u ON u.id = CASE WHEN ? = f.user_id THEN f.friend_id ELSE f.user_id END
-     WHERE ? IN (f.user_id, f.friend_id)
-     ORDER BY u.name ASC`,
-    [userId, userId]
+    `SELECT u.id,
+            u.name,
+            u.nickname,
+            u.email,
+            u.avatar_url,
+            (SELECT COUNT(*)
+               FROM messages m
+          LEFT JOIN message_deletions md ON md.message_id = m.id AND md.user_id = ?
+              WHERE m.deleted_at IS NULL
+                AND md.message_id IS NULL
+                AND m.sender_id = u.id
+                AND m.receiver_id = ?
+                AND m.read_at IS NULL
+            ) AS unread_count,
+            CASE WHEN ub.blocked_id IS NOT NULL THEN 'blocked' ELSE 'friend' END AS relation
+       FROM (
+             SELECT DISTINCT CASE WHEN f.user_id = ? THEN f.friend_id ELSE f.user_id END AS peer_id
+               FROM friendships f
+              WHERE ? IN (f.user_id, f.friend_id)
+             UNION
+             SELECT blocked_id AS peer_id
+               FROM user_blocks
+              WHERE blocker_id = ?
+            ) AS connections
+       JOIN users u ON u.id = connections.peer_id
+  LEFT JOIN user_blocks ub ON ub.blocker_id = ? AND ub.blocked_id = u.id
+   ORDER BY u.name ASC, u.nickname ASC`,
+    [userId, userId, userId, userId, userId, userId]
   );
+
   return res.json(rows);
 });
 
@@ -107,14 +150,29 @@ router.get('/', ensureAuth, async (req, res) => {
 router.get('/requests', ensureAuth, async (req, res) => {
   const userId = Number(req.user.id);
   const [rows] = await pool.query(
-    `SELECT fr.requester_id AS fromUserId, u.name, u.nickname, fr.created_at
+    `SELECT fr.requester_id AS id,
+            fr.requester_id AS fromUserId,
+            u.name,
+            u.nickname,
+            u.avatar_url,
+            fr.created_at
      FROM friend_requests fr
      JOIN users u ON u.id = fr.requester_id
      WHERE fr.receiver_id = ? AND fr.status = 'pending'
      ORDER BY fr.created_at DESC`,
     [userId]
   );
-  return res.json(rows);
+
+  const base = `${req.protocol}://${req.get('host')}`.replace(/\/$/, '');
+  const normalized = (rows || []).map((r) => {
+    const avatar = r?.avatar_url;
+    if (avatar && !/^https?:/i.test(avatar)) {
+      return { ...r, avatar_url: base + avatar };
+    }
+    return r;
+  });
+
+  return res.json(normalized);
 });
 
 export default router;

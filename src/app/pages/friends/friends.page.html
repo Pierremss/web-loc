@@ -138,14 +138,46 @@
         <ion-card class="surface-card fadein">
           <ion-card-header>
             <div class="header-group">
-              <ion-card-title>Seus amigos</ion-card-title>
-              <ion-card-subtitle>Converse, organize partidas e mantenha contato</ion-card-subtitle>
+              <ion-card-title>Conversas</ion-card-title>
+              <ion-card-subtitle>Abra chats rapidamente e gerencie bloqueios</ion-card-subtitle>
             </div>
           </ion-card-header>
           <ion-card-content>
             <ng-container *ngIf="!pageLoading; else amigosSkeleton">
-              <ion-list lines="none" class="list-surface" *ngIf="friends.length; else semAmigos">
-                <ion-item class="friend-row" *ngFor="let f of friends">
+              <ng-container *ngIf="friends.length; else semAmigos">
+                <ng-container *ngIf="activeFriends.length">
+                  <div class="friends-section">
+                    <div class="friends-section__head">
+                      <ion-icon name="chatbubble-ellipses-outline"></ion-icon>
+                      <span>Seus amigos</span>
+                      <span class="friends-section__count">{{ activeFriends.length }}</span>
+                    </div>
+                    <ion-list lines="none" class="list-surface">
+                      <ng-container *ngFor="let f of activeFriends; trackBy: trackById">
+                        <ng-container *ngTemplateOutlet="friendRow; context: { $implicit: f }"></ng-container>
+                      </ng-container>
+                    </ion-list>
+                  </div>
+                </ng-container>
+
+                <ng-container *ngIf="blockedFriends.length">
+                  <div class="friends-section">
+                    <div class="friends-section__head friends-section__head--warn">
+                      <ion-icon name="lock-closed-outline"></ion-icon>
+                      <span>Bloqueados por você</span>
+                      <span class="friends-section__count">{{ blockedFriends.length }}</span>
+                    </div>
+                    <ion-list lines="none" class="list-surface">
+                      <ng-container *ngFor="let f of blockedFriends; trackBy: trackById">
+                        <ng-container *ngTemplateOutlet="friendRow; context: { $implicit: f }"></ng-container>
+                      </ng-container>
+                    </ion-list>
+                  </div>
+                </ng-container>
+              </ng-container>
+
+              <ng-template #friendRow let-f>
+                <ion-item class="friend-row" [ngClass]="{ 'friend-row--blocked': f.relation === 'blocked' }">
                   <ion-avatar slot="start" class="avatar avatar-lg">
                     <ng-container *ngIf="f.avatar_url; else initialsF">
                       <img [src]="normalizeAvatar(f.avatar_url)" (error)="onImgError($event)" alt="Avatar" />
@@ -155,20 +187,31 @@
                     </ng-template>
                   </ion-avatar>
                   <ion-label class="friend-info">
-                    <h3>{{ f.name || ('@' + f.nickname) }}</h3>
+                    <h3>
+                      <span class="friend-name">{{ f.name || ('@' + f.nickname) }}</span>
+                      <ion-chip color="warning" class="blocked-chip" *ngIf="f.relation === 'blocked'">
+                        <ion-icon name="lock-closed-outline"></ion-icon>
+                        <span>Bloqueado por você</span>
+                      </ion-chip>
+                    </h3>
                     <p class="muted">ID {{ f.id }}</p>
+                    <p class="muted helper" *ngIf="f.relation === 'blocked'">O chat continua acessível; remova para tirar das conversas.</p>
                   </ion-label>
                   <div class="row-actions" slot="end">
                     <ion-button size="small" class="btn-primary" [routerLink]="['/chat', f.id]">
                       <ion-icon name="chatbubble-ellipses-outline" slot="start"></ion-icon>
-                      Conversar
+                      Abrir chat
+                    </ion-button>
+                    <ion-button size="small" fill="clear" color="tertiary" (click)="remove(f.id)" *ngIf="f.relation === 'blocked'">
+                      <ion-icon name="lock-open-outline" slot="start"></ion-icon>
+                      Remover
                     </ion-button>
                     <ion-button size="small" color="danger" fill="clear" (click)="remove(f.id)">
                       <ion-icon name="trash-outline"></ion-icon>
                     </ion-button>
                   </div>
                 </ion-item>
-              </ion-list>
+              </ng-template>
               <ng-template #semAmigos>
                 <div class="empty-state">
                   <ion-icon name="sparkles-outline"></ion-icon>

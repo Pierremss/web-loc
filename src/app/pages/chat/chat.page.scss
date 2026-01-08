@@ -15,6 +15,10 @@
 	-webkit-backdrop-filter: blur(10px);
 }
 
+.chat-toolbar ion-buttons[slot='end'] ion-button {
+	--color: rgba(226, 232, 240, 0.92);
+}
+
 .chat-toolbar-back ion-back-button {
 	--color: rgba(226, 232, 240, 0.92);
 	--padding-start: 6px;
@@ -205,6 +209,65 @@
 	color: #fff;
 }
 
+/* ActionSheet (menu dos 3 pontinhos) */
+:host ::ng-deep .chat-action-sheet {
+	--background: rgba(18, 20, 32, 0.96);
+	--color: #ffffff !important;
+	--button-color: #ffffff !important;
+	--header-color: #ffffff;
+	--ion-text-color: #ffffff !important;
+
+	.action-sheet-group .action-sheet-button,
+	.action-sheet-group .action-sheet-button.sc-ion-action-sheet-md,
+	.action-sheet-group .action-sheet-button.sc-ion-action-sheet-ios,
+	.action-sheet-group .action-sheet-title,
+	.action-sheet-group .action-sheet-button .action-sheet-button-inner,
+	.action-sheet-group .action-sheet-button ion-icon,
+	.action-sheet-group .action-sheet-button .action-sheet-icon {
+		color: #ffffff !important;
+	}
+}
+
+:host-context(body:not(.dark)) ::ng-deep .chat-action-sheet {
+	--background: #ffffff;
+	--color: #0f172a;
+	--button-color: #0f172a;
+	--header-color: #0f172a;
+	--ion-text-color: #0f172a;
+}
+
+/* Alert (Denunciar jogador) */
+:host-context(body.dark) ::ng-deep .report-user-alert {
+	--background: rgba(18, 20, 32, 0.96);
+	--color: rgba(226, 232, 240, 0.96);
+}
+
+:host-context(body.dark) ::ng-deep .report-user-alert .alert-wrapper {
+	background: rgba(18, 20, 32, 0.96);
+	border: 1px solid rgba(148, 163, 184, 0.22);
+}
+
+:host-context(body.dark) ::ng-deep .report-user-alert .alert-title,
+:host-context(body.dark) ::ng-deep .report-user-alert .alert-message {
+	color: rgba(226, 232, 240, 0.96);
+}
+
+:host-context(body.dark) ::ng-deep .report-user-alert .alert-input {
+	background: rgba(15, 22, 38, 0.92);
+	color: rgba(226, 232, 240, 0.96);
+	border: 1px solid rgba(148, 163, 184, 0.28);
+	border-radius: 12px;
+}
+
+:host-context(body.dark) ::ng-deep .report-user-alert .alert-input::placeholder {
+	color: rgba(148, 163, 184, 0.9);
+}
+
+:host-context(body.dark) ::ng-deep .report-user-alert .alert-button {
+	color: rgba(226, 232, 240, 0.96);
+}
+
+
 .message-row.mine .bubble {
 	border-bottom-right-radius: 8px;
 	justify-self: end;
@@ -329,6 +392,7 @@
 	min-width: 56px;
 }
 
+
 .bubble .meta .date {
 	font-size: 0.72rem;
 	color: rgba(148,163,184,0.7);
@@ -361,6 +425,10 @@
 :host-context(body:not(.dark)) {
 	.chat-toolbar-name {
 		color: rgba(15,23,42,0.95) !important;
+	}
+
+	.chat-toolbar ion-buttons[slot='end'] ion-button {
+		--color: rgba(15,23,42,0.9);
 	}
 
 	.chat-toolbar-back ion-back-button {
@@ -398,6 +466,12 @@
 		border: 1px solid rgba(191, 219, 254, 0.7);
 		color: rgba(45, 55, 72, 0.88);
 		box-shadow: 0 16px 32px rgba(148, 163, 184, 0.22);
+	}
+
+	/* No tema claro, o menu da própria mensagem não deve ficar branco */
+	.bubble.mine .bubble-menu {
+		--background: rgba(15, 23, 42, 0.06);
+		color: rgba(15, 23, 42, 0.9);
 	}
 }
 

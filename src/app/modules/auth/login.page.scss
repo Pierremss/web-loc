@@ -2,6 +2,28 @@
   --background: linear-gradient(180deg, #f2f4ff 0%, #e7ebff 100%);
   color: #1d2240;
 
+  .top-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 10px;
+  }
+
+  .theme-toggle {
+    --background: rgba(27, 34, 64, 0.06);
+    --color: #1d2240;
+    --border-radius: 999px;
+    --padding-start: 12px;
+    --padding-end: 12px;
+    --box-shadow: none;
+    font-weight: 700;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  .theme-toggle::part(native) {
+    border: 1px solid rgba(27, 34, 64, 0.12);
+  }
+
   .login-container {
     background: rgba(255, 255, 255, 0.92);
     border: 1px solid rgba(27, 34, 64, 0.08);
@@ -135,6 +157,15 @@
 :host-context(.dark) .login-page {
   --background: linear-gradient(180deg, #161a39 0%, #0f1126 100%);
   color: #e9ebff;
+
+  .theme-toggle {
+    --background: rgba(255, 255, 255, 0.06);
+    --color: #e9ebff;
+  }
+
+  .theme-toggle::part(native) {
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
 
   .login-container {
     background: linear-gradient(160deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));

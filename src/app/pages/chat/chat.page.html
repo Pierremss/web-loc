@@ -21,6 +21,11 @@
         </div>
       </div>
     </ion-title>
+    <ion-buttons slot="end">
+      <ion-button fill="clear" aria-label="Opções do contato" (click)="openChatActions()">
+        <ion-icon name="ellipsis-vertical"></ion-icon>
+      </ion-button>
+    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
@@ -156,6 +161,11 @@
 
 <ion-footer class="chat-input">
   <ion-toolbar class="composer-toolbar">
+    <ion-item class="blocked-banner" lines="none" *ngIf="blocked">
+      <ion-icon name="ban" slot="start" color="medium"></ion-icon>
+      <ion-text color="medium" *ngIf="blockedByMe">Você bloqueou este jogador. Desbloqueie para voltar a enviar mensagens.</ion-text>
+      <ion-text color="medium" *ngIf="!blockedByMe">Este jogador bloqueou o contato. Não é possível enviar mensagens neste chat.</ion-text>
+    </ion-item>
     <ion-item class="reply-banner" lines="none" *ngIf="replyingTo">
       <div class="reply-banner-content">
         <span class="reply-banner-label">
@@ -175,8 +185,9 @@
         [(ngModel)]="content"
         (ionInput)="onTyping()"
         (keyup.enter)="send()"
+        [readonly]="blocked"
       ></ion-input>
-      <ion-button class="send-btn" (click)="send()" [disabled]="!content.trim()">
+      <ion-button class="send-btn" (click)="send()" [disabled]="blocked || !content.trim()">
         <ion-icon name="send-outline"></ion-icon>
       </ion-button>
     </ion-item>

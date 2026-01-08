@@ -1,7 +1,7 @@
 <ion-header>
   <ion-toolbar>
     <ion-buttons slot="start">
-      <ion-back-button defaultHref="/home"></ion-back-button>
+      <ion-back-button defaultHref="/home" text="Voltar"></ion-back-button>
     </ion-buttons>
     <ion-title>Recomendar jogo</ion-title>
   </ion-toolbar>
@@ -38,6 +38,7 @@
 
         <div class="option-card" [class.invalid]="showError('gameType')">
           <div class="option-header">Tipo</div>
+          <p class="option-hint">Escolha o estilo da recomendação (casual ou competitivo).</p>
           <ion-radio-group formControlName="gameType">
             <ion-item lines="none" class="option-item" *ngFor="let option of typeOptions">
               <ion-radio slot="start" [value]="option"></ion-radio>
@@ -47,11 +48,20 @@
         </div>
         <ion-note *ngIf="showError('gameType')" color="danger">Selecione o tipo do jogo.</ion-note>
 
-        <ion-item [class.invalid]="showError('genre')">
-          <ion-label position="stacked">Gênero</ion-label>
-          <ion-input formControlName="genre" type="text" autocomplete="off" maxlength="255"></ion-input>
-        </ion-item>
-        <ion-note *ngIf="showError('genre')" color="danger">Informe o gênero.</ion-note>
+        <div class="option-card" [class.invalid]="showError('genre')">
+          <div class="option-header">Gênero</div>
+          <p class="option-hint">Selecione um gênero já cadastrado no WebLoc.</p>
+          <ion-radio-group formControlName="genre" *ngIf="genreOptions.length; else semGeneros">
+            <ion-item lines="none" class="option-item" *ngFor="let option of genreOptions">
+              <ion-radio slot="start" [value]="option.name"></ion-radio>
+              <ion-label>{{ option.name }}</ion-label>
+            </ion-item>
+          </ion-radio-group>
+          <ng-template #semGeneros>
+            <ion-text color="medium">Nenhum gênero cadastrado no momento.</ion-text>
+          </ng-template>
+        </div>
+        <ion-note *ngIf="showError('genre')" color="danger">Selecione um gênero.</ion-note>
 
         <ion-item>
           <ion-label position="stacked">Observações (opcional)</ion-label>

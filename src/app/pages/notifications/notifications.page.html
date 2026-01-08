@@ -1,0 +1,116 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home" text="Voltar"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Notificações</ion-title>
+    <ion-buttons slot="end" *ngIf="totalUnread > 0">
+      <ion-badge color="tertiary">{{ totalUnread }}</ion-badge>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding notifications-page" fullscreen>
+  <ng-container *ngIf="isPlayer; else adminOrLoggedOut">
+    <div class="hero">
+      <h1>Central de notificações</h1>
+      <p>Acompanhe pedidos de amizade e mensagens novas em conversas e salas.</p>
+    </div>
+
+    <ion-card class="surface" *ngIf="pendingRequests.length">
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon name="person-add-outline"></ion-icon>
+          Solicitações de amizade
+        </ion-card-title>
+        <ion-card-subtitle>{{ pendingRequests.length }} pendente(s)</ion-card-subtitle>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-list lines="none">
+          <ion-item *ngFor="let r of pendingRequests; trackBy: trackById" button (click)="openFriends()">
+            <ion-avatar slot="start">
+              <img [src]="normalizeAvatar(r.avatar_url || r.avatarUrl || r.avatar)" (error)="onImgError($event)" alt="Avatar" />
+            </ion-avatar>
+            <ion-label>
+              <h3>{{ r.name || ('@' + r.nickname) || 'Novo convite' }}</h3>
+              <p class="muted">Toque para gerenciar</p>
+            </ion-label>
+            <ion-badge slot="end" color="primary">Pendente</ion-badge>
+          </ion-item>
+        </ion-list>
+      </ion-card-content>
+    </ion-card>
+
+    <ion-card class="surface" *ngIf="unreadFriends.length">
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon name="chatbubble-ellipses-outline"></ion-icon>
+          Mensagens de amigos
+        </ion-card-title>
+        <ion-card-subtitle>Conversas diretas com novas mensagens</ion-card-subtitle>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-list lines="none">
+          <ion-item *ngFor="let f of unreadFriends; trackBy: trackById" button (click)="openFriendChat(f)">
+            <ion-avatar slot="start">
+              <img [src]="normalizeAvatar(f.avatar_url)" (error)="onImgError($event)" alt="Avatar" />
+            </ion-avatar>
+            <ion-label>
+              <h3>{{ f.name || ('@' + f.nickname) || ('Jogador #' + f.id) }}</h3>
+              <p class="muted">Toque para abrir o chat</p>
+            </ion-label>
+            <ion-badge slot="end" color="tertiary">{{ f.unread_count }}</ion-badge>
+          </ion-item>
+        </ion-list>
+      </ion-card-content>
+    </ion-card>
+
+    <ion-card class="surface" *ngIf="unreadRooms.length">
+      <ion-card-header>
+        <ion-card-title>
+          <ion-icon name="chatbubbles-outline"></ion-icon>
+          Mensagens em salas
+        </ion-card-title>
+        <ion-card-subtitle>Grupos com novas mensagens</ion-card-subtitle>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-list lines="none">
+          <ion-item *ngFor="let room of unreadRooms; trackBy: trackById" button (click)="openRoom(room)">
+            <ion-avatar slot="start">
+              <img [src]="normalizeAvatar(room.avatar_url)" (error)="onImgError($event)" alt="Avatar" />
+            </ion-avatar>
+            <ion-label>
+              <h3>{{ room.name || 'Sala' }}</h3>
+              <p class="muted" *ngIf="room.last_message">{{ room.last_message }}</p>
+              <p class="muted" *ngIf="!room.last_message">Toque para abrir a sala</p>
+            </ion-label>
+            <ion-badge slot="end" color="tertiary">{{ room.unread_count }}</ion-badge>
+          </ion-item>
+        </ion-list>
+      </ion-card-content>
+    </ion-card>
+
+    <ion-card class="surface" *ngIf="!loading && !pendingRequests.length && !unreadFriends.length && !unreadRooms.length">
+      <ion-card-content class="empty">
+        <ion-icon name="sparkles-outline"></ion-icon>
+        <h2>Sem notificações</h2>
+        <p>Quando houver mensagens novas ou convites, elas aparecem aqui.</p>
+      </ion-card-content>
+    </ion-card>
+
+    <div class="loading" *ngIf="loading">
+      <ion-spinner name="crescent"></ion-spinner>
+      <span>Carregando…</span>
+    </div>
+  </ng-container>
+
+  <ng-template #adminOrLoggedOut>
+    <ion-card class="surface">
+      <ion-card-content class="empty">
+        <ion-icon name="alert-circle-outline"></ion-icon>
+        <h2>Indisponível</h2>
+        <p>Esta tela é exclusiva para jogadores logados.</p>
+      </ion-card-content>
+    </ion-card>
+  </ng-template>
+</ion-content>

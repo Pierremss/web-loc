@@ -3,6 +3,16 @@
     <ion-header class="menu-header">
       <ion-toolbar>
         <ion-title>WebLoc</ion-title>
+        <ion-buttons slot="end" *ngIf="auth.isLogged() && !auth.isAdmin()">
+          <ion-button class="menu-notifications" (click)="openNotifications()" aria-label="Notificações">
+            <ion-icon name="notifications-outline"></ion-icon>
+            <ion-badge
+              *ngIf="totalNotifications > 0"
+              class="menu-notifications__badge"
+              color="danger"
+            >{{ totalNotifications }}</ion-badge>
+          </ion-button>
+        </ion-buttons>
       </ion-toolbar>
       <div class="menu-profile" *ngIf="auth.isLogged()">
         <img [src]="normalizeAvatar(auth.user?.avatar_url)" (error)="onImgError($event)" alt="avatar" />
@@ -16,11 +26,18 @@
       <ion-list>
         <ion-list-header>Principal</ion-list-header>
         <ion-menu-toggle auto-hide="true" *ngFor="let p of appPages" >
-          <ion-item *ngIf="p.show()" [routerLink]="p.url" routerDirection="root" lines="none">
-            <ion-icon [name]="p.icon" slot="start"></ion-icon>
+          <ion-item *ngIf="p.show() && p.url" [routerLink]="p.url" routerDirection="root" lines="none">
+            <span slot="start" class="menu-icon-wrapper">
+              <ion-icon [name]="p.icon"></ion-icon>
+            </span>
             <ion-label>{{ p.title }}</ion-label>
-            <ion-badge color="primary" *ngIf="p.title === 'Amigos' && pendingRequests > 0" slot="end">{{ pendingRequests }}</ion-badge>
-            <ion-badge color="tertiary" *ngIf="p.title === 'Salas' && unreadRooms > 0" slot="end">{{ unreadRooms }}</ion-badge>
+          </ion-item>
+
+          <ion-item *ngIf="p.show() && !p.url" (click)="p.action?.()" button detail="false" lines="none">
+            <span slot="start" class="menu-icon-wrapper">
+              <ion-icon [name]="p.icon"></ion-icon>
+            </span>
+            <ion-label>{{ p.title }}</ion-label>
           </ion-item>
         </ion-menu-toggle>
       </ion-list>

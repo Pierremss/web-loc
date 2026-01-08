@@ -39,7 +39,7 @@
       </div>
     </section>
 
-    <section class="filters-summary" *ngIf="filters.minCompatibility || filters.platformIds?.length || filters.gameStyle || filters.period">
+    <section class="filters-summary" *ngIf="filters.minCompatibility || filters.platformIds?.length || filters.gameStyle || filters.period || filters.genreIds?.length">
       <ion-chip color="primary" outline (click)="openFilters()">
         <ion-icon name="funnel-outline"></ion-icon>
         <ion-label>Filtros ativos</ion-label>
@@ -49,6 +49,9 @@
         <ion-badge color="medium" *ngIf="(filters.platformIds?.length ?? 0) > 0">{{ filters.platformIds?.length ?? 0 }} plataforma(s)</ion-badge>
         <ion-badge color="medium" *ngIf="filters.gameStyle">Estilo {{ filters.gameStyle }}</ion-badge>
         <ion-badge color="medium" *ngIf="filters.period">Horário {{ filters.period }}</ion-badge>
+        <ion-badge color="medium" *ngIf="genreFilterLabel() as genreLabel">
+          Gêneros {{ genreLabel }}
+        </ion-badge>
       </div>
     </section>
 
@@ -103,11 +106,11 @@
               </div>
 
               <div class="meta">
-                <ion-chip color="dark" *ngIf="current.game_style">
+                <ion-chip *ngIf="current.game_style">
                   <ion-icon name="game-controller-outline"></ion-icon>
                   <ion-label>{{ current.game_style }}</ion-label>
                 </ion-chip>
-                <ion-chip color="dark">
+                <ion-chip>
                   <ion-icon name="hardware-chip-outline"></ion-icon>
                   <ion-label>{{ platformList(current) }}</ion-label>
                 </ion-chip>
@@ -209,7 +212,7 @@
           <div>
             <h2>{{ profile.name }}</h2>
             <p *ngIf="profile.nickname">{{ '@' + profile.nickname }}</p>
-            <ion-badge color="dark" *ngIf="profile.game_style">{{ profile.game_style }}</ion-badge>
+            <ion-badge color="primary" *ngIf="profile.game_style">{{ profile.game_style }}</ion-badge>
           </div>
         </div>
 
@@ -252,7 +255,7 @@
 
   <ion-modal #filterModal [isOpen]="isFilterOpen" (didDismiss)="closeFilters()">
     <ng-template>
-      <ion-header>
+      <ion-header class="filters-header">
         <ion-toolbar>
           <ion-title>Filtrar jogadores</ion-title>
           <ion-buttons slot="end">
@@ -265,7 +268,7 @@
       <ion-content class="filters-modal">
         <ion-list>
           <ion-item>
-            <ion-label position="stacked">Compatibilidade mínima</ion-label>
+            <ion-label position="stacked" class="filter-label">Compatibilidade mínima</ion-label>
             <ion-range min="0" max="100" step="5" [(ngModel)]="compatibilityFloor" snaps="true">
               <ion-label slot="start">0%</ion-label>
               <ion-label slot="end">100%</ion-label>
@@ -273,26 +276,55 @@
           </ion-item>
 
           <ion-item>
-            <ion-label position="stacked">Plataformas</ion-label>
-            <ion-select placeholder="Todas" multiple="true" [(ngModel)]="filters.platformIds">
+            <ion-label position="stacked" class="filter-label">Plataformas</ion-label>
+            <ion-select
+              class="filter-select"
+              placeholder="Todas"
+              multiple="true"
+              interface="popover"
+              [interfaceOptions]="filterPopoverOptions"
+              [(ngModel)]="filters.platformIds">
               <ion-select-option *ngFor="let platform of platformOptions" [value]="platform.id">{{ platform.name }}</ion-select-option>
             </ion-select>
           </ion-item>
 
           <ion-item>
-            <ion-label position="stacked">Estilo de jogo</ion-label>
-            <ion-segment [(ngModel)]="filters.gameStyle">
-              <ion-segment-button value="">Todos</ion-segment-button>
-              <ion-segment-button *ngFor="let style of styleOptions" [value]="style">{{ style }}</ion-segment-button>
-            </ion-segment>
+            <ion-label position="stacked" class="filter-label">Estilo de jogo</ion-label>
+            <ion-select
+              class="filter-select"
+              [(ngModel)]="filters.gameStyle"
+              interface="popover"
+              [interfaceOptions]="filterPopoverOptions"
+              placeholder="Todos">
+              <ion-select-option value="">Todos</ion-select-option>
+              <ion-select-option *ngFor="let style of styleOptions" [value]="style">{{ style }}</ion-select-option>
+            </ion-select>
           </ion-item>
 
           <ion-item>
-            <ion-label position="stacked">Período</ion-label>
-            <ion-segment [(ngModel)]="filters.period">
-              <ion-segment-button value="">Todos</ion-segment-button>
-              <ion-segment-button *ngFor="let period of periodOptions" [value]="period">{{ period }}</ion-segment-button>
-            </ion-segment>
+            <ion-label position="stacked" class="filter-label">Período</ion-label>
+            <ion-select
+              class="filter-select"
+              [(ngModel)]="filters.period"
+              interface="popover"
+              [interfaceOptions]="filterPopoverOptions"
+              placeholder="Todos">
+              <ion-select-option value="">Todos</ion-select-option>
+              <ion-select-option *ngFor="let period of periodOptions" [value]="period">{{ period }}</ion-select-option>
+            </ion-select>
+          </ion-item>
+
+          <ion-item>
+            <ion-label position="stacked" class="filter-label">Gêneros favoritos</ion-label>
+            <ion-select
+              class="filter-select"
+              placeholder="Todos"
+              multiple="true"
+              interface="popover"
+              [interfaceOptions]="filterPopoverOptions"
+              [(ngModel)]="filters.genreIds">
+              <ion-select-option *ngFor="let genre of genreOptions" [value]="genre.id">{{ genre.name }}</ion-select-option>
+            </ion-select>
           </ion-item>
         </ion-list>
 

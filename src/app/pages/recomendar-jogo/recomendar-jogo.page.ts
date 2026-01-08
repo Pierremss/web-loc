@@ -4,6 +4,7 @@ import { ToastController } from '@ionic/angular';
 import { Router } from '@angular/router';
 import { AuthService } from '../../modules/auth/auth.service';
 import { GameRecommendationsService } from '../../services/game-recommendations.service';
+import { Genre, GenresService } from '../../services/genres.service';
 
 function requireNonEmptyArray(control: AbstractControl): ValidationErrors | null {
   const value = control.value;
@@ -21,25 +22,45 @@ export class RecomendarJogoPage implements OnInit {
   private readonly toast = inject(ToastController);
   private readonly router = inject(Router);
   private readonly recommendations = inject(GameRecommendationsService);
+  private readonly genres = inject(GenresService);
   readonly auth = inject(AuthService);
 
   submitting = false;
   readonly platformOptions = ['PC', 'Mobile', 'Nintendo', 'Xbox', 'PlayStation 5'];
   readonly typeOptions = ['Casual', 'Competitivo'];
+  genreOptions: Genre[] = [];
 
   readonly form = this.fb.nonNullable.group({
     gameName: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(255)]],
     platforms: this.fb.nonNullable.control<string[]>([], [requireNonEmptyArray]),
     gameType: this.fb.nonNullable.control(this.typeOptions[0], [Validators.required, Validators.minLength(2), Validators.maxLength(255)]),
-    genre: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(255)]],
+    genre: this.fb.nonNullable.control('', [Validators.required, Validators.minLength(2), Validators.maxLength(255)]),
     notes: ['', [Validators.maxLength(4000)]],
   });
 
   ngOnInit() {
     if (this.auth.isAdmin()) {
-      this.router.navigateByUrl('/menu-admin');
+      this.router.navigateByUrl('/home');
       return;
     }
+
+    this.loadGenres();
+  }
+
+  private loadGenres() {
+    this.genres.list().subscribe({
+      next: (genres) => {
+        this.genreOptions = [...(genres || [])].sort((a, b) => a.name.localeCompare(b.name));
+        const current = this.form.controls.genre.value?.trim();
+        if (!current && this.genreOptions.length) {
+          this.form.controls.genre.setValue(this.genreOptions[0].name);
+        }
+      },
+      error: () => {
+        // se falhar, mantém vazio para o usuário perceber e tentar novamente
+        this.genreOptions = [];
+      },
+    });
   }
 
   submit() {

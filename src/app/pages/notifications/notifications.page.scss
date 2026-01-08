@@ -1,0 +1,70 @@
+.notifications-page {
+	--background: transparent;
+}
+
+.hero {
+	margin-bottom: 12px;
+}
+
+.hero h1 {
+	margin: 0 0 6px;
+	font-size: 1.1rem;
+	font-weight: 800;
+}
+
+.hero p {
+	margin: 0;
+	opacity: 0.85;
+}
+
+.surface {
+	border-radius: 16px;
+}
+
+ion-card-title {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	--color: var(--ion-text-color);
+	color: var(--ion-text-color);
+	font-weight: 800;
+}
+
+ion-card-subtitle {
+	--color: rgba(var(--ion-text-color-rgb), 0.78);
+	color: rgba(var(--ion-text-color-rgb), 0.78);
+}
+
+.muted {
+	opacity: 0.75;
+}
+
+.empty {
+	text-align: center;
+	padding: 18px 10px;
+}
+
+.empty ion-icon {
+	font-size: 2rem;
+	margin-bottom: 8px;
+}
+
+.empty h2 {
+	margin: 0 0 6px;
+	font-size: 1rem;
+	font-weight: 800;
+}
+
+.empty p {
+	margin: 0;
+	opacity: 0.85;
+}
+
+.loading {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	justify-content: center;
+	padding: 14px 0;
+	opacity: 0.85;
+}

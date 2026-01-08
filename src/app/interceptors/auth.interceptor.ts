@@ -18,6 +18,18 @@ export class AuthInterceptor implements HttpInterceptor {
         if (err.status === 401) {
           this.auth.logout();
           this.router.navigateByUrl('/login');
+        } else if (err.status === 403 && (err.error?.error === 'banned' || err.error?.error === 'deleted')) {
+          const qp: any = {};
+          if (err.error?.error === 'banned') {
+            qp.banned = '1';
+            if (err.error?.banned_until) qp.banned_until = String(err.error.banned_until);
+          }
+          if (err.error?.error === 'deleted') {
+            qp.deleted = '1';
+          }
+          this.auth.logout();
+          const qs = new URLSearchParams(qp).toString();
+          this.router.navigateByUrl(qs ? `/login?${qs}` : '/login');
         }
         return throwError(() => err);
       })

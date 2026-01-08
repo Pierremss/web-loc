@@ -42,7 +42,7 @@
 .option-hint {
   margin: 0;
   font-size: 0.85rem;
-  color: var(--ion-color-step-600, rgba(0, 0, 0, 0.55));
+  color: rgba(var(--ion-text-color-rgb), 0.72);
 }
 
 .option-list {
@@ -60,6 +60,7 @@
 
 .option-item ion-label {
   font-size: 0.95rem;
+  color: var(--ion-text-color);
 }
 
 .stack {
