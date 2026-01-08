@@ -18,7 +18,9 @@ import { environment } from '../environments/environment';
 })
 export class AppComponent {
   appPages: Array<{ title: string; url?: string; icon: string; show: () => boolean; action?: () => void }> = [
-    { title: 'Home', url: '/home', icon: 'home-outline', show: () => true },
+    { title: 'Home', url: '/home', icon: 'home-outline', show: () => !this.auth.isLogged() },
+    { title: 'Jogador', url: '/home', icon: 'home-outline', show: () => this.auth.isLogged() && !this.auth.isAdmin() },
+    { title: 'Admin (Home)', url: '/home', icon: 'home-outline', show: () => this.auth.isLogged() && this.auth.isAdmin() },
     // Itens visíveis apenas para jogadores (não para administradores)
     { title: 'Descobrir Perfis', url: '/swipe', icon: 'sparkles-outline', show: () => this.auth.isLogged() && !this.auth.isAdmin() },
     { title: 'Meu Perfil', url: '/jogador-perfil', icon: 'person-outline', show: () => this.auth.isLogged() && !this.auth.isAdmin() },

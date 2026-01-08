@@ -45,7 +45,8 @@
       <ion-list *ngIf="auth.isLogged()">
         <ion-list-header>Conta</ion-list-header>
         <ion-item>
-          <ion-label>Tema escuro</ion-label>
+          <ion-icon slot="start" [name]="theme.isDark ? 'moon-outline' : 'sunny-outline'"></ion-icon>
+          <ion-label>{{ theme.isDark ? 'Tema escuro' : 'Tema claro' }}</ion-label>
           <ion-toggle [checked]="theme.isDark" (ionChange)="theme.toggle()"></ion-toggle>
         </ion-item>
         <ion-menu-toggle auto-hide="true">
