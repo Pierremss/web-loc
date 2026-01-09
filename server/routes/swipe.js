@@ -44,13 +44,22 @@ function parseSchedule(raw) {
   return {};
 }
 
+function normalizeToken(value) {
+  if (value === null || value === undefined) return '';
+  return String(value)
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
 function scheduleOverlap(a, b) {
   const overlap = [];
   let count = 0;
   Object.entries(a).forEach(([day, periods]) => {
     if (!Array.isArray(periods) || !periods.length) return;
-    const other = new Set(b[day] || []);
-    const shared = periods.filter(p => other.has(p));
+    const other = new Set((b[day] || []).map(normalizeToken));
+    const shared = periods.filter(p => other.has(normalizeToken(p)));
     if (shared.length) {
       overlap.push({ day, periods: shared });
       count += shared.length;
@@ -255,7 +264,10 @@ router.get('/deck', ensureAuth, async (req, res) => {
         if (!hasGenre) continue;
       }
       if (periodFilter) {
-        const hasPeriod = Object.values(schedule).some((periods) => Array.isArray(periods) && periods.includes(periodFilter));
+        const wanted = normalizeToken(periodFilter);
+        const hasPeriod = Object.values(schedule).some((periods) =>
+          Array.isArray(periods) && periods.some((p) => normalizeToken(p) === wanted)
+        );
         if (!hasPeriod) continue;
       }
 

@@ -147,6 +147,47 @@ ion-fab-button {
   --box-shadow: var(--app-shadow-md);
 }
 
+/* Swipe: Profile modal theming (ion-modal content is rendered outside component host) */
+body:not(.dark) ion-modal .profile-modal {
+  --profile-bg: linear-gradient(180deg, rgba(248, 250, 252, 0.98), rgba(241, 245, 249, 0.96));
+  --profile-card: rgba(255, 255, 255, 0.98);
+  --profile-border: rgba(148, 163, 184, 0.26);
+  --profile-text: rgba(15, 23, 42, 0.95);
+  --profile-subtext: rgba(71, 85, 105, 0.82);
+  --profile-hero-bg: linear-gradient(135deg, rgba(99, 102, 241, 0.14), rgba(59, 130, 246, 0.1));
+  --profile-highlight-bg: rgba(241, 245, 249, 0.92);
+  --profile-highlight-border: rgba(148, 163, 184, 0.22);
+  --profile-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
+  --profile-actions-bg: rgba(255, 255, 255, 0.96);
+  --profile-actions-border: rgba(148, 163, 184, 0.22);
+  --profile-pill-bg: rgba(241, 245, 249, 0.92);
+  --profile-pill-border: rgba(148, 163, 184, 0.22);
+  --profile-avatar-shell-bg: rgba(255, 255, 255, 0.72);
+  --profile-avatar-shell-border: rgba(255, 255, 255, 0.95);
+  --profile-chip-bg: rgba(226, 232, 240, 0.75);
+  --profile-chip-color: rgba(15, 23, 42, 0.9);
+}
+
+body.dark ion-modal .profile-modal {
+  --profile-bg: linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(2, 6, 23, 0.96));
+  --profile-card: rgba(15, 23, 42, 0.55);
+  --profile-border: rgba(148, 163, 184, 0.14);
+  --profile-text: rgba(248, 250, 252, 0.96);
+  --profile-subtext: rgba(226, 232, 240, 0.78);
+  --profile-hero-bg: linear-gradient(135deg, rgba(56, 189, 248, 0.16), rgba(99, 102, 241, 0.16));
+  --profile-highlight-bg: rgba(2, 6, 23, 0.35);
+  --profile-highlight-border: rgba(148, 163, 184, 0.14);
+  --profile-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+  --profile-actions-bg: rgba(2, 6, 23, 0.74);
+  --profile-actions-border: rgba(148, 163, 184, 0.12);
+  --profile-pill-bg: rgba(2, 6, 23, 0.32);
+  --profile-pill-border: rgba(148, 163, 184, 0.14);
+  --profile-avatar-shell-bg: rgba(2, 6, 23, 0.35);
+  --profile-avatar-shell-border: rgba(255, 255, 255, 0.18);
+  --profile-chip-bg: rgba(15, 23, 42, 0.55);
+  --profile-chip-color: rgba(241, 245, 249, 0.92);
+}
+
 /* Containers */
 .container,
 ion-list {

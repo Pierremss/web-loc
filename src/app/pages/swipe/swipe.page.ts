@@ -12,6 +12,11 @@ interface CompatibilitySummary {
   details: string;
 }
 
+interface AvailabilityBlock {
+  day: string;
+  periods: string[];
+}
+
 @Component({
   selector: 'app-swipe',
   templateUrl: './swipe.page.html',
@@ -59,9 +64,14 @@ export class SwipePage implements OnInit {
   };
 
   profileDetails: SwipeProfile | null = null;
+  profileDeckItem: SwipeDeckItem | null = null;
   profileLoading = false;
   isProfileOpen = false;
   isFilterOpen = false;
+
+  private dragLock = false;
+  private dragStartX = 0;
+  private dragStartY = 0;
 
   private readonly swipe = inject(SwipeService);
   private readonly platforms = inject(PlatformsService);
@@ -177,6 +187,7 @@ export class SwipePage implements OnInit {
     this.items.shift();
     this.busy = false;
     this.profileDetails = null;
+    this.profileDeckItem = null;
     this.isProfileOpen = false;
     if (this.items.length < 5) void this.load('auto');
   }
@@ -208,18 +219,74 @@ export class SwipePage implements OnInit {
     return this.formatFallbackSchedule(value);
   }
 
+  availabilityLayout(raw?: string | null): { blocks: AvailabilityBlock[]; more: number } {
+    const value = typeof raw === 'string' ? raw.trim() : '';
+    if (!value) return { blocks: [], more: 0 };
+
+    const schedule = this.parseScheduleObject(value);
+    const blocks = schedule ? this.scheduleObjectToBlocks(schedule) : this.scheduleTextToBlocks(value);
+    if (!blocks.length) return { blocks: [], more: 0 };
+
+    // Keep it compact on the card.
+    const limit = 4;
+    const sliced = blocks.slice(0, limit);
+    const more = Math.max(0, blocks.length - sliced.length);
+    return { blocks: sliced, more };
+  }
+
   platformList(item?: SwipeDeckItem) {
     if (!item) return '';
-    return item.platforms.map((p) => p.name).join(', ');
+    const names = item.platforms.map((p) => p.name).filter(Boolean);
+    if (names.length <= 2) return names.join(', ');
+    return `${names.slice(0, 2).join(', ')} +${names.length - 2}`;
+  }
+
+  bioText(item?: SwipeDeckItem): string | null {
+    if (!item) return null;
+
+    const fromSummary = item.summary?.bio;
+    if (typeof fromSummary === 'string' && fromSummary.trim()) return fromSummary.trim();
+
+    // Defensive fallback: if the backend shape changed, try common fields.
+    const anyItem = item as unknown as Record<string, unknown>;
+    const anySummary = (anyItem['summary'] as Record<string, unknown> | undefined) ?? undefined;
+    const candidates: unknown[] = [
+      anySummary?.['bio'],
+      anySummary?.['profile'],
+      anyItem['profile'],
+      anyItem['descricao'],
+      anyItem['description'],
+      anyItem['bio'],
+    ];
+
+    for (const value of candidates) {
+      if (typeof value === 'string' && value.trim()) return value.trim();
+    }
+    return null;
+  }
+
+  shouldShowBioMore(item: SwipeDeckItem, renderedBio: string): boolean {
+    // We only have the full description in the Profile modal.
+    // In the deck payload, bio is typically summarized/truncated; show a discreet link when it looks truncated.
+    const summaryBio = item.summary?.bio;
+    const value = (typeof summaryBio === 'string' && summaryBio.trim()) ? summaryBio.trim() : renderedBio.trim();
+    if (!value) return false;
+
+    // Backend truncation uses "..."; keep heuristic simple.
+    if (value.endsWith('...')) return true;
+    if (value.length >= 140) return true;
+    return false;
   }
 
   async openProfile(item: SwipeDeckItem) {
     if (this.profileLoading) return;
     this.profileLoading = true;
+    this.profileDeckItem = item;
     try {
       this.profileDetails = await firstValueFrom(this.swipe.profile(item.id));
       this.isProfileOpen = true;
     } catch {
+      this.profileDeckItem = null;
       await this.presentToast('Não foi possível carregar o perfil.', 'danger');
     } finally {
       this.profileLoading = false;
@@ -230,6 +297,7 @@ export class SwipePage implements OnInit {
     this.isProfileOpen = false;
     if (!this.profileLoading) {
       this.profileDetails = null;
+      this.profileDeckItem = null;
     }
   }
 
@@ -286,11 +354,42 @@ export class SwipePage implements OnInit {
     this.filterModal?.dismiss();
   }
 
-  onDragStart(_event?: TouchEvent | MouseEvent) {
+  private shouldIgnoreDragStart(event?: TouchEvent | MouseEvent): boolean {
+    const target = (event?.target ?? null) as EventTarget | null;
+    if (!(target instanceof Element)) return false;
+
+    // Ignore gestures that start from interactive controls.
+    // This prevents accidental likes when tapping buttons (e.g., "Perfil").
+    const interactiveSelector = [
+      'ion-button',
+      'button',
+      'a',
+      'ion-select',
+      'ion-range',
+      'ion-chip',
+      'ion-input',
+      'ion-textarea',
+      'input',
+      'textarea',
+      'select',
+      '[role="button"]',
+    ].join(',');
+
+    return Boolean(target.closest(interactiveSelector));
+  }
+
+  onDragStart(event?: TouchEvent | MouseEvent) {
+    if (this.busy) return;
+    if (this.shouldIgnoreDragStart(event)) return;
     this.dragging = true;
+    this.dragLock = false;
     this.dx = 0;
     this.dy = 0;
     this.angle = 0;
+
+    const point = event && 'touches' in event ? event.touches[0] : (event as MouseEvent | undefined);
+    this.dragStartX = point?.clientX ?? 0;
+    this.dragStartY = point?.clientY ?? 0;
   }
 
   onDragMove(ev: TouchEvent | MouseEvent) {
@@ -304,12 +403,24 @@ export class SwipePage implements OnInit {
     this.dx = point.clientX - cx;
     this.dy = point.clientY - cy;
     this.angle = (this.dx / rect.width) * 15;
+
+    const movedX = Math.abs((point.clientX ?? 0) - this.dragStartX);
+    const movedY = Math.abs((point.clientY ?? 0) - this.dragStartY);
+    if (!this.dragLock && movedX > 10 && movedX > movedY) {
+      this.dragLock = true;
+    }
+    if (this.dragLock && 'touches' in ev) {
+      try {
+        (ev as TouchEvent).preventDefault();
+      } catch {}
+    }
   }
 
   onDragEnd(_event?: TouchEvent | MouseEvent) {
     if (!this.dragging) return;
     this.dragging = false;
-    const threshold = 120;
+    const card = document.getElementById('swipe-card');
+    const threshold = card ? Math.max(90, Math.round(card.getBoundingClientRect().width * 0.25)) : 120;
     if (this.dx > threshold) {
       this.onLike();
     } else if (this.dx < -threshold) {
@@ -318,6 +429,7 @@ export class SwipePage implements OnInit {
     this.dx = 0;
     this.dy = 0;
     this.angle = 0;
+    this.dragLock = false;
   }
 
   private async presentToast(message: string, color: 'dark' | 'danger' = 'dark') {
@@ -380,7 +492,60 @@ export class SwipePage implements OnInit {
         segments.push(`${label}: ${formatted.join(', ')}`);
       });
     }
-    return segments.join(' • ').trim();
+    const trimmed = segments.map((s) => s.trim()).filter(Boolean);
+    if (!trimmed.length) return '';
+    if (trimmed.length <= 2) return trimmed.join(' • ');
+    return `${trimmed.slice(0, 2).join(' • ')} • +${trimmed.length - 2}`;
+  }
+
+  private scheduleObjectToBlocks(schedule: Record<string, string[]>): AvailabilityBlock[] {
+    const result: AvailabilityBlock[] = [];
+
+    // Prefer standard order when possible
+    this.dayOrder.forEach((day) => {
+      const periods = this.formatPeriods(schedule[day]);
+      if (!periods.length) return;
+      const label = this.dayLabels[day] || this.normalizeDayLabel(day);
+      result.push({ day: label, periods });
+    });
+
+    if (result.length) return result;
+
+    Object.entries(schedule).forEach(([day, periods]) => {
+      const formatted = this.formatPeriods(periods);
+      if (!formatted.length) return;
+      const label = this.dayLabels[day] || this.normalizeDayLabel(day);
+      result.push({ day: label, periods: formatted });
+    });
+
+    return result;
+  }
+
+  private scheduleTextToBlocks(text: string): AvailabilityBlock[] {
+    const formattedText = this.formatFallbackSchedule(text);
+    if (!formattedText) return [];
+    const segments = formattedText
+      .split(/\s*•\s*/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    const blocks: AvailabilityBlock[] = [];
+    segments.forEach((segment) => {
+      const [dayPart, rest] = segment.split(':');
+      const day = this.normalizeDayLabel(dayPart || segment);
+      if (!rest) {
+        blocks.push({ day, periods: [] });
+        return;
+      }
+      const periods = this.uniqueSequence(
+        rest
+          .split(/,|\//)
+          .map((v) => this.normalizePeriodLabel(v))
+          .filter(Boolean)
+      );
+      blocks.push({ day: this.dayLabels[day] || day, periods });
+    });
+    return blocks;
   }
 
   private formatFallbackSchedule(text: string): string {
@@ -407,7 +572,10 @@ export class SwipePage implements OnInit {
       );
       return periods.length ? `${dayLabel}: ${periods.join(', ')}` : dayLabel;
     });
-    return formatted.join(' • ');
+    const trimmed = formatted.map((s) => s.trim()).filter(Boolean);
+    if (!trimmed.length) return '';
+    if (trimmed.length <= 2) return trimmed.join(' • ');
+    return `${trimmed.slice(0, 2).join(' • ')} • +${trimmed.length - 2}`;
   }
 
   private formatPeriods(periods: unknown): string[] {

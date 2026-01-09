@@ -27,16 +27,6 @@
         <h1>Encontre seu duo ideal</h1>
         <p>Analise compatibilidade, estilos de jogo e horários alinhados antes de dar o próximo like.</p>
       </div>
-      <div class="intro-actions">
-        <ion-button fill="clear" size="small" color="medium" (click)="onRefresh()" [disabled]="loading">
-          <ion-icon slot="start" name="refresh-outline"></ion-icon>
-          Atualizar deck
-        </ion-button>
-        <ion-button size="small" color="primary" (click)="openFilters()">
-          <ion-icon slot="start" name="funnel-outline"></ion-icon>
-          Ajustar filtros
-        </ion-button>
-      </div>
     </section>
 
     <section class="filters-summary" *ngIf="filters.minCompatibility || filters.platformIds?.length || filters.gameStyle || filters.period || filters.genreIds?.length">
@@ -81,7 +71,12 @@
             (touchstart)="onDragStart($event)"
             (touchmove)="onDragMove($event)"
             (touchend)="onDragEnd($event)">
-            <img [src]="normalizeAvatar(current.avatar_url)" (error)="onImgError($event)" alt="avatar" />
+            <img class="bg-photo" [src]="normalizeAvatar(current.avatar_url)" (error)="onImgError($event)" alt="" />
+            <div class="card-top">
+              <div class="avatar-wrap">
+                <img class="avatar" [src]="normalizeAvatar(current.avatar_url)" (error)="onImgError($event)" alt="avatar" />
+              </div>
+            </div>
 
             <div class="overlay like" [style.opacity]="Math.max(0, Math.min(1, dx/120))">
               <ion-icon name="heart"></ion-icon>
@@ -92,14 +87,25 @@
               <span>Pass</span>
             </div>
 
-            <div class="gradient"></div>
-            <div class="info">
+            <div
+              class="info"
+              (pointerdown)="$event.stopPropagation()"
+              (touchstart)="$event.stopPropagation()"
+              (mousedown)="$event.stopPropagation()">
               <div class="header">
                 <div>
                   <h2>{{ current.name }}</h2>
                   <span class="nickname" *ngIf="current.nickname">{{ '@' + current.nickname }}</span>
                 </div>
-                <ion-button size="small" fill="outline" color="light" (click)="openProfile(current)">
+                <ion-button
+                  class="profile-btn"
+                  size="small"
+                  fill="outline"
+                  color="light"
+                  (pointerdown)="$event.stopPropagation()"
+                  (touchstart)="$event.stopPropagation()"
+                  (mousedown)="$event.stopPropagation()"
+                  (click)="openProfile(current)">
                   <ion-icon slot="start" name="person-circle-outline"></ion-icon>
                   Perfil
                 </ion-button>
@@ -116,12 +122,39 @@
                 </ion-chip>
               </div>
 
-              <p class="bio" *ngIf="current.summary?.bio">{{ current.summary.bio }}</p>
+              <ng-container *ngIf="bioText(current) as bio">
+                <p class="bio">{{ bio }}</p>
+                <button
+                  type="button"
+                  class="bio-more"
+                  *ngIf="shouldShowBioMore(current, bio)"
+                  (pointerdown)="$event.stopPropagation()"
+                  (touchstart)="$event.stopPropagation()"
+                  (mousedown)="$event.stopPropagation()"
+                  (click)="openProfile(current)">
+                  Ver mais
+                </button>
+              </ng-container>
 
-              <div class="availability" *ngIf="availabilitySummary(current.summary?.availableTimes) as availability">
-                <ion-icon name="time-outline"></ion-icon>
-                <span>{{ availability }}</span>
-              </div>
+              <ng-container *ngIf="availabilityLayout(current.summary?.availableTimes) as availability">
+                <div class="availability" *ngIf="availability.blocks.length">
+                  <div class="availability-title">
+                    <ion-icon name="time-outline"></ion-icon>
+                    <span>Disponibilidade</span>
+                  </div>
+
+                  <div class="availability-grid">
+                    <div class="availability-day" *ngFor="let block of availability.blocks">
+                      <span class="day">{{ block.day }}</span>
+                      <div class="periods">
+                        <span class="period" *ngFor="let period of block.periods">{{ period }}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="availability-more" *ngIf="availability.more > 0">+{{ availability.more }} dia(s)</div>
+                </div>
+              </ng-container>
 
               <div class="info-footer">
                 <div class="tag" *ngIf="current.compatibility.commonGames.length">
@@ -207,36 +240,60 @@
         </ion-toolbar>
       </ion-header>
       <ion-content *ngIf="profileDetails as profile" class="profile-modal">
-        <div class="profile-hero">
-          <img [src]="normalizeAvatar(profile.avatar_url)" (error)="onImgError($event)" alt="avatar" />
-          <div>
-            <h2>{{ profile.name }}</h2>
-            <p *ngIf="profile.nickname">{{ '@' + profile.nickname }}</p>
-            <ion-badge color="primary" *ngIf="profile.game_style">{{ profile.game_style }}</ion-badge>
+        <div class="profile-sheet">
+          <div class="profile-hero">
+            <img class="profile-avatar" [src]="normalizeAvatar(profile.avatar_url)" (error)="onImgError($event)" alt="avatar" />
+            <div class="profile-identity">
+              <h2>{{ profile.name }}</h2>
+              <p class="profile-handle" *ngIf="profile.nickname">{{ '@' + profile.nickname }}</p>
+              <div class="profile-badges">
+                <ion-badge class="profile-badge" color="primary" *ngIf="profile.game_style">{{ profile.game_style }}</ion-badge>
+                <ion-badge class="profile-badge" color="success" *ngIf="profileDeckItem?.compatibility?.score !== undefined">{{ profileDeckItem?.compatibility?.score }}% compatível</ion-badge>
+              </div>
+              <div class="profile-highlights">
+                <div class="highlight" *ngIf="profile.platforms?.length">
+                  <ion-icon name="hardware-chip-outline"></ion-icon>
+                  <span>{{ profile.platforms?.length }} plataforma(s)</span>
+                </div>
+                <div class="highlight" *ngIf="profileFavoriteGames().length">
+                  <ion-icon name="flame-outline"></ion-icon>
+                  <span>{{ profileFavoriteGames().length }} favorito(s)</span>
+                </div>
+              </div>
+            </div>
           </div>
+
+          <section class="profile-section" *ngIf="profile.platforms?.length">
+            <h3>Plataformas</h3>
+            <div class="chip-row">
+              <ion-chip *ngFor="let platform of profile.platforms" color="medium">{{ platform.name }}</ion-chip>
+            </div>
+          </section>
+
+          <section class="profile-section" *ngIf="profile.profile">
+            <h3>Sobre</h3>
+            <p>{{ profile.profile }}</p>
+          </section>
+
+          <section class="profile-section" *ngIf="profileSchedules().length">
+            <h3>Disponibilidade</h3>
+            <ul class="schedule-list">
+              <li *ngFor="let slot of profileSchedules()">
+                <span class="day">{{ slot.day }}</span>
+                <span class="periods">{{ slot.periods.join(', ') }}</span>
+              </li>
+            </ul>
+          </section>
+
+          <section class="profile-section" *ngIf="profileFavoriteGames().length">
+            <h3>Jogos favoritos</h3>
+            <div class="chip-row">
+              <ion-chip *ngFor="let game of profileFavoriteGames()" color="primary">{{ game.name }}</ion-chip>
+            </div>
+          </section>
         </div>
 
-        <section *ngIf="profile.profile">
-          <h3>Sobre</h3>
-          <p>{{ profile.profile }}</p>
-        </section>
-
-        <section *ngIf="profileSchedules().length">
-          <h3>Disponibilidade</h3>
-          <ul>
-            <li *ngFor="let slot of profileSchedules()">
-              <strong>{{ slot.day }}:</strong>
-              <span>{{ slot.periods.join(', ') }}</span>
-            </li>
-          </ul>
-        </section>
-
-        <section *ngIf="profileFavoriteGames().length">
-          <h3>Jogos favoritos</h3>
-          <ion-chip *ngFor="let game of profileFavoriteGames()" color="primary">{{ game.name }}</ion-chip>
-        </section>
-
-        <div class="modal-actions">
+        <div class="profile-actions">
           <ion-button expand="block" color="success" (click)="onProfileAction('like')" [disabled]="busy">
             <ion-icon slot="start" name="heart"></ion-icon>
             Enviar like
@@ -266,16 +323,26 @@
         </ion-toolbar>
       </ion-header>
       <ion-content class="filters-modal">
-        <ion-list>
-          <ion-item>
-            <ion-label position="stacked" class="filter-label">Compatibilidade mínima</ion-label>
+        <div class="filters-hero">
+          <div class="filters-hero__icon">
+            <ion-icon name="options-outline"></ion-icon>
+          </div>
+          <div class="filters-hero__text">
+            <h2>Encontre seu match ideal</h2>
+            <p>Ajuste compatibilidade, plataformas e preferências.</p>
+          </div>
+        </div>
+
+        <ion-list class="filters-list">
+          <ion-item class="filter-card" lines="none">
+            <ion-label position="stacked" class="filter-label">Compatibilidade mínima ({{ compatibilityFloor }}%)</ion-label>
             <ion-range min="0" max="100" step="5" [(ngModel)]="compatibilityFloor" snaps="true">
               <ion-label slot="start">0%</ion-label>
               <ion-label slot="end">100%</ion-label>
             </ion-range>
           </ion-item>
 
-          <ion-item>
+          <ion-item class="filter-card" lines="none">
             <ion-label position="stacked" class="filter-label">Plataformas</ion-label>
             <ion-select
               class="filter-select"
@@ -288,7 +355,7 @@
             </ion-select>
           </ion-item>
 
-          <ion-item>
+          <ion-item class="filter-card" lines="none">
             <ion-label position="stacked" class="filter-label">Estilo de jogo</ion-label>
             <ion-select
               class="filter-select"
@@ -301,7 +368,7 @@
             </ion-select>
           </ion-item>
 
-          <ion-item>
+          <ion-item class="filter-card" lines="none">
             <ion-label position="stacked" class="filter-label">Período</ion-label>
             <ion-select
               class="filter-select"
@@ -314,7 +381,7 @@
             </ion-select>
           </ion-item>
 
-          <ion-item>
+          <ion-item class="filter-card" lines="none">
             <ion-label position="stacked" class="filter-label">Gêneros favoritos</ion-label>
             <ion-select
               class="filter-select"
