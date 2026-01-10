@@ -17,6 +17,12 @@ async function ensureAccountStructures() {
     } catch (err) {
       if (err?.code !== 'ER_DUP_FIELDNAME') throw err;
     }
+
+    try {
+      await pool.query(`ALTER TABLE users ADD COLUMN disabled_until DATETIME NULL`);
+    } catch (err) {
+      if (err?.code !== 'ER_DUP_FIELDNAME') throw err;
+    }
     await pool.query(`
       CREATE TABLE IF NOT EXISTS user_account_events (
         id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -44,6 +50,15 @@ async function ensureAccountStructures() {
     `);
   })();
   return ensured;
+}
+
+function toSqlDateTime(d) {
+  const dt = d instanceof Date ? d : new Date(d);
+  if (!Number.isFinite(dt.getTime())) return null;
+  return new Date(dt.getTime() - dt.getTimezoneOffset() * 60_000)
+    .toISOString()
+    .slice(0, 19)
+    .replace('T', ' ');
 }
 
 function enrichAvatar(row, req) {
@@ -128,13 +143,14 @@ router.get('/search', ensureAuth, async (req, res) => {
   if (!q || q.length < 2) return res.json({ items: [] });
   const like = `%${q}%`;
   const [rows] = await pool.query(
-    `SELECT id, name, nickname, email
+    `SELECT id, name, nickname, email, avatar_url
      FROM users
      WHERE name LIKE ? OR nickname LIKE ?
      ORDER BY name ASC
      LIMIT 20`, [like, like]
   );
-  res.json({ items: rows });
+  const items = (rows || []).map((r) => enrichAvatar(r, req));
+  res.json({ items });
 });
 
 // Retorna os jogos favoritos do usuário
@@ -301,6 +317,93 @@ router.post(
     await pool.query(
       'INSERT INTO user_account_events (user_id, type, message, meta) VALUES (?, ?, ?, JSON_OBJECT(\'reason\', ?))',
       [userId, 'unban', msg, reason || null]
+    );
+
+    res.json({ ok: true });
+  }
+);
+
+// Desativar usuário (admin) - impede login até uma data
+router.post(
+  '/:id/disable',
+  ensureAuth,
+  ensureAdmin,
+  param('id').isInt({ min: 1 }),
+  body('days').optional().isInt({ min: 1, max: 3650 }),
+  body('until').optional().isISO8601(),
+  body('reason').optional().isString().isLength({ max: 200 }),
+  async (req, res) => {
+    await ensureAccountStructures();
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+    const userId = Number(req.params.id);
+    const days = req.body.days !== undefined ? Number(req.body.days) : null;
+    const untilRaw = req.body.until ? String(req.body.until) : null;
+    const reason = req.body.reason ? String(req.body.reason).trim() : '';
+
+    let until = null;
+    if (untilRaw) {
+      const d = new Date(untilRaw);
+      if (Number.isFinite(d.getTime())) until = d;
+    } else if (Number.isFinite(days) && days && days > 0) {
+      until = new Date(Date.now() + days * 24 * 60 * 60_000);
+    } else {
+      until = new Date(Date.now() + 30 * 24 * 60 * 60_000); // padrão 30 dias
+    }
+
+    const untilSql = toSqlDateTime(until);
+    if (!untilSql) return res.status(400).json({ error: 'Data inválida' });
+
+    const [[u]] = await pool.query('SELECT id, is_admin FROM users WHERE id = ? LIMIT 1', [userId]);
+    if (!u) return res.status(404).json({ error: 'Não encontrado' });
+    if (u.is_admin) return res.status(400).json({ error: 'Não é permitido desativar administradores' });
+
+    await pool.query('UPDATE users SET disabled_until = ? WHERE id = ?', [untilSql, userId]);
+
+    const msg = reason
+      ? `Sua conta foi desativada temporariamente até ${untilSql}. Motivo: ${reason}`
+      : `Sua conta foi desativada temporariamente até ${untilSql}.`;
+
+    await pool.query(
+      'INSERT INTO user_account_events (user_id, type, message, meta) VALUES (?, ?, ?, JSON_OBJECT(\'until\', ?, \'reason\', ?))',
+      [userId, 'disable', msg, untilSql, reason || null]
+    );
+
+    res.json({ ok: true, disabled_until: untilSql });
+  }
+);
+
+// Reativar usuário (admin)
+router.post(
+  '/:id/enable',
+  ensureAuth,
+  ensureAdmin,
+  param('id').isInt({ min: 1 }),
+  body('reason').optional().isString().isLength({ max: 200 }),
+  async (req, res) => {
+    await ensureAccountStructures();
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+    const userId = Number(req.params.id);
+    const reason = req.body.reason ? String(req.body.reason).trim() : '';
+
+    const [[u]] = await pool.query('SELECT id, is_admin FROM users WHERE id = ? LIMIT 1', [userId]);
+    if (!u) return res.status(404).json({ error: 'Não encontrado' });
+    if (u.is_admin) return res.status(400).json({ error: 'Não é permitido alterar administradores' });
+
+    await pool.query('UPDATE users SET disabled_until = NULL WHERE id = ?', [userId]);
+
+    const msg = reason
+      ? `Sua conta foi reativada. Observação: ${reason}`
+      : 'Sua conta foi reativada. Você já pode acessar o sistema novamente.';
+
+    await pool.query(
+      'INSERT INTO user_account_events (user_id, type, message, meta) VALUES (?, ?, ?, JSON_OBJECT(\'reason\', ?))',
+      [userId, 'enable', msg, reason || null]
     );
 
     res.json({ ok: true });

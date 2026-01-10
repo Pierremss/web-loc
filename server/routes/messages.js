@@ -48,6 +48,35 @@ function reportUploadHandler(req, res, next) {
   });
 }
 
+async function ensureModerationColumns() {
+  try {
+    await pool.query(`ALTER TABLE users ADD COLUMN disabled_until DATETIME NULL`);
+  } catch (err) {
+    if (err?.code !== 'ER_DUP_FIELDNAME') throw err;
+  }
+}
+
+function toSqlDateTime(d) {
+  const dt = d instanceof Date ? d : new Date(d);
+  if (!Number.isFinite(dt.getTime())) return null;
+  return new Date(dt.getTime() - dt.getTimezoneOffset() * 60_000)
+    .toISOString()
+    .slice(0, 19)
+    .replace('T', ' ');
+}
+
+function pickAutoAction(reportCount) {
+  // Política simples (pode ser ajustada depois):
+  // 1-2: registra
+  // 3-4: ban 3 dias
+  // 5-6: ban 14 dias
+  // 7+: disable 30 dias
+  if (reportCount >= 7) return { kind: 'disable', days: 30 };
+  if (reportCount >= 5) return { kind: 'ban', days: 14 };
+  if (reportCount >= 3) return { kind: 'ban', days: 3 };
+  return { kind: 'none' };
+}
+
 // Listar conversa com um usuário específico
 router.get('/conversation/:userId', ensureAuth, async (req, res) => {
   const me = Number(req.user.id);
@@ -690,6 +719,7 @@ router.post(
 
     try {
       // Garante tabelas (para ambientes sem migração aplicada)
+      await ensureModerationColumns();
       await pool.query(`
         CREATE TABLE IF NOT EXISTS user_reports (
           id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -743,7 +773,10 @@ router.post(
       try {
         await conn.beginTransaction();
 
-        const [userRows] = await conn.query('SELECT id, is_admin FROM users WHERE id = ? FOR UPDATE', [reportedId]);
+        const [userRows] = await conn.query(
+          'SELECT id, is_admin, banned_until, disabled_until FROM users WHERE id = ? FOR UPDATE',
+          [reportedId]
+        );
         if (!userRows.length) {
           await conn.rollback();
           return res.status(400).json({ error: 'invalid_user' });
@@ -774,30 +807,33 @@ router.post(
         const [[countRow]] = await conn.query('SELECT COUNT(*) AS cnt FROM user_reports WHERE reported_id = ?', [reportedId]);
         const count = Number(countRow?.cnt ?? 0);
 
-        if (!isAdmin && count >= 5) {
-          // Registrar exclusão para permitir mensagem amigável no login
-          try {
-            await conn.query(`
-              CREATE TABLE IF NOT EXISTS deleted_accounts (
-                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                email VARCHAR(255) NOT NULL,
-                deleted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                deleted_by INT NULL,
-                reason VARCHAR(200) NULL,
-                source VARCHAR(32) NOT NULL,
-                INDEX idx_da_email (email),
-                INDEX idx_da_deleted (deleted_at)
-              ) ENGINE=InnoDB
-            `);
-          } catch {}
+        const policy = pickAutoAction(count);
 
-          const [[reportedUser]] = await conn.query('SELECT email FROM users WHERE id = ? LIMIT 1', [reportedId]);
-          if (reportedUser?.email) {
-            await conn.query(
-              'INSERT INTO deleted_accounts (email, deleted_by, reason, source) VALUES (?, NULL, NULL, ?)',
-              [String(reportedUser.email).toLowerCase(), 'auto_delete']
-            );
+        if (!isAdmin && policy.kind !== 'none') {
+          const until = new Date(Date.now() + policy.days * 24 * 60 * 60_000);
+          const untilSql = toSqlDateTime(until);
+          if (!untilSql) {
+            await conn.rollback();
+            return res.status(500).json({ error: 'moderation_date_failed' });
           }
+
+          const action = policy.kind === 'ban' ? 'auto_ban' : 'auto_disable';
+
+          if (policy.kind === 'ban') {
+            await conn.query('UPDATE users SET banned_until = ? WHERE id = ?', [untilSql, reportedId]);
+          } else {
+            await conn.query('UPDATE users SET disabled_until = ? WHERE id = ?', [untilSql, reportedId]);
+          }
+
+          try {
+            const msg = policy.kind === 'ban'
+              ? `Banimento automático por denúncias: ${policy.days} dias (total: ${count}).`
+              : `Desativação automática por denúncias: ${policy.days} dias (total: ${count}).`;
+            await conn.query(
+              'INSERT INTO user_account_events (user_id, type, message, meta) VALUES (?, ?, ?, JSON_OBJECT(\'reports\', ?, \'until\', ?, \'days\', ?))',
+              [reportedId, action, msg, count, untilSql, policy.days]
+            );
+          } catch {}
 
           await conn.query(
             `
@@ -829,18 +865,20 @@ router.post(
                 reported.name,
                 reported.nickname,
                 reported.email,
-                'auto_delete'
+                ?
               FROM user_reports ur
               LEFT JOIN users reporter ON reporter.id = ur.reporter_id
               LEFT JOIN users reported ON reported.id = ur.reported_id
               WHERE ur.reported_id = ?
             `,
-            [reportedId]
+            [action, reportedId]
           );
 
-          await conn.query('DELETE FROM users WHERE id = ?', [reportedId]);
+          // Limpa a fila de reports (anexos removem via FK ON DELETE CASCADE)
+          await conn.query('DELETE FROM user_reports WHERE reported_id = ?', [reportedId]);
+
           await conn.commit();
-          return res.json({ ok: true, action: 'auto_deleted', reports: count });
+          return res.json({ ok: true, action, reports: count, until: untilSql, days: policy.days });
         }
 
         await conn.commit();

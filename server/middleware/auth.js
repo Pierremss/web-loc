@@ -11,6 +11,12 @@ async function ensureAccountStructures() {
       if (err?.code !== 'ER_DUP_FIELDNAME') throw err;
     }
 
+    try {
+      await pool.query(`ALTER TABLE users ADD COLUMN disabled_until DATETIME NULL`);
+    } catch (err) {
+      if (err?.code !== 'ER_DUP_FIELDNAME') throw err;
+    }
+
     await pool.query(`
       CREATE TABLE IF NOT EXISTS user_account_events (
         id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -46,9 +52,18 @@ export async function ensureAuth(req, res, next) {
     }
 
     // JWT é stateless: valida existência do usuário para permitir revogação por exclusão.
-    const [rows] = await pool.query('SELECT id, is_admin, banned_until FROM users WHERE id = ? LIMIT 1', [userId]);
+    const [rows] = await pool.query('SELECT id, is_admin, banned_until, disabled_until FROM users WHERE id = ? LIMIT 1', [userId]);
     if (!rows.length) {
       return res.status(401).json({ error: 'Token inválido' });
+    }
+
+    const disabledUntil = rows[0].disabled_until ? new Date(rows[0].disabled_until) : null;
+    if (disabledUntil && Number.isFinite(disabledUntil.getTime()) && disabledUntil.getTime() > Date.now()) {
+      return res.status(403).json({
+        error: 'disabled',
+        disabled_until: rows[0].disabled_until,
+        message: 'Sua conta está desativada temporariamente.'
+      });
     }
 
     const bannedUntil = rows[0].banned_until ? new Date(rows[0].banned_until) : null;

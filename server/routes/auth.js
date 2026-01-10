@@ -311,6 +311,15 @@ router.post('/login',
         });
       }
 
+      const disabledUntil = user.disabled_until ? new Date(user.disabled_until) : null;
+      if (disabledUntil && Number.isFinite(disabledUntil.getTime()) && disabledUntil.getTime() > Date.now()) {
+        return res.status(403).json({
+          error: 'disabled',
+          disabled_until: user.disabled_until,
+          message: 'Sua conta está desativada temporariamente.'
+        });
+      }
+
       const bannedUntil = user.banned_until ? new Date(user.banned_until) : null;
       if (bannedUntil && Number.isFinite(bannedUntil.getTime()) && bannedUntil.getTime() > Date.now()) {
         return res.status(403).json({
