@@ -648,6 +648,58 @@ export class ConversationChatPage implements OnInit, OnDestroy {
     });
   }
 
+  triggerMessageImagePicker() {
+    const el = document.querySelector<HTMLInputElement>('input[type="file"][data-conv-message-image]');
+    el?.click();
+  }
+
+  onMessageImageSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input?.files?.[0];
+    if (!file) return;
+    this.convSvc.sendImage(this.convId, file).subscribe({
+      next: (msg) => {
+        const decorated = this.decorateMessage(msg);
+        const messageId = Number(decorated?.id ?? msg?.id);
+        const isDuplicate = Number.isFinite(messageId) && this.seenMessageIds.has(messageId);
+        this.insertOrUpdateMessage(decorated);
+        this.refreshDisplayMessages();
+        input.value = '';
+        if (!isDuplicate && Number.isFinite(messageId)) {
+          this.markRead(messageId as number);
+        }
+        if (!isDuplicate) {
+          if (!this.atBottom) {
+            this.newMessages++;
+          } else {
+            setTimeout(() => this.scrollToBottom(), 0);
+          }
+        }
+      },
+      error: (err) => {
+        input.value = '';
+        window.alert(err?.error?.error || 'Não foi possível enviar a imagem');
+      }
+    });
+  }
+
+  hasText(message: any): boolean {
+    const value = typeof message?.content === 'string' ? message.content.trim() : '';
+    return value.length > 0;
+  }
+
+  imageAttachments(message: any): any[] {
+    const attachments = Array.isArray(message?.attachments) ? message.attachments : [];
+    return attachments.filter((a: any) => /^image\//i.test(String(a?.mime_type || '')) && !!a?.url);
+  }
+
+  normalizeMediaUrl(url?: string | null): string {
+    if (!url) return '';
+    if (/^https?:\/\//i.test(url)) return url;
+    const normalized = url.startsWith('/') ? url : `/${url}`;
+    return `${this.mediaBase}${normalized}`;
+  }
+
   onTyping() {
     this.socketSvc.get()?.emit('conv:typing', { conversationId: this.convId, typing: true });
   }

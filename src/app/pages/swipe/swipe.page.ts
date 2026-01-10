@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, inject } from '@angular/core';
+import { Component, NgZone, OnInit, ViewChild, inject } from '@angular/core';
 import { IonModal, ToastController } from '@ionic/angular';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -40,6 +40,12 @@ export class SwipePage implements OnInit {
   periodOptions = ['Manha', 'Tarde', 'Noite', 'Madrugada'];
   compatibilityFloor = 0;
   filterPopoverOptions = { cssClass: 'webloc-filter-popover' };
+
+  // Pickers (busca para listas grandes)
+  isPlatformPickerOpen = false;
+  isGenrePickerOpen = false;
+  platformPickerSearch = '';
+  genrePickerSearch = '';
   private readonly dayOrder = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
   private readonly dayLabels: Record<string, string> = {
     Segunda: 'Seg.',
@@ -69,14 +75,27 @@ export class SwipePage implements OnInit {
   isProfileOpen = false;
   isFilterOpen = false;
 
+  matchFlash = false;
+  private matchFlashTimer: any;
+
   private dragLock = false;
   private dragStartX = 0;
   private dragStartY = 0;
+  private dragCardWidth = 320;
+  private rafId: number | null = null;
+  private pendingDx = 0;
+  private pendingDy = 0;
+
+  private boundMouseMove?: (ev: MouseEvent) => void;
+  private boundMouseUp?: (ev: MouseEvent) => void;
+  private boundTouchMove?: (ev: TouchEvent) => void;
+  private boundTouchEnd?: (ev: TouchEvent) => void;
 
   private readonly swipe = inject(SwipeService);
   private readonly platforms = inject(PlatformsService);
   private readonly genres = inject(GenresService);
   private readonly toast = inject(ToastController);
+  private readonly zone = inject(NgZone);
   @ViewChild('profileModal') profileModal?: IonModal;
   @ViewChild('filterModal') filterModal?: IonModal;
 
@@ -84,6 +103,53 @@ export class SwipePage implements OnInit {
     this.loadPlatforms();
     this.loadGenres();
     void this.load('initial');
+  }
+
+  openPlatformPicker(): void {
+    this.isPlatformPickerOpen = true;
+  }
+
+  openGenrePicker(): void {
+    this.isGenrePickerOpen = true;
+  }
+
+  selectionCountLabel(values: any[] | null | undefined, emptyLabel: string, allLabel?: string): string {
+    const normalized = Array.isArray(values)
+      ? values.map((v) => Number(v)).filter((v) => Number.isFinite(v) && v > 0)
+      : [];
+    if (!normalized.length) return allLabel ?? emptyLabel;
+    return normalized.length === 1 ? '1 selecionado' : `${normalized.length} selecionados`;
+  }
+
+  isFilterSelected(field: 'platformIds' | 'genreIds', id: number): boolean {
+    const current = (this.filters as any)?.[field];
+    const list = Array.isArray(current) ? current.map((v: any) => Number(v)).filter((v: number) => Number.isFinite(v) && v > 0) : [];
+    return list.includes(Number(id));
+  }
+
+  toggleFilterSelection(field: 'platformIds' | 'genreIds', id: number, checked: boolean): void {
+    const current = (this.filters as any)?.[field];
+    const list = Array.isArray(current) ? current.map((v: any) => Number(v)).filter((v: number) => Number.isFinite(v) && v > 0) : [];
+    const next = new Set<number>(list);
+    if (checked) next.add(Number(id));
+    else next.delete(Number(id));
+    (this.filters as any)[field] = Array.from(next);
+  }
+
+  filteredPlatforms(): Platform[] {
+    const term = (this.platformPickerSearch || '').trim().toLowerCase();
+    if (!term) return this.platformOptions;
+    return this.platformOptions.filter((p) => (p?.name || '').toLowerCase().includes(term));
+  }
+
+  filteredGenres(): Genre[] {
+    const term = (this.genrePickerSearch || '').trim().toLowerCase();
+    if (!term) return this.genreOptions;
+    return this.genreOptions.filter((g) => (g?.name || '').toLowerCase().includes(term));
+  }
+
+  trackById(_: number, item: any): number {
+    return Number(item?.id) || 0;
   }
 
   private loadPlatforms() {
@@ -159,7 +225,7 @@ export class SwipePage implements OnInit {
       next: (res) => {
         this.pop();
         if (res?.matched) {
-          void this.presentToast(res.message || 'É um match!', 'dark');
+          this.showMatchFlash();
         }
       },
       error: async () => {
@@ -167,6 +233,16 @@ export class SwipePage implements OnInit {
         await this.presentToast('Erro ao enviar like', 'danger');
       },
     });
+  }
+
+  private showMatchFlash(): void {
+    this.matchFlash = true;
+    if (this.matchFlashTimer) {
+      clearTimeout(this.matchFlashTimer);
+    }
+    this.matchFlashTimer = setTimeout(() => {
+      this.matchFlash = false;
+    }, 1200);
   }
 
   onPass() {
@@ -387,38 +463,29 @@ export class SwipePage implements OnInit {
     this.dy = 0;
     this.angle = 0;
 
+    const card = document.getElementById('swipe-card');
+    const rect = card?.getBoundingClientRect();
+    this.dragCardWidth = rect?.width ? Math.max(200, rect.width) : 320;
+
     const point = event && 'touches' in event ? event.touches[0] : (event as MouseEvent | undefined);
     this.dragStartX = point?.clientX ?? 0;
     this.dragStartY = point?.clientY ?? 0;
+
+    // Listeners no document (fora do Angular) para evitar CD em alta frequência.
+    this.attachDocumentDragListeners();
   }
 
+  // Mantido para compatibilidade (chamado apenas se ainda houver bindings no template)
   onDragMove(ev: TouchEvent | MouseEvent) {
-    if (!this.dragging) return;
-    const point = 'touches' in ev ? ev.touches[0] : (ev as MouseEvent);
-    const card = document.getElementById('swipe-card');
-    if (!card) return;
-    const rect = card.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
-    this.dx = point.clientX - cx;
-    this.dy = point.clientY - cy;
-    this.angle = (this.dx / rect.width) * 15;
-
-    const movedX = Math.abs((point.clientX ?? 0) - this.dragStartX);
-    const movedY = Math.abs((point.clientY ?? 0) - this.dragStartY);
-    if (!this.dragLock && movedX > 10 && movedX > movedY) {
-      this.dragLock = true;
-    }
-    if (this.dragLock && 'touches' in ev) {
-      try {
-        (ev as TouchEvent).preventDefault();
-      } catch {}
-    }
+    this.handleDragMove(ev as any);
   }
 
   onDragEnd(_event?: TouchEvent | MouseEvent) {
     if (!this.dragging) return;
     this.dragging = false;
+
+    this.detachDocumentDragListeners();
+
     const card = document.getElementById('swipe-card');
     const threshold = card ? Math.max(90, Math.round(card.getBoundingClientRect().width * 0.25)) : 120;
     if (this.dx > threshold) {
@@ -430,6 +497,70 @@ export class SwipePage implements OnInit {
     this.dy = 0;
     this.angle = 0;
     this.dragLock = false;
+  }
+
+  private attachDocumentDragListeners(): void {
+    if (this.boundMouseMove) return;
+    this.boundMouseMove = (ev: MouseEvent) => this.handleDragMove(ev);
+    this.boundMouseUp = (_ev: MouseEvent) => this.zone.run(() => this.onDragEnd());
+    this.boundTouchMove = (ev: TouchEvent) => this.handleDragMove(ev);
+    this.boundTouchEnd = (_ev: TouchEvent) => this.zone.run(() => this.onDragEnd());
+
+    this.zone.runOutsideAngular(() => {
+      document.addEventListener('mousemove', this.boundMouseMove!, { passive: true });
+      document.addEventListener('mouseup', this.boundMouseUp!, { passive: true });
+      document.addEventListener('touchmove', this.boundTouchMove!, { passive: false });
+      document.addEventListener('touchend', this.boundTouchEnd!, { passive: true });
+      document.addEventListener('touchcancel', this.boundTouchEnd!, { passive: true });
+    });
+  }
+
+  private detachDocumentDragListeners(): void {
+    if (!this.boundMouseMove) return;
+    document.removeEventListener('mousemove', this.boundMouseMove);
+    document.removeEventListener('mouseup', this.boundMouseUp!);
+    document.removeEventListener('touchmove', this.boundTouchMove!);
+    document.removeEventListener('touchend', this.boundTouchEnd!);
+    document.removeEventListener('touchcancel', this.boundTouchEnd!);
+    this.boundMouseMove = undefined;
+    this.boundMouseUp = undefined;
+    this.boundTouchMove = undefined;
+    this.boundTouchEnd = undefined;
+
+    if (this.rafId != null) {
+      cancelAnimationFrame(this.rafId);
+      this.rafId = null;
+    }
+  }
+
+  private handleDragMove(ev: MouseEvent | TouchEvent): void {
+    if (!this.dragging) return;
+    const point = 'touches' in ev ? ev.touches[0] : (ev as MouseEvent);
+    if (!point) return;
+
+    const dx = (point.clientX ?? 0) - this.dragStartX;
+    const dy = (point.clientY ?? 0) - this.dragStartY;
+    this.pendingDx = dx;
+    this.pendingDy = dy;
+
+    const movedX = Math.abs(dx);
+    const movedY = Math.abs(dy);
+    if (!this.dragLock && movedX > 10 && movedX > movedY) {
+      this.dragLock = true;
+    }
+    if (this.dragLock && 'touches' in ev) {
+      try { (ev as TouchEvent).preventDefault(); } catch {}
+    }
+
+    if (this.rafId != null) return;
+    this.rafId = requestAnimationFrame(() => {
+      this.rafId = null;
+      this.zone.run(() => {
+        this.dx = this.pendingDx;
+        this.dy = this.pendingDy;
+        this.angle = (this.dx / this.dragCardWidth) * 15;
+      });
+    });
   }
 
   private async presentToast(message: string, color: 'dark' | 'danger' = 'dark') {

@@ -28,6 +28,14 @@
   (change)="onConversationAvatarSelected($event)"
 />
 
+<input
+  type="file"
+  accept="image/*"
+  data-conv-message-image
+  style="display:none"
+  (change)="onMessageImageSelected($event)"
+/>
+
 <ion-content class="chat-page conversation-chat" fullscreen>
   <div class="chat-layout chat-layout--clean">
     <section class="chat-columns chat-columns--clean">
@@ -72,7 +80,18 @@
                         </ion-button>
                       </div>
                     </div>
-                    <div class="bubble-text" *ngIf="!m.deleted_at; else deletedTpl">{{ m.content }}</div>
+                    <div class="bubble-text" *ngIf="!m.deleted_at && hasText(m); else deletedTpl">{{ m.content }}</div>
+                    <div class="bubble-attachments" *ngIf="!m.deleted_at && imageAttachments(m).length">
+                      <img
+                        class="bubble-image"
+                        *ngFor="let a of imageAttachments(m)"
+                        [src]="normalizeMediaUrl(a.url)"
+                        [attr.alt]="'Imagem enviada por ' + (m.sender_name || 'participante')"
+                        loading="lazy"
+                        (error)="a.__error = true"
+                        [class.bubble-image--error]="a.__error"
+                      />
+                    </div>
                     <ng-template #deletedTpl>
                       <div class="bubble-text" style="opacity: 0.75; font-style: italic;">Mensagem excluída</div>
                     </ng-template>
@@ -353,7 +372,7 @@
 <ion-footer class="chat-footer">
   <ion-toolbar>
     <div class="composer">
-      <ion-button fill="clear" color="medium" class="composer__action" aria-label="Adicionar anexo">
+      <ion-button fill="clear" color="medium" class="composer__action" aria-label="Adicionar imagem" (click)="triggerMessageImagePicker()">
         <ion-icon name="add-outline"></ion-icon>
       </ion-button>
       <ion-input

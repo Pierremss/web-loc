@@ -1,11 +1,13 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from './auth.service';
-import { GamesService } from '../games/games.service';
+import { GamesService, Game } from '../games/games.service';
 import { Platform } from '../../model/platform';
 import { PlatformsService } from '../../services/platforms.service';
 import { GenresService } from '../../services/genres.service';
 import { GameTypesService } from '../../services/game-types.service';
+import { Subject, catchError, debounceTime, finalize, of, switchMap } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-register',
@@ -50,6 +52,21 @@ export class RegisterPage implements OnInit {
   platformOptions: Platform[] = [];
   genreOptions: any[] = [];
   typeOptions: any[] = [];
+
+  // Pickers (busca + filtros para listas grandes)
+  isGamePickerOpen = false;
+  isPlatformPickerOpen = false;
+  isTypePickerOpen = false;
+  isGenrePickerOpen = false;
+
+  gamePickerSearch = '';
+  gamePickerGenreIds: number[] = [];
+  gamePickerLoading = false;
+  gamePickerResults: Game[] = [];
+
+  platformPickerSearch = '';
+  typePickerSearch = '';
+  genrePickerSearch = '';
   diasSemana: string[] = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
   periodos: { label: string; value: string }[] = [
     { label: 'Manhã', value: 'Manha' },
@@ -79,6 +96,9 @@ export class RegisterPage implements OnInit {
   private readonly platformsService = inject(PlatformsService);
   private readonly genresService = inject(GenresService);
   private readonly typesService = inject(GameTypesService);
+  private readonly destroyRef = inject(DestroyRef);
+
+  private readonly gameSearchTrigger$ = new Subject<void>();
 
   constructor() {
     // Inicializa todos os dias com array vazio
@@ -87,12 +107,140 @@ export class RegisterPage implements OnInit {
   }
 
   ngOnInit(): void {
-  this.gamesService.list({ pageSize: 200, order: 'name' }).subscribe((jogos) => this.jogos = jogos);
+    this.setupGamePickerSearch();
     this.platformsService.list().subscribe(platforms => {
       this.platformOptions = platforms.sort((a, b) => a.name.localeCompare(b.name));
     });
     this.genresService.list().subscribe(list => this.genreOptions = list.sort((a: any,b:any)=>a.name.localeCompare(b.name)));
     this.typesService.list().subscribe(list => this.typeOptions = list.sort((a: any,b:any)=>a.name.localeCompare(b.name)));
+  }
+
+  private setupGamePickerSearch(): void {
+    this.gameSearchTrigger$
+      .pipe(
+        debounceTime(200),
+        switchMap(() => {
+          this.gamePickerLoading = true;
+          const search = (this.gamePickerSearch || '').trim();
+          const genres = Array.isArray(this.gamePickerGenreIds)
+            ? this.gamePickerGenreIds.map((v) => Number(v)).filter((v) => Number.isInteger(v) && v > 0)
+            : [];
+
+          return this.gamesService
+            .list({ pageSize: 60, order: 'name', search: search || undefined, genres: genres.length ? genres : undefined })
+            .pipe(
+              catchError(() => of([] as Game[])),
+              finalize(() => (this.gamePickerLoading = false))
+            );
+        }),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe((games) => {
+        const selected = new Set(this.normalizeIdArray(this.form.jogos_favoritos));
+        const byName = (a: Game, b: Game) => (a.name || '').localeCompare(b.name || '');
+        this.gamePickerResults = [...(games || [])].sort((a, b) => {
+          const as = selected.has(Number(a.id));
+          const bs = selected.has(Number(b.id));
+          if (as && !bs) return -1;
+          if (!as && bs) return 1;
+          return byName(a, b);
+        });
+      });
+  }
+
+  openGamePicker(): void {
+    this.isGamePickerOpen = true;
+    this.queueGamePickerSearch();
+  }
+
+  openPlatformPicker(): void {
+    this.isPlatformPickerOpen = true;
+  }
+
+  openTypePicker(): void {
+    this.isTypePickerOpen = true;
+  }
+
+  openGenrePicker(): void {
+    this.isGenrePickerOpen = true;
+  }
+
+  closePickers(): void {
+    this.isGamePickerOpen = false;
+    this.isPlatformPickerOpen = false;
+    this.isTypePickerOpen = false;
+    this.isGenrePickerOpen = false;
+  }
+
+  queueGamePickerSearch(): void {
+    this.gameSearchTrigger$.next();
+  }
+
+  setGamePickerSearch(value: string): void {
+    this.gamePickerSearch = value;
+    this.queueGamePickerSearch();
+  }
+
+  setGamePickerGenres(value: any): void {
+    const raw = Array.isArray(value) ? value : [];
+    this.gamePickerGenreIds = raw.map((v) => Number(v)).filter((v) => Number.isInteger(v) && v > 0);
+    this.queueGamePickerSearch();
+  }
+
+  selectionCountLabel(values: any[] | null | undefined, emptyLabel: string): string {
+    const ids = this.normalizeIdArray(values || []);
+    if (!ids.length) return emptyLabel;
+    return ids.length === 1 ? '1 selecionado' : `${ids.length} selecionados`;
+  }
+
+  isSelected(field: 'jogos_favoritos' | 'platforms' | 'types' | 'genres', id: number): boolean {
+    const current = this.normalizeIdArray(this.form[field] || []);
+    return current.includes(Number(id));
+  }
+
+  toggleSelection(field: 'jogos_favoritos' | 'platforms' | 'types' | 'genres', id: number, checked: boolean): void {
+    const normalizedId = Number(id);
+    const current = this.normalizeIdArray(this.form[field] || []);
+    const next = new Set<number>(current);
+    if (checked) next.add(normalizedId);
+    else next.delete(normalizedId);
+    this.form[field] = Array.from(next);
+    // Mantém erros em sincronia enquanto o usuário seleciona
+    if (this.form[field].length) {
+      delete this.erros[field];
+    }
+  }
+
+  toggleTypeSelection(typeId: number, checked: boolean): void {
+    this.toggleSelection('types', typeId, checked);
+    const normalized = this.normalizeIdArray(this.form.types || []);
+    this.form.types = normalized;
+    this.form.game_style = this.resolvePrimaryGameStyle(normalized) || '';
+    if (normalized.length) {
+      delete this.erros['types'];
+    }
+  }
+
+  filteredPlatforms(): Platform[] {
+    const term = (this.platformPickerSearch || '').trim().toLowerCase();
+    if (!term) return this.platformOptions;
+    return this.platformOptions.filter((p) => (p?.name || '').toLowerCase().includes(term));
+  }
+
+  filteredTypes(): any[] {
+    const term = (this.typePickerSearch || '').trim().toLowerCase();
+    if (!term) return this.typeOptions;
+    return this.typeOptions.filter((t) => String(t?.name || '').toLowerCase().includes(term));
+  }
+
+  filteredGenres(): any[] {
+    const term = (this.genrePickerSearch || '').trim().toLowerCase();
+    if (!term) return this.genreOptions;
+    return this.genreOptions.filter((g) => String(g?.name || '').toLowerCase().includes(term));
+  }
+
+  trackById(_: number, item: any): number {
+    return Number(item?.id) || 0;
   }
 
   erros: { [key: string]: string } = {};

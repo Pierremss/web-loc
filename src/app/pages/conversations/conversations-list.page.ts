@@ -5,8 +5,9 @@ import { SocketService } from '../../services/socket.service';
 import { AuthService } from '../../modules/auth/auth.service';
 import { FriendsService } from '../../services/friends.service';
 import { environment } from '../../../environments/environment';
-import { finalize } from 'rxjs/operators';
+import { catchError, finalize, map, switchMap } from 'rxjs/operators';
 import { IonModal, ViewWillEnter } from '@ionic/angular';
+import { of } from 'rxjs';
 
 @Component({
   selector: 'app-conversations-list',
@@ -138,9 +139,27 @@ export class ConversationsListPage implements OnInit, OnDestroy, ViewWillEnter {
       members: Array.from(this.selectedFriendIds)
     };
     this.createLoading = true;
+    const avatarFile = this.newAvatarFile || undefined;
     this.convSvc
-      .create(payload, this.newAvatarFile || undefined)
-      .pipe(finalize(() => (this.createLoading = false)))
+      .create(payload, avatarFile)
+      .pipe(
+        switchMap((room) => {
+          if (!room) return of(room);
+          if (!avatarFile) return of(room);
+
+          // Alguns backends ignoram o avatar no POST /conversations e exigem o endpoint /avatar.
+          // Para garantir consistência, fazemos upload após ter o id.
+          return this.convSvc.uploadAvatar(Number(room.id), avatarFile).pipe(
+            map((result) => ({ ...room, avatar_url: result.avatar_url })),
+            catchError((err) => {
+              console.warn('[conversations] Falha ao enviar avatar da sala', err?.error || err);
+              // Não bloqueia a criação; apenas segue sem atualizar a imagem.
+              return of(room);
+            })
+          );
+        }),
+        finalize(() => (this.createLoading = false))
+      )
       .subscribe({
         next: (room) => {
           if (!room) return;

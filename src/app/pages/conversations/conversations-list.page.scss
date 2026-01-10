@@ -272,20 +272,20 @@
 
 	.create-modal {
 		--background: var(--ion-background-color);
-		padding: 16px;
+		padding: 24px;
 	}
 
 	.create-modal__grid {
 		display: grid;
 		grid-template-columns: 1fr;
-		gap: 20px;
+		gap: 24px;
 	}
 
 	.create-modal__section {
 		display: flex;
 		flex-direction: column;
-		gap: 14px;
-		padding: 20px;
+		gap: 16px;
+		padding: 24px;
 		border-radius: 20px;
 		border: 1px solid rgba(255, 255, 255, 0.08);
 		background: rgba(5, 6, 12, 0.4);
@@ -306,30 +306,50 @@
 		margin: 4px 0 0;
 	}
 
-	.identity-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-		gap: 14px;
+	.avatar-uploader {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 10px;
+		padding-bottom: 10px;
+	}
+
+	.avatar-uploader__shell {
+		position: relative;
+		cursor: pointer;
+		user-select: none;
+		outline: none;
+	}
+
+	.avatar-uploader__meta {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		flex-wrap: wrap;
+		justify-content: center;
 	}
 
 	.identity-card {
 		border: 1px solid rgba(255, 255, 255, 0.08);
-		border-radius: 16px;
-		padding: 14px;
+		border-radius: 18px;
+		padding: 18px;
 		background: rgba(255, 255, 255, 0.03);
 		display: flex;
 		flex-direction: column;
-		gap: 12px;
+		gap: 10px;
 	}
 
 	.identity-card__title {
 		display: flex;
 		gap: 10px;
 		align-items: center;
+		margin-bottom: 4px;
 	}
 
 	.identity-card__title h4 {
 		margin: 0;
+		font-size: 1rem;
+		letter-spacing: -0.01em;
 	}
 
 	.identity-card__title p {
@@ -340,6 +360,8 @@
 	.create-tips {
 		display: none;
 	}
+
+
 
 	.create-tips .tip {
 		background: rgba(var(--ion-color-primary-rgb, 64, 87, 255), 0.12);
@@ -354,8 +376,17 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		color: rgba(var(--ion-color-primary-rgb, 64, 87, 255), 0.7);
-		background: rgba(var(--ion-color-primary-rgb, 64, 87, 255), 0.08);
+	}
+
+	.create-avatar__preview {
+		width: 132px;
+		height: 132px;
+		border-radius: 999px;
+		border: 1px dashed rgba(var(--ion-color-primary-rgb, 64, 87, 255), 0.35);
+		display: grid;
+		place-items: center;
+		color: rgba(var(--ion-color-primary-rgb, 64, 87, 255), 0.75);
+		background: rgba(255, 255, 255, 0.04);
 		overflow: hidden;
 	}
 
@@ -369,10 +400,23 @@
 		object-fit: cover;
 	}
 
-	.create-avatar__actions {
-		display: flex;
-		gap: 10px;
-		flex-wrap: wrap;
+	.avatar-uploader__camera {
+		position: absolute;
+		right: -4px;
+		bottom: -4px;
+		width: 48px;
+		height: 48px;
+		border-radius: 999px;
+		display: grid;
+		place-items: center;
+		background: rgba(var(--ion-color-primary-rgb, 64, 87, 255), 0.92);
+		color: #ffffff;
+		border: 1px solid rgba(255, 255, 255, 0.16);
+		box-shadow: 0 12px 26px rgba(0, 0, 0, 0.22);
+	}
+
+	.avatar-uploader__camera ion-icon {
+		font-size: 1.25rem;
 	}
 
 	.members-actions {
@@ -380,6 +424,13 @@
 		grid-template-columns: 1fr auto;
 		gap: 10px;
 		align-items: center;
+	}
+
+	.members-actions ion-button[fill='clear'] {
+		--padding-start: 8px;
+		--padding-end: 10px;
+		--color: var(--ion-color-primary);
+		box-shadow: none;
 	}
 
 	.members-actions ion-searchbar {
@@ -416,6 +467,48 @@
 		max-height: 280px;
 		overflow-y: auto;
 		padding-right: 8px;
+	}
+
+	.friend-chips {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 10px;
+	}
+
+	.friend-chip {
+		cursor: pointer;
+		user-select: none;
+		border-radius: 999px;
+		border: 1px solid rgba(255, 255, 255, 0.08);
+		background: rgba(255, 255, 255, 0.04);
+		transition: transform 0.12s ease, background 0.12s ease, border-color 0.12s ease;
+	}
+
+	.friend-chip ion-icon {
+		color: rgba(var(--ion-color-primary-rgb, 64, 87, 255), 0.9);
+	}
+
+	.friend-chip:active {
+		transform: scale(0.98);
+	}
+
+	.friend-chip--selected {
+		border-color: rgba(var(--ion-color-primary-rgb, 64, 87, 255), 0.35);
+		background: rgba(var(--ion-color-primary-rgb, 64, 87, 255), 0.12);
+	}
+
+	.friend-chip__avatar {
+		width: 26px;
+		height: 26px;
+		border-radius: 10px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		background: rgba(var(--ion-color-primary-rgb, 64, 87, 255), 0.16);
+		color: #fff;
+		font-weight: 800;
+		font-size: 0.82rem;
+		margin-right: 8px;
 	}
 
 	.participant {
@@ -465,7 +558,17 @@
 
 	.input {
 		--background: rgba(255, 255, 255, 0.05);
+		--highlight-height: 0;
+		border: 1px solid rgba(255, 255, 255, 0.08);
 		border-radius: 14px;
+	}
+
+	.input ion-label {
+		color: rgba(var(--ion-text-color-rgb, 255, 255, 255), 0.85);
+	}
+
+	.input ion-textarea {
+		min-height: 120px;
 	}
 
 	.input--toggle {

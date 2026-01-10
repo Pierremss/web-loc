@@ -62,6 +62,15 @@ export class ConversationsService {
     return this.http.post<any>(`${this.base}/${conversationId}/messages`, { content, reply_to_id });
   }
 
+  sendImage(conversationId: number, image: File, reply_to_id?: number) {
+    const form = new FormData();
+    form.append('image', image);
+    if (reply_to_id !== undefined && reply_to_id !== null) {
+      form.append('reply_to_id', String(reply_to_id));
+    }
+    return this.http.post<any>(`${this.base}/${conversationId}/messages/image`, form);
+  }
+
   deleteMessage(conversationId: number, messageId: number) {
     return this.http.delete(`${this.base}/${conversationId}/messages/${messageId}`);
   }

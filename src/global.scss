@@ -362,6 +362,37 @@ body.dark ion-modal.create-room-modal .members-actions ion-searchbar {
   --cancel-button-color: rgba(var(--ion-text-color-rgb), 0.85);
 }
 
+/* Modal de criar sala (/conversations) - layout/profissional */
+ion-modal.create-room-modal {
+  --border-radius: var(--app-radius-lg);
+  --box-shadow: var(--app-shadow-lg);
+  --width: min(920px, calc(100% - 24px));
+  --height: min(760px, 92vh);
+}
+
+ion-modal.create-room-modal::part(content) {
+  border-radius: var(--app-radius-lg);
+  overflow: hidden;
+  box-shadow: var(--app-shadow-lg);
+}
+
+ion-modal.create-room-modal::part(backdrop) {
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  background: rgba(0, 0, 0, 0.55);
+}
+
+ion-modal.create-room-modal ion-toolbar {
+  --border-color: transparent;
+  --border-width: 0;
+}
+
+ion-modal.create-room-modal ion-title {
+  font-weight: 800;
+  font-size: 1.1rem;
+  letter-spacing: -0.02em;
+}
+
 /* Modal gerenciar integrantes (salas -> conversa) - tema escuro */
 body.dark ion-modal.members-manager-modal ion-searchbar {
   --color: var(--ion-text-color);

@@ -48,6 +48,26 @@ async function ensureAccountStructures() {
         INDEX idx_da_deleted (deleted_at)
       ) ENGINE=InnoDB
     `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS user_types (
+        user_id INT NOT NULL,
+        type_id INT NOT NULL,
+        PRIMARY KEY (user_id, type_id),
+        CONSTRAINT fk_ut_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        CONSTRAINT fk_ut_type FOREIGN KEY (type_id) REFERENCES game_types(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS user_genres (
+        user_id INT NOT NULL,
+        genre_id INT NOT NULL,
+        PRIMARY KEY (user_id, genre_id),
+        CONSTRAINT fk_user_genres_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        CONSTRAINT fk_user_genres_genre FOREIGN KEY (genre_id) REFERENCES genres(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
   })();
   return ensured;
 }
@@ -59,6 +79,34 @@ function toSqlDateTime(d) {
     .toISOString()
     .slice(0, 19)
     .replace('T', ' ');
+}
+
+function coerceArray(value) {
+  if (Array.isArray(value)) return value;
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return [];
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) return parsed;
+    } catch {}
+    return trimmed.split(',').map((v) => v.trim()).filter(Boolean);
+  }
+  if (value && typeof value === 'object' && !('length' in value)) return [value];
+  return [];
+}
+
+function normalizeNumericIds(value) {
+  const arr = coerceArray(value);
+  const ids = arr
+    .map((item) => {
+      if (typeof item === 'number') return item;
+      if (typeof item === 'string' && item.trim() !== '') return Number(item);
+      if (item && typeof item === 'object' && 'id' in item) return Number(item.id);
+      return NaN;
+    })
+    .filter((id) => Number.isInteger(id) && id > 0);
+  return Array.from(new Set(ids));
 }
 
 function enrichAvatar(row, req) {
@@ -412,6 +460,7 @@ router.post(
 
 // Obter por id (admin ou o próprio usuário)
 router.get('/:id', ensureAuth, async (req, res) => {
+  await ensureAccountStructures();
   const id = Number(req.params.id);
   const userId = Number(req.user.id);
   if (!req.user.is_admin && userId !== id) return res.status(403).json({ error: 'Acesso negado' });
@@ -442,7 +491,17 @@ router.get('/:id', ensureAuth, async (req, res) => {
     [id]
   );
   if (!rows.length) return res.status(404).json({ error: 'Não encontrado' });
-  res.json(enrichAvatar(rows[0], req));
+  const user = enrichAvatar(rows[0], req);
+  try {
+    const [typeRows] = await pool.query('SELECT type_id FROM user_types WHERE user_id = ? ORDER BY type_id ASC', [id]);
+    const [genreRows] = await pool.query('SELECT genre_id FROM user_genres WHERE user_id = ? ORDER BY genre_id ASC', [id]);
+    user.types = typeRows.map((r) => Number(r.type_id)).filter((v) => Number.isInteger(v) && v > 0);
+    user.genres = genreRows.map((r) => Number(r.genre_id)).filter((v) => Number.isInteger(v) && v > 0);
+  } catch {
+    user.types = [];
+    user.genres = [];
+  }
+  res.json(user);
 });
 
 // Criar usuário (admin) - útil para testes; mantém is_admin=0
@@ -468,6 +527,7 @@ router.put('/:id', ensureAuth,
   body('name').optional().isLength({min:2}),
   body('email').optional().isEmail(),
   async (req, res) => {
+    await ensureAccountStructures();
     const id = Number(req.params.id);
     const userId = Number(req.user.id);
     if (!req.user.is_admin && userId !== id) return res.status(403).json({ error: 'Acesso negado' });
@@ -483,21 +543,94 @@ router.put('/:id', ensureAuth,
         updateData.platforms = '';
       }
     }
+
+    const requestedTypeIds = updateData.types !== undefined ? normalizeNumericIds(updateData.types) : null;
+    const requestedGenreIds = updateData.genres !== undefined ? normalizeNumericIds(updateData.genres) : null;
+    delete updateData.types;
+    delete updateData.genres;
     
-    const fields = [];
-    const values = [];
-  const allowed = ['name', 'email', 'nickname', 'platforms', 'game_style', 'available_times', 'profile', 'avatar_url'];
-    for (const k of allowed) {
-      if (updateData[k] !== undefined) { 
-        fields.push(`${k} = ?`); 
-        values.push(updateData[k]); 
+    const conn = await pool.getConnection();
+    try {
+      await conn.beginTransaction();
+
+      if (requestedTypeIds && requestedTypeIds.length) {
+        const [typeRows] = await conn.query('SELECT id, name FROM game_types WHERE id IN (?)', [requestedTypeIds]);
+        const found = new Set(typeRows.map((r) => Number(r.id)));
+        const missing = requestedTypeIds.filter((tid) => !found.has(tid));
+        if (missing.length) {
+          await conn.rollback();
+          return res.status(400).json({ error: 'Tipos de jogo inválidos', missing });
+        }
+        const firstName = typeRows.find((r) => Number(r.id) === requestedTypeIds[0])?.name;
+        if (typeof firstName === 'string' && firstName.trim()) {
+          updateData.game_style = firstName.trim().slice(0, 80);
+        }
       }
+
+      const fields = [];
+      const values = [];
+      const allowed = ['name', 'email', 'nickname', 'platforms', 'game_style', 'available_times', 'profile', 'avatar_url'];
+      for (const k of allowed) {
+        if (updateData[k] !== undefined) {
+          fields.push(`${k} = ?`);
+          values.push(updateData[k]);
+        }
+      }
+
+      if (!fields.length && requestedTypeIds === null && requestedGenreIds === null) {
+        await conn.rollback();
+        return res.status(400).json({ error: 'Nada para atualizar' });
+      }
+
+      if (fields.length) {
+        values.push(id);
+        await conn.query(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`, values);
+      }
+
+      if (requestedTypeIds !== null) {
+        await conn.query('DELETE FROM user_types WHERE user_id = ?', [id]);
+        if (requestedTypeIds.length) {
+          const valuesSql = requestedTypeIds.map(() => '(?, ?)').join(', ');
+          const params = [];
+          requestedTypeIds.forEach((typeId) => params.push(id, typeId));
+          await conn.query(`INSERT IGNORE INTO user_types (user_id, type_id) VALUES ${valuesSql}`, params);
+        }
+      }
+
+      if (requestedGenreIds !== null) {
+        if (requestedGenreIds.length) {
+          const [genreRows] = await conn.query('SELECT id FROM genres WHERE id IN (?)', [requestedGenreIds]);
+          const found = new Set(genreRows.map((r) => Number(r.id)));
+          const missing = requestedGenreIds.filter((gid) => !found.has(gid));
+          if (missing.length) {
+            await conn.rollback();
+            return res.status(400).json({ error: 'Gêneros inválidos', missing });
+          }
+        }
+        await conn.query('DELETE FROM user_genres WHERE user_id = ?', [id]);
+        if (requestedGenreIds.length) {
+          const valuesSql = requestedGenreIds.map(() => '(?, ?)').join(', ');
+          const params = [];
+          requestedGenreIds.forEach((genreId) => params.push(id, genreId));
+          await conn.query(`INSERT IGNORE INTO user_genres (user_id, genre_id) VALUES ${valuesSql}`, params);
+        }
+      }
+
+      await conn.commit();
+    } catch (err) {
+      try { await conn.rollback(); } catch {}
+      return res.status(500).json({ error: 'Erro ao salvar perfil', detail: err?.message });
+    } finally {
+      conn.release();
     }
-    if (!fields.length) return res.status(400).json({ error: 'Nada para atualizar' });
-    values.push(id);
-    await pool.query(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`, values);
+
     const [rows] = await pool.query('SELECT id, name, email, nickname, platforms, game_style, available_times, profile, avatar_url, is_admin, created_at FROM users WHERE id = ?', [id]);
-  res.json(enrichAvatar(rows[0], req));
+    const user = enrichAvatar(rows[0], req);
+    const [typeRows] = await pool.query('SELECT type_id FROM user_types WHERE user_id = ? ORDER BY type_id ASC', [id]);
+    const [genreRows] = await pool.query('SELECT genre_id FROM user_genres WHERE user_id = ? ORDER BY genre_id ASC', [id]);
+    user.types = typeRows.map((r) => Number(r.type_id)).filter((v) => Number.isInteger(v) && v > 0);
+    user.genres = genreRows.map((r) => Number(r.genre_id)).filter((v) => Number.isInteger(v) && v > 0);
+    res.json(user);
   }
 );
 
@@ -540,3 +673,4 @@ router.delete('/:id', ensureAuth, async (req, res) => {
 });
 
 export default router;
+

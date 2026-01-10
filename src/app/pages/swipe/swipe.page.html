@@ -13,6 +13,11 @@
 </ion-header>
 
 <ion-content class="swipe-page" [fullscreen]="true">
+  <div class="match-flash" *ngIf="matchFlash" aria-hidden="true">
+    <div class="match-flash__panel">
+      <div class="match-flash__text">MATCH</div>
+    </div>
+  </div>
   <ion-refresher slot="fixed" (ionRefresh)="handlePullRefresh($event)">
     <ion-refresher-content
       pullingIcon="chevron-down-circle-outline"
@@ -62,14 +67,10 @@
           <div
             id="swipe-card"
             class="player-card"
-            [style.transform]="'translate(' + dx + 'px,' + dy + 'px) rotate(' + angle + 'deg)'"
+            [style.transform]="'translate3d(' + dx + 'px,' + dy + 'px,0) rotate(' + angle + 'deg)'"
             [class.dragging]="dragging"
             (mousedown)="onDragStart($event)"
-            (mousemove)="onDragMove($event)"
-            (mouseup)="onDragEnd($event)"
-            (mouseleave)="onDragEnd($event)"
             (touchstart)="onDragStart($event)"
-            (touchmove)="onDragMove($event)"
             (touchend)="onDragEnd($event)">
             <img class="bg-photo" [src]="normalizeAvatar(current.avatar_url)" (error)="onImgError($event)" alt="" />
             <div class="card-top">
@@ -344,15 +345,9 @@
 
           <ion-item class="filter-card" lines="none">
             <ion-label position="stacked" class="filter-label">Plataformas</ion-label>
-            <ion-select
-              class="filter-select"
-              placeholder="Todas"
-              multiple="true"
-              interface="popover"
-              [interfaceOptions]="filterPopoverOptions"
-              [(ngModel)]="filters.platformIds">
-              <ion-select-option *ngFor="let platform of platformOptions" [value]="platform.id">{{ platform.name }}</ion-select-option>
-            </ion-select>
+            <ion-button fill="clear" class="filter-select" type="button" (click)="openPlatformPicker()">
+              {{ selectionCountLabel(filters.platformIds, 'Selecionar', 'Todas') }}
+            </ion-button>
           </ion-item>
 
           <ion-item class="filter-card" lines="none">
@@ -383,17 +378,64 @@
 
           <ion-item class="filter-card" lines="none">
             <ion-label position="stacked" class="filter-label">Gêneros favoritos</ion-label>
-            <ion-select
-              class="filter-select"
-              placeholder="Todos"
-              multiple="true"
-              interface="popover"
-              [interfaceOptions]="filterPopoverOptions"
-              [(ngModel)]="filters.genreIds">
-              <ion-select-option *ngFor="let genre of genreOptions" [value]="genre.id">{{ genre.name }}</ion-select-option>
-            </ion-select>
+            <ion-button fill="clear" class="filter-select" type="button" (click)="openGenrePicker()">
+              {{ selectionCountLabel(filters.genreIds, 'Selecionar', 'Todos') }}
+            </ion-button>
           </ion-item>
         </ion-list>
+
+        <!-- Pickers com busca para listas grandes -->
+        <ion-modal [isOpen]="isPlatformPickerOpen" (didDismiss)="isPlatformPickerOpen = false">
+          <ng-template>
+            <ion-header>
+              <ion-toolbar>
+                <ion-title>Plataformas</ion-title>
+                <ion-buttons slot="end">
+                  <ion-button (click)="isPlatformPickerOpen = false">Fechar</ion-button>
+                </ion-buttons>
+              </ion-toolbar>
+            </ion-header>
+            <ion-content class="ion-padding">
+              <ion-searchbar placeholder="Buscar plataforma" [(ngModel)]="platformPickerSearch" debounce="200"></ion-searchbar>
+              <ion-list>
+                <ion-item *ngFor="let p of filteredPlatforms(); trackBy: trackById">
+                  <ion-checkbox
+                    slot="start"
+                    [checked]="isFilterSelected('platformIds', p.id)"
+                    (ionChange)="toggleFilterSelection('platformIds', p.id, $event.detail.checked)">
+                  </ion-checkbox>
+                  <ion-label>{{ p.name }}</ion-label>
+                </ion-item>
+              </ion-list>
+            </ion-content>
+          </ng-template>
+        </ion-modal>
+
+        <ion-modal [isOpen]="isGenrePickerOpen" (didDismiss)="isGenrePickerOpen = false">
+          <ng-template>
+            <ion-header>
+              <ion-toolbar>
+                <ion-title>Gêneros</ion-title>
+                <ion-buttons slot="end">
+                  <ion-button (click)="isGenrePickerOpen = false">Fechar</ion-button>
+                </ion-buttons>
+              </ion-toolbar>
+            </ion-header>
+            <ion-content class="ion-padding">
+              <ion-searchbar placeholder="Buscar gênero" [(ngModel)]="genrePickerSearch" debounce="200"></ion-searchbar>
+              <ion-list>
+                <ion-item *ngFor="let g of filteredGenres(); trackBy: trackById">
+                  <ion-checkbox
+                    slot="start"
+                    [checked]="isFilterSelected('genreIds', g.id)"
+                    (ionChange)="toggleFilterSelection('genreIds', g.id, $event.detail.checked)">
+                  </ion-checkbox>
+                  <ion-label>{{ g.name }}</ion-label>
+                </ion-item>
+              </ion-list>
+            </ion-content>
+          </ng-template>
+        </ion-modal>
 
         <div class="filters-actions">
           <ion-button expand="block" color="primary" (click)="applyFilters()">Aplicar filtros</ion-button>

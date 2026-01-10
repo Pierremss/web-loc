@@ -289,7 +289,20 @@
     border: 1px solid rgba(var(--ion-text-color-rgb), 0.08);
     flex: 1 1 96px;
     text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+
+  .select-chip::part(container) {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .select-chip ion-label {
+    width: 100%;
+    text-align: center;
   }
 
   .select-chip.selected {

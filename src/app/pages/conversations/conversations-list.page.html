@@ -140,7 +140,7 @@
     </ng-template>
   </div>
 
-  <ion-modal #createModal [isOpen]="isCreateModalOpen" cssClass="create-room-modal" (didDismiss)="closeCreateModal()">
+  <ion-modal #createModal [isOpen]="isCreateModalOpen" cssClass="create-room-modal" class="create-room-modal" (didDismiss)="closeCreateModal()">
     <ng-template>
       <ion-header>
         <ion-toolbar>
@@ -155,48 +155,42 @@
       <ion-content class="create-modal">
         <div class="create-modal__grid">
           <section class="create-modal__section">
-            <div class="identity-grid">
-              <div class="identity-card">
-                <div class="identity-card__title">
-                  <div>
-                    <h4>Foto</h4>
-                  </div>
+            <div class="avatar-uploader">
+              <div
+                class="avatar-uploader__shell"
+                role="button"
+                tabindex="0"
+                (click)="fileInput.click()"
+                (keyup.enter)="fileInput.click()"
+              >
+                <div class="create-avatar__preview" [class.has-image]="newAvatarPreview">
+                  <img *ngIf="newAvatarPreview" [src]="newAvatarPreview" alt="Avatar da sala" />
                 </div>
-                <div class="create-avatar">
-                  <div class="create-avatar__preview" [class.has-image]="newAvatarPreview">
-                    <img *ngIf="newAvatarPreview; else defaultConvAvatar" [src]="newAvatarPreview" alt="Avatar da sala" />
-                    <ng-template #defaultConvAvatar>
-                      <ion-icon name="images-outline"></ion-icon>
-                    </ng-template>
-                  </div>
-                  <div class="create-avatar__actions">
-                    <ion-button size="small" fill="outline" (click)="fileInput.click()">
-                      <ion-icon slot="start" name="cloud-upload-outline"></ion-icon>
-                      Escolher foto
-                    </ion-button>
-                    <ion-button size="small" fill="clear" color="medium" *ngIf="newAvatarPreview" (click)="clearAvatar()">
-                      Remover
-                    </ion-button>
-                  </div>
-                  <input type="file" #fileInput hidden accept="image/*" (change)="onAvatarSelected($event)" />
+                <div class="avatar-uploader__camera" aria-hidden="true">
+                  <ion-icon name="camera"></ion-icon>
                 </div>
               </div>
+              <div class="avatar-uploader__meta">
+                <ion-note color="medium">Toque para escolher uma foto</ion-note>
+                <ion-button size="small" fill="clear" color="medium" *ngIf="newAvatarPreview" (click)="clearAvatar()">
+                  Remover
+                </ion-button>
+              </div>
+              <input type="file" #fileInput hidden accept="image/*" (change)="onAvatarSelected($event)" />
+            </div>
 
-              <div class="identity-card">
-                <div class="identity-card__title">
-                  <div>
-                    <h4>Nome e descrição</h4>
-                  </div>
-                </div>
-                <ion-item class="input" lines="none">
-                  <ion-label position="stacked">Nome da sala</ion-label>
-                  <ion-input [(ngModel)]="name" maxlength="200"></ion-input>
-                </ion-item>
-                <ion-item class="input" lines="none">
-                  <ion-label position="stacked">Descrição</ion-label>
-                  <ion-textarea autoGrow="true" maxlength="500" [(ngModel)]="description"></ion-textarea>
-                </ion-item>
+            <div class="identity-card">
+              <div class="identity-card__title">
+                <h4>Nome e descrição</h4>
               </div>
+              <ion-item class="input" lines="none">
+                <ion-label position="stacked">Nome da sala</ion-label>
+                <ion-input [(ngModel)]="name" maxlength="200"></ion-input>
+              </ion-item>
+              <ion-item class="input" lines="none">
+                <ion-label position="stacked">Descrição</ion-label>
+                <ion-textarea autoGrow="true" maxlength="500" [(ngModel)]="description"></ion-textarea>
+              </ion-item>
             </div>
 
             <div class="section-heading">
@@ -205,29 +199,36 @@
 
             <div class="members-actions">
               <ion-searchbar placeholder="Buscar por nome" [value]="friendSearch" (ionInput)="onFriendSearch($event)"></ion-searchbar>
-              <ion-button fill="outline" size="small" routerLink="/friends">
+              <ion-button fill="clear" color="primary" size="small" routerLink="/friends">
                 <ion-icon slot="start" name="person-add-outline"></ion-icon>
                 Adicionar amigo
               </ion-button>
             </div>
 
-            <div class="selected-participants" *ngIf="selectedFriendsList().length">
-              <ion-chip *ngFor="let friend of selectedFriendsList()">
-                <div class="avatar-circle">{{ initialsFromName(displayFriendName(friend)) }}</div>
-                <ion-label>{{ displayFriendName(friend) }}</ion-label>
-                <ion-icon name="close" (click)="removeFriendSelection(friend.id)"></ion-icon>
-              </ion-chip>
-            </div>
-
             <div class="participant-picker">
               <ion-spinner name="crescent" *ngIf="friendsLoading"></ion-spinner>
               <ion-note color="medium" *ngIf="!friendsLoading && !friends.length">Você ainda não adicionou amigos.</ion-note>
-              <div class="participant" *ngFor="let friend of filteredFriendsForSelection()">
-                <div class="participant__info solo">
-                  <strong>{{ displayFriendName(friend) }}</strong>
+
+              <ng-container *ngIf="!friendsLoading && filteredFriendsForSelection().length; else noFriendMatches">
+                <div class="friend-chips">
+                  <ion-chip
+                    class="friend-chip"
+                    *ngFor="let friend of filteredFriendsForSelection()"
+                    [class.friend-chip--selected]="isFriendSelected(friend.id)"
+                    (click)="toggleFriendSelection(friend.id)"
+                    (keyup.enter)="toggleFriendSelection(friend.id)"
+                    tabindex="0"
+                  >
+                    <div class="friend-chip__avatar">{{ initialsFromName(displayFriendName(friend)) }}</div>
+                    <ion-label>{{ displayFriendName(friend) }}</ion-label>
+                    <ion-icon name="close-circle" *ngIf="isFriendSelected(friend.id)"></ion-icon>
+                  </ion-chip>
                 </div>
-                <ion-checkbox [checked]="isFriendSelected(friend.id)" (ionChange)="toggleFriendSelection(friend.id)"></ion-checkbox>
-              </div>
+              </ng-container>
+
+              <ng-template #noFriendMatches>
+                <ion-note color="medium" *ngIf="!friendsLoading && friends.length">Nenhum amigo encontrado.</ion-note>
+              </ng-template>
             </div>
           </section>
         </div>

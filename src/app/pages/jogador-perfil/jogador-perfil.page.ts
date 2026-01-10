@@ -1,9 +1,12 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../modules/auth/auth.service';
-import { GamesService } from '../../modules/games/games.service';
+import { GamesService, Game } from '../../modules/games/games.service';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
+import { GenresService, Genre } from '../../services/genres.service';
+import { Subject, catchError, debounceTime, finalize, of, switchMap } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-jogador-perfil',
@@ -15,12 +18,23 @@ export class JogadorPerfilPage implements OnInit {
   // Tipagem dos favoritos com suporte a timestamp
   favoritos: FavoriteGame[] = [];
   favoritosFiltrados: FavoriteGame[] = [];
-  todosJogos: any[] = [];
+  genreOptions: Genre[] = [];
   readonly auth = inject(AuthService);
   private readonly gamesService = inject(GamesService);
+  private readonly genresService = inject(GenresService);
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
   novoFavorito: number | null = null;
+  novoFavoritoNome: string | null = null;
+
+  // Picker (busca + filtro)
+  isGamePickerOpen = false;
+  gamePickerSearch = '';
+  gamePickerGenreIds: number[] = [];
+  gamePickerLoading = false;
+  gamePickerResults: Game[] = [];
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly gameSearchTrigger$ = new Subject<void>();
   loading = false;
   error = '';
   filtro = '';
@@ -32,7 +46,69 @@ export class JogadorPerfilPage implements OnInit {
 
   ngOnInit() {
     this.carregarFavoritos();
-  this.gamesService.list({ pageSize: 200, order: 'name' }).subscribe(jogos => this.todosJogos = jogos);
+    this.loadGenres();
+    this.setupGamePickerSearch();
+  }
+
+  private loadGenres(): void {
+    this.genresService.list().subscribe({
+      next: (list) => {
+        this.genreOptions = [...(list || [])].sort((a, b) => a.name.localeCompare(b.name));
+      },
+      error: () => {
+        this.genreOptions = [];
+      }
+    });
+  }
+
+  private setupGamePickerSearch(): void {
+    this.gameSearchTrigger$
+      .pipe(
+        debounceTime(200),
+        switchMap(() => {
+          this.gamePickerLoading = true;
+          const search = (this.gamePickerSearch || '').trim();
+          const genres = Array.isArray(this.gamePickerGenreIds)
+            ? this.gamePickerGenreIds.map((v) => Number(v)).filter((v) => Number.isInteger(v) && v > 0)
+            : [];
+          return this.gamesService
+            .list({ pageSize: 60, order: 'name', search: search || undefined, genres: genres.length ? genres : undefined })
+            .pipe(
+              catchError(() => of([] as Game[])),
+              finalize(() => (this.gamePickerLoading = false))
+            );
+        }),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe((games) => {
+        this.gamePickerResults = [...(games || [])].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      });
+  }
+
+  openGamePicker(): void {
+    this.isGamePickerOpen = true;
+    this.queueGamePickerSearch();
+  }
+
+  queueGamePickerSearch(): void {
+    this.gameSearchTrigger$.next();
+  }
+
+  setGamePickerSearch(value: string): void {
+    this.gamePickerSearch = value;
+    this.queueGamePickerSearch();
+  }
+
+  setGamePickerGenres(value: any): void {
+    const raw = Array.isArray(value) ? value : [];
+    this.gamePickerGenreIds = raw.map((v) => Number(v)).filter((v) => Number.isInteger(v) && v > 0);
+    this.queueGamePickerSearch();
+  }
+
+  selectNovoFavorito(game: Game): void {
+    this.novoFavorito = Number(game?.id) || null;
+    this.novoFavoritoNome = game?.name || null;
+    this.isGamePickerOpen = false;
   }
 
   carregarFavoritos() {

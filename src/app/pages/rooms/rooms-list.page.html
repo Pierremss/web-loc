@@ -273,16 +273,24 @@
               <ion-button size="small" fill="outline" (click)="addManualInvite()">Adicionar</ion-button>
             </div>
 
-            <div class="participant-picker">
-              <div class="participant" *ngFor="let friend of filteredFriendsForSelection()">
-                <ion-checkbox [checked]="isFriendSelected(friend.id)" (ionChange)="toggleFriendSelection(friend.id)"></ion-checkbox>
-                <div class="participant__avatar">{{ initialsFromName(displayFriendName(friend)) }}</div>
-                <div class="participant__info">
-                  <strong>{{ displayFriendName(friend) }}</strong>
-                </div>
-              </div>
-              <ion-note color="medium" *ngIf="!filteredFriendsForSelection().length">Nenhum amigo encontrado.</ion-note>
+            <div class="friend-chips" *ngIf="filteredFriendsForSelection().length; else noFriendsFound">
+              <ion-chip
+                class="friend-chip"
+                *ngFor="let friend of filteredFriendsForSelection()"
+                [class.friend-chip--selected]="isFriendSelected(friend.id)"
+                (click)="toggleFriendSelection(friend.id)"
+                (keyup.enter)="toggleFriendSelection(friend.id)"
+                tabindex="0"
+              >
+                <div class="friend-chip__avatar">{{ initialsFromName(displayFriendName(friend)) }}</div>
+                <ion-label>{{ displayFriendName(friend) }}</ion-label>
+                <ion-icon name="checkmark-circle" *ngIf="isFriendSelected(friend.id)"></ion-icon>
+              </ion-chip>
             </div>
+
+            <ng-template #noFriendsFound>
+              <ion-note color="medium">Nenhum amigo encontrado.</ion-note>
+            </ng-template>
           </section>
         </div>
 

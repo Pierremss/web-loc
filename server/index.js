@@ -74,6 +74,17 @@ try {
 	console.error('[db] Falha ao garantir tabela conversation_message_deletions', e);
 }
 
+// Suporte a avatar de conversa (coluna adicionada em 20251202_add_conversation_avatar.sql)
+try {
+	const [cols] = await pool.query("SHOW COLUMNS FROM conversations LIKE 'avatar_url'");
+	if (!cols || !cols.length) {
+		await pool.query('ALTER TABLE conversations ADD COLUMN avatar_url VARCHAR(500) NULL AFTER is_public');
+		console.log('[db] Coluna conversations.avatar_url criada');
+	}
+} catch (e) {
+	console.error('[db] Falha ao garantir coluna conversations.avatar_url', e);
+}
+
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/games', gameRoutes);

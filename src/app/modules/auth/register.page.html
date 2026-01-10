@@ -91,51 +91,30 @@
 
       <ion-item>
         <ion-label>Jogos Favoritos</ion-label>
-        <ion-select
-          multiple="true"
-          interface="alert"
-          [interfaceOptions]="{ cssClass: 'webloc-select' }"
-          [(ngModel)]="form.jogos_favoritos"
-          name="jogos_favoritos">
-          <ion-select-option *ngFor="let g of jogos" [value]="g.id">{{g.name}}</ion-select-option>
-        </ion-select>
+        <ion-button fill="clear" slot="end" type="button" (click)="openGamePicker()">
+          {{ selectionCountLabel(form.jogos_favoritos, 'Selecionar') }}
+        </ion-button>
       </ion-item>
       <div *ngIf="erros['jogos_favoritos']" class="error-message">{{ erros['jogos_favoritos'] }}</div>
       <ion-item>
         <ion-label>Plataformas</ion-label>
-        <ion-select
-          multiple="true"
-          interface="alert"
-          [interfaceOptions]="{ cssClass: 'webloc-select' }"
-          [(ngModel)]="form.platforms"
-          name="platforms">
-          <ion-select-option *ngFor="let p of platformOptions" [value]="p.id">{{ p.name }}</ion-select-option>
-        </ion-select>
+        <ion-button fill="clear" slot="end" type="button" (click)="openPlatformPicker()">
+          {{ selectionCountLabel(form.platforms, 'Selecionar') }}
+        </ion-button>
       </ion-item>
       <div *ngIf="erros['platforms']" class="error-message">{{ erros['platforms'] }}</div>
       <ion-item>
         <ion-label>Tipo de Jogo</ion-label>
-        <ion-select
-          [multiple]="true"
-          interface="alert"
-          [interfaceOptions]="{ cssClass: 'webloc-select' }"
-          [(ngModel)]="form.types"
-          name="types"
-          (ionChange)="onTypeSelectionChange($event)">
-          <ion-select-option *ngFor="let t of typeOptions" [value]="t.id">{{ t.name }}</ion-select-option>
-        </ion-select>
+        <ion-button fill="clear" slot="end" type="button" (click)="openTypePicker()">
+          {{ selectionCountLabel(form.types, 'Selecionar') }}
+        </ion-button>
       </ion-item>
       <div *ngIf="erros['types']" class="error-message">{{ erros['types'] }}</div>
       <ion-item>
         <ion-label>Gêneros Preferidos</ion-label>
-        <ion-select
-          multiple="true"
-          interface="alert"
-          [interfaceOptions]="{ cssClass: 'webloc-select' }"
-          [(ngModel)]="form.genres"
-          name="genres">
-          <ion-select-option *ngFor="let g of genreOptions" [value]="g.id">{{ g.name }}</ion-select-option>
-        </ion-select>
+        <ion-button fill="clear" slot="end" type="button" (click)="openGenrePicker()">
+          {{ selectionCountLabel(form.genres, 'Selecionar') }}
+        </ion-button>
       </ion-item>
 
       <ion-item>
@@ -153,6 +132,154 @@
         Voltar
         <ion-icon name="arrow-back-outline" slot="start"></ion-icon>
       </ion-button>
+
+      <!-- Modal: Jogos Favoritos (busca + filtro por gênero) -->
+      <ion-modal [isOpen]="isGamePickerOpen" (didDismiss)="isGamePickerOpen = false">
+        <ng-template>
+          <ion-header>
+            <ion-toolbar>
+              <ion-title>Selecionar jogos</ion-title>
+              <ion-buttons slot="end">
+                <ion-button (click)="isGamePickerOpen = false">Fechar</ion-button>
+              </ion-buttons>
+            </ion-toolbar>
+          </ion-header>
+          <ion-content class="ion-padding">
+            <ion-searchbar
+              placeholder="Buscar jogo"
+              [value]="gamePickerSearch"
+              (ionInput)="setGamePickerSearch($any($event.target).value)"
+              debounce="250">
+            </ion-searchbar>
+
+            <ion-item>
+              <ion-label position="stacked">Filtrar por gênero</ion-label>
+              <ion-select
+                multiple="true"
+                interface="popover"
+                [value]="gamePickerGenreIds"
+                (ionChange)="setGamePickerGenres($event.detail.value)">
+                <ion-select-option *ngFor="let g of genreOptions; trackBy: trackById" [value]="g.id">{{ g.name }}</ion-select-option>
+              </ion-select>
+            </ion-item>
+
+            <ion-text color="medium" *ngIf="gamePickerLoading">Carregando...</ion-text>
+
+            <ion-list *ngIf="!gamePickerLoading">
+              <ion-item *ngIf="!gamePickerResults.length" lines="none">
+                <ion-label>Nenhum jogo encontrado.</ion-label>
+              </ion-item>
+              <ion-item *ngFor="let game of gamePickerResults; trackBy: trackById">
+                <ion-checkbox
+                  slot="start"
+                  [checked]="isSelected('jogos_favoritos', game.id)"
+                  (ionChange)="toggleSelection('jogos_favoritos', game.id, $event.detail.checked)">
+                </ion-checkbox>
+                <ion-label>{{ game.name }}</ion-label>
+              </ion-item>
+            </ion-list>
+          </ion-content>
+        </ng-template>
+      </ion-modal>
+
+      <!-- Modal: Plataformas -->
+      <ion-modal [isOpen]="isPlatformPickerOpen" (didDismiss)="isPlatformPickerOpen = false">
+        <ng-template>
+          <ion-header>
+            <ion-toolbar>
+              <ion-title>Selecionar plataformas</ion-title>
+              <ion-buttons slot="end">
+                <ion-button (click)="isPlatformPickerOpen = false">Fechar</ion-button>
+              </ion-buttons>
+            </ion-toolbar>
+          </ion-header>
+          <ion-content class="ion-padding">
+            <ion-searchbar
+              placeholder="Buscar plataforma"
+              name="platformPickerSearch"
+              [ngModelOptions]="{ standalone: true }"
+              [(ngModel)]="platformPickerSearch"
+              debounce="200">
+            </ion-searchbar>
+            <ion-list>
+              <ion-item *ngFor="let p of filteredPlatforms(); trackBy: trackById">
+                <ion-checkbox
+                  slot="start"
+                  [checked]="isSelected('platforms', p.id)"
+                  (ionChange)="toggleSelection('platforms', p.id, $event.detail.checked)">
+                </ion-checkbox>
+                <ion-label>{{ p.name }}</ion-label>
+              </ion-item>
+            </ion-list>
+          </ion-content>
+        </ng-template>
+      </ion-modal>
+
+      <!-- Modal: Tipos -->
+      <ion-modal [isOpen]="isTypePickerOpen" (didDismiss)="isTypePickerOpen = false">
+        <ng-template>
+          <ion-header>
+            <ion-toolbar>
+              <ion-title>Selecionar tipos</ion-title>
+              <ion-buttons slot="end">
+                <ion-button (click)="isTypePickerOpen = false">Fechar</ion-button>
+              </ion-buttons>
+            </ion-toolbar>
+          </ion-header>
+          <ion-content class="ion-padding">
+            <ion-searchbar
+              placeholder="Buscar tipo"
+              name="typePickerSearch"
+              [ngModelOptions]="{ standalone: true }"
+              [(ngModel)]="typePickerSearch"
+              debounce="200">
+            </ion-searchbar>
+            <ion-list>
+              <ion-item *ngFor="let t of filteredTypes(); trackBy: trackById">
+                <ion-checkbox
+                  slot="start"
+                  [checked]="isSelected('types', t.id)"
+                  (ionChange)="toggleTypeSelection(t.id, $event.detail.checked)">
+                </ion-checkbox>
+                <ion-label>{{ t.name }}</ion-label>
+              </ion-item>
+            </ion-list>
+          </ion-content>
+        </ng-template>
+      </ion-modal>
+
+      <!-- Modal: Gêneros -->
+      <ion-modal [isOpen]="isGenrePickerOpen" (didDismiss)="isGenrePickerOpen = false">
+        <ng-template>
+          <ion-header>
+            <ion-toolbar>
+              <ion-title>Selecionar gêneros</ion-title>
+              <ion-buttons slot="end">
+                <ion-button (click)="isGenrePickerOpen = false">Fechar</ion-button>
+              </ion-buttons>
+            </ion-toolbar>
+          </ion-header>
+          <ion-content class="ion-padding">
+            <ion-searchbar
+              placeholder="Buscar gênero"
+              name="genrePickerSearch"
+              [ngModelOptions]="{ standalone: true }"
+              [(ngModel)]="genrePickerSearch"
+              debounce="200">
+            </ion-searchbar>
+            <ion-list>
+              <ion-item *ngFor="let g of filteredGenres(); trackBy: trackById">
+                <ion-checkbox
+                  slot="start"
+                  [checked]="isSelected('genres', g.id)"
+                  (ionChange)="toggleSelection('genres', g.id, $event.detail.checked)">
+                </ion-checkbox>
+                <ion-label>{{ g.name }}</ion-label>
+              </ion-item>
+            </ion-list>
+          </ion-content>
+        </ng-template>
+      </ion-modal>
     </form>
 
     <form *ngIf="etapaAtual === 3" (ngSubmit)="avancarEtapa()" class="form-stage surface-ghost stack">

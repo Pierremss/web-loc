@@ -38,6 +38,9 @@ async function insertConversationRow(conn, { name, description, ownerId, isPubli
 const conversationUploadsDir = path.resolve(process.cwd(), 'uploads', 'conversations');
 if (!fs.existsSync(conversationUploadsDir)) fs.mkdirSync(conversationUploadsDir, { recursive: true });
 
+const conversationMessageUploadsDir = path.resolve(process.cwd(), 'uploads', 'conversation-messages');
+if (!fs.existsSync(conversationMessageUploadsDir)) fs.mkdirSync(conversationMessageUploadsDir, { recursive: true });
+
 const conversationAvatarMaxMb = Number(process.env.CONVERSATION_AVATAR_MAX_MB || 10);
 const conversationAvatarStorage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, conversationUploadsDir),
@@ -57,6 +60,64 @@ const conversationAvatarUpload = multer({
     cb(null, true);
   }
 });
+
+const conversationMessageImageMaxMb = Number(process.env.CONVERSATION_MESSAGE_IMAGE_MAX_MB || 10);
+const conversationMessageImageStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, conversationMessageUploadsDir),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname || '') || '.jpg';
+    cb(null, `convmsg_${randomUUID().replace(/-/g, '')}${ext}`);
+  }
+});
+
+const conversationMessageImageUpload = multer({
+  storage: conversationMessageImageStorage,
+  limits: { fileSize: conversationMessageImageMaxMb * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (!/^image\//i.test(file?.mimetype || '')) {
+      return cb(new Error('Tipo de imagem inválido'));
+    }
+    cb(null, true);
+  }
+});
+
+async function attachAttachmentsToMessages(messages) {
+  if (!Array.isArray(messages) || messages.length === 0) return messages;
+  const ids = messages
+    .map((m) => Number(m?.id))
+    .filter((id) => Number.isFinite(id));
+  if (!ids.length) {
+    return messages.map((m) => ({ ...m, attachments: [] }));
+  }
+
+  const placeholders = ids.map(() => '?').join(',');
+  const [rows] = await pool.query(
+    `SELECT message_id, url, mime_type, size_bytes, width, height
+       FROM conversation_message_attachments
+      WHERE message_id IN (${placeholders})`,
+    ids
+  );
+  const byMsg = new Map();
+  for (const a of rows || []) {
+    const mid = Number(a.message_id);
+    if (!Number.isFinite(mid)) continue;
+    const list = byMsg.get(mid) ?? [];
+    list.push({
+      url: a.url,
+      mime_type: a.mime_type,
+      size_bytes: a.size_bytes,
+      width: a.width,
+      height: a.height,
+    });
+    byMsg.set(mid, list);
+  }
+
+  return messages.map((m) => {
+    const mid = Number(m?.id);
+    const attachments = Number.isFinite(mid) ? (byMsg.get(mid) ?? []) : [];
+    return { ...m, attachments };
+  });
+}
 
 // Helper to handle validation errors
 function badRequestIfAny(req, res) {
@@ -620,7 +681,8 @@ router.get(
         }));
       return { ...msg, read_by: readBy };
     });
-    res.json(decorated.reverse());
+    const withAttachments = await attachAttachmentsToMessages(decorated.reverse());
+    res.json(withAttachments);
   }
 );
 
@@ -733,6 +795,7 @@ router.post(
       [r.insertId]
     );
     message.read_by = [];
+    message.attachments = [];
     const io = req.app.get('io');
     io?.to(`conv:${convId}`).emit('conv:message:new', message);
 
@@ -749,6 +812,97 @@ router.post(
       // falha silenciosa: a mensagem já foi enviada ao grupo
     }
     res.status(201).json(message);
+  }
+);
+
+// Send image message (HTTP)
+router.post(
+  '/:id/messages/image',
+  ensureAuth,
+  param('id').isInt({ min: 1 }),
+  async (req, res) => {
+    const err = badRequestIfAny(req, res);
+    if (err) return err;
+
+    conversationMessageImageUpload.single('image')(req, res, async (uploadErr) => {
+      if (uploadErr) {
+        if (uploadErr.code === 'LIMIT_FILE_SIZE') {
+          return res.status(413).json({ error: `Imagem excede ${conversationMessageImageMaxMb}MB` });
+        }
+        return res.status(400).json({ error: uploadErr.message });
+      }
+
+      const me = Number(req.user.id);
+      const convId = Number(req.params.id);
+      const file = req.file;
+      if (!file) return res.status(400).json({ error: 'image_required' });
+      if (!/^image\//i.test(file?.mimetype || '')) {
+        await removeUploadedFile(file);
+        return res.status(400).json({ error: 'invalid_image_type' });
+      }
+
+      const [mem] = await pool.query('SELECT 1 FROM conversation_members WHERE conversation_id = ? AND user_id = ? LIMIT 1', [convId, me]);
+      if (!mem.length) {
+        await removeUploadedFile(file);
+        return res.status(403).json({ error: 'not_member' });
+      }
+
+      const replyToRaw = req.body?.reply_to_id;
+      const replyToId = replyToRaw == null || replyToRaw === '' ? null : Number(replyToRaw);
+      if (replyToId != null && !Number.isFinite(replyToId)) {
+        await removeUploadedFile(file);
+        return res.status(400).json({ error: 'invalid_reply_to_id' });
+      }
+
+      const url = `/uploads/conversation-messages/${file.filename}`.replace(/\\/g, '/');
+      const conn = await pool.getConnection();
+      try {
+        await conn.beginTransaction();
+        const [r] = await conn.query(
+          'INSERT INTO conversation_messages (conversation_id, sender_id, content, reply_to_id) VALUES (?, ?, ?, ?)',
+          [convId, me, '', replyToId]
+        );
+        const messageId = r.insertId;
+        await conn.query(
+          `INSERT INTO conversation_message_attachments (message_id, url, mime_type, size_bytes)
+           VALUES (?, ?, ?, ?)`,
+          [messageId, url, file.mimetype || 'image/*', Number(file.size) || 0]
+        );
+        await conn.commit();
+
+        const [[message]] = await pool.query(
+          `SELECT cm.*, COALESCE(u.nickname, u.name, u.email) AS sender_name, u.avatar_url AS sender_avatar
+             FROM conversation_messages cm
+             JOIN users u ON u.id = cm.sender_id
+            WHERE cm.id = ?`,
+          [messageId]
+        );
+        const [decorated] = await attachAttachmentsToMessages([{ ...message, read_by: [] }]);
+        const payload = decorated;
+        const io = req.app.get('io');
+        io?.to(`conv:${convId}`).emit('conv:message:new', payload);
+
+        // Notificação (inbox) para membros mesmo fora da sala.
+        try {
+          const [members] = await pool.query('SELECT user_id FROM conversation_members WHERE conversation_id = ?', [convId]);
+          for (const m of members) {
+            const uid = Number(m.user_id);
+            if (!Number.isFinite(uid) || uid === me) continue;
+            io?.to(`user:${uid}`).emit('conv:message:notify', payload);
+          }
+        } catch {
+          // silencioso
+        }
+
+        return res.status(201).json(payload);
+      } catch (e) {
+        try { await conn.rollback(); } catch {}
+        await removeUploadedFile(file);
+        return res.status(500).json({ error: 'upload_failed', details: e?.message });
+      } finally {
+        conn.release();
+      }
+    });
   }
 );
 
