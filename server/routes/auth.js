@@ -80,6 +80,12 @@ async function fetchTypesByIds(ids) {
   return rows;
 }
 
+async function fetchGenresByIds(ids) {
+  if (!ids.length) return [];
+  const [rows] = await pool.query('SELECT id, name FROM genres WHERE id IN (?)', [ids]);
+  return rows;
+}
+
 // Configuração de upload para avatar no cadastro
 const regUploadDir = path.resolve(process.cwd(), 'uploads', 'avatars');
 if (!fs.existsSync(regUploadDir)) fs.mkdirSync(regUploadDir, { recursive: true });
@@ -121,6 +127,7 @@ router.post('/register',
   body('password').isLength({min:6}).withMessage('Senha mínima de 6'),
   body('platforms').custom(val => Array.isArray(val) || typeof val === 'string').withMessage('Plataformas inválidas'),
   body('types').optional().custom(val => Array.isArray(val) || typeof val === 'string').withMessage('Tipos de jogo inválidos'),
+  body('genres').optional().custom(val => Array.isArray(val) || typeof val === 'string').withMessage('Gêneros inválidos'),
   body('game_style').isString().withMessage('Estilo de jogo inválido'),
   body('available_times').isString().withMessage('Horários inválidos'),
   body('profile').isString().withMessage('Perfil inválido'),
@@ -133,10 +140,11 @@ router.post('/register',
       return res.status(400).json({ error: arr[0]?.msg || 'Dados inválidos', errors: arr });
     }
 
-  let { name, nickname, email, password, platforms, game_style, available_times, profile, jogos_favoritos, types } = req.body;
+  let { name, nickname, email, password, platforms, game_style, available_times, profile, jogos_favoritos, types, genres } = req.body;
   const platformIds = normalizeNumericIds(platforms);
   const favoriteGameIds = normalizeNumericIds(jogos_favoritos);
   const typeIds = normalizeNumericIds(types);
+  const genreIds = normalizeNumericIds(genres);
   if (!platformIds.length) {
     return res.status(400).json({ error: 'Selecione ao menos uma plataforma válida' });
   }
@@ -174,6 +182,15 @@ router.post('/register',
       game_style = orderedTypes[0] || game_style || '';
       if (game_style.length > 80) {
         game_style = game_style.slice(0, 80);
+      }
+
+      if (genreIds.length) {
+        const genreRows = await fetchGenresByIds(genreIds);
+        const foundGenreIds = new Set(genreRows.map((row) => row.id));
+        const missingGenres = genreIds.filter((id) => !foundGenreIds.has(id));
+        if (missingGenres.length) {
+          return res.status(400).json({ error: 'Gêneros inválidos', missing: missingGenres });
+        }
       }
 
       email = String(email ?? '').trim().toLowerCase();
@@ -219,6 +236,24 @@ router.post('/register',
           params.push(pendingUserId, typeId);
         });
         await pool.query(`INSERT IGNORE INTO pending_user_types (pending_user_id, type_id) VALUES ${values}`, params);
+      }
+
+      if (genreIds.length > 0) {
+        await pool.query(`
+          CREATE TABLE IF NOT EXISTS pending_user_genres (
+            pending_user_id INT UNSIGNED NOT NULL,
+            genre_id INT NOT NULL,
+            PRIMARY KEY (pending_user_id, genre_id),
+            CONSTRAINT fk_pugr_pending_user FOREIGN KEY (pending_user_id) REFERENCES pending_users(id) ON DELETE CASCADE,
+            CONSTRAINT fk_pugr_genre FOREIGN KEY (genre_id) REFERENCES genres(id) ON DELETE CASCADE
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        `);
+        const values = genreIds.map(() => '(?, ?)').join(', ');
+        const params = [];
+        genreIds.forEach((genreId) => {
+          params.push(pendingUserId, genreId);
+        });
+        await pool.query(`INSERT IGNORE INTO pending_user_genres (pending_user_id, genre_id) VALUES ${values}`, params);
       }
       let delivered = false;
       let expiresAt = null;
@@ -308,15 +343,6 @@ router.post('/login',
         return res.status(403).json({
           error: 'E-mail não verificado. Confirme o código enviado para o seu e-mail.',
           requiresVerification: true
-        });
-      }
-
-      const disabledUntil = user.disabled_until ? new Date(user.disabled_until) : null;
-      if (disabledUntil && Number.isFinite(disabledUntil.getTime()) && disabledUntil.getTime() > Date.now()) {
-        return res.status(403).json({
-          error: 'disabled',
-          disabled_until: user.disabled_until,
-          message: 'Sua conta está desativada temporariamente.'
         });
       }
 

@@ -249,12 +249,28 @@ CREATE TABLE IF NOT EXISTS user_types (
   CONSTRAINT fk_ut_type FOREIGN KEY (type_id) REFERENCES game_types(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
+CREATE TABLE IF NOT EXISTS user_genres (
+  user_id INT NOT NULL,
+  genre_id INT NOT NULL,
+  PRIMARY KEY (user_id, genre_id),
+  CONSTRAINT fk_ugr_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_ugr_genre FOREIGN KEY (genre_id) REFERENCES genres(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 CREATE TABLE IF NOT EXISTS pending_user_types (
   pending_user_id INT UNSIGNED NOT NULL,
   type_id INT NOT NULL,
   PRIMARY KEY (pending_user_id, type_id),
   CONSTRAINT fk_put_pending_user FOREIGN KEY (pending_user_id) REFERENCES pending_users(id) ON DELETE CASCADE,
   CONSTRAINT fk_put_type FOREIGN KEY (type_id) REFERENCES game_types(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS pending_user_genres (
+  pending_user_id INT UNSIGNED NOT NULL,
+  genre_id INT NOT NULL,
+  PRIMARY KEY (pending_user_id, genre_id),
+  CONSTRAINT fk_pugr_pending_user FOREIGN KEY (pending_user_id) REFERENCES pending_users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_pugr_genre FOREIGN KEY (genre_id) REFERENCES genres(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS verification_codes (

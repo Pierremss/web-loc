@@ -6,6 +6,7 @@ import { Platform } from '../../model/platform';
 import { PlatformsService } from '../../services/platforms.service';
 import { GenresService } from '../../services/genres.service';
 import { GameTypesService } from '../../services/game-types.service';
+import { ThemeService } from '../../services/theme.service';
 import { Subject, catchError, debounceTime, finalize, of, switchMap } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
@@ -16,6 +17,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
   standalone: false,
 })
 export class RegisterPage implements OnInit {
+
+  readonly theme = inject(ThemeService);
 
   etapaAtual: number = 1;
   isArray(val: any): boolean {
@@ -97,6 +100,22 @@ export class RegisterPage implements OnInit {
   private readonly genresService = inject(GenresService);
   private readonly typesService = inject(GameTypesService);
   private readonly destroyRef = inject(DestroyRef);
+
+  get themeToggleIcon(): string {
+    return this.theme.isDark ? 'sunny-outline' : 'moon-outline';
+  }
+
+  get themeToggleText(): string {
+    return this.theme.isDark ? 'Tema claro' : 'Tema escuro';
+  }
+
+  get themeToggleAria(): string {
+    return this.theme.isDark ? 'Ativar tema claro' : 'Ativar tema escuro';
+  }
+
+  toggleTheme() {
+    this.theme.toggle();
+  }
 
   private readonly gameSearchTrigger$ = new Subject<void>();
 

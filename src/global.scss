@@ -411,6 +411,25 @@ body.dark ion-modal.members-manager-modal ion-searchbar::part(input)::placeholde
   color: var(--ion-text-color) !important;
   opacity: 1 !important;
 }
+
+/* Cadastro (/register) - modais (jogos/plataformas/tipos/gêneros): searchbar legível no tema escuro */
+body.dark ion-modal ion-searchbar.picker-searchbar {
+  --color: var(--ion-text-color);
+  --placeholder-color: rgba(var(--ion-text-color-rgb), 0.72);
+  --placeholder-opacity: 1;
+  --icon-color: rgba(var(--ion-text-color-rgb), 0.9);
+  --clear-button-color: rgba(var(--ion-text-color-rgb), 0.9);
+  --cancel-button-color: rgba(var(--ion-text-color-rgb), 0.9);
+}
+
+body.dark ion-modal ion-searchbar.picker-searchbar::part(input) {
+  color: var(--ion-text-color) !important;
+}
+
+body.dark ion-modal ion-searchbar.picker-searchbar::part(input)::placeholder {
+  color: rgba(var(--ion-text-color-rgb), 0.72) !important;
+  opacity: 1 !important;
+}
 body.dark ion-alert.webloc-select .alert-radio-label,
 body.dark ion-alert.webloc-select .alert-checkbox-label,
 body.dark .dark ion-alert.webloc-select .alert-title,

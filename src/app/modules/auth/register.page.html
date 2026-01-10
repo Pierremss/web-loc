@@ -6,6 +6,18 @@
           <ion-icon slot="start" name="home-outline"></ion-icon>
           <span>Menu principal</span>
         </ion-button>
+
+        <ion-button
+          class="nav-btn theme-toggle"
+          fill="solid"
+          size="small"
+          type="button"
+          (click)="toggleTheme()"
+          [attr.aria-label]="themeToggleAria"
+        >
+          <ion-icon [name]="themeToggleIcon" slot="start"></ion-icon>
+          {{ themeToggleText }}
+        </ion-button>
       </div>
       <header class="logo stack">
         <h1>WebLoc</h1>
@@ -146,6 +158,7 @@
           </ion-header>
           <ion-content class="ion-padding">
             <ion-searchbar
+              class="picker-searchbar"
               placeholder="Buscar jogo"
               [value]="gamePickerSearch"
               (ionInput)="setGamePickerSearch($any($event.target).value)"
@@ -179,6 +192,13 @@
               </ion-item>
             </ion-list>
           </ion-content>
+          <ion-footer>
+            <ion-toolbar>
+              <ion-buttons slot="end">
+                <ion-button (click)="isGamePickerOpen = false" strong="true">OK</ion-button>
+              </ion-buttons>
+            </ion-toolbar>
+          </ion-footer>
         </ng-template>
       </ion-modal>
 
@@ -195,6 +215,7 @@
           </ion-header>
           <ion-content class="ion-padding">
             <ion-searchbar
+              class="picker-searchbar"
               placeholder="Buscar plataforma"
               name="platformPickerSearch"
               [ngModelOptions]="{ standalone: true }"
@@ -212,6 +233,13 @@
               </ion-item>
             </ion-list>
           </ion-content>
+          <ion-footer>
+            <ion-toolbar>
+              <ion-buttons slot="end">
+                <ion-button (click)="isPlatformPickerOpen = false" strong="true">OK</ion-button>
+              </ion-buttons>
+            </ion-toolbar>
+          </ion-footer>
         </ng-template>
       </ion-modal>
 
@@ -228,6 +256,7 @@
           </ion-header>
           <ion-content class="ion-padding">
             <ion-searchbar
+              class="picker-searchbar"
               placeholder="Buscar tipo"
               name="typePickerSearch"
               [ngModelOptions]="{ standalone: true }"
@@ -245,6 +274,13 @@
               </ion-item>
             </ion-list>
           </ion-content>
+          <ion-footer>
+            <ion-toolbar>
+              <ion-buttons slot="end">
+                <ion-button (click)="isTypePickerOpen = false" strong="true">OK</ion-button>
+              </ion-buttons>
+            </ion-toolbar>
+          </ion-footer>
         </ng-template>
       </ion-modal>
 
@@ -261,6 +297,7 @@
           </ion-header>
           <ion-content class="ion-padding">
             <ion-searchbar
+              class="picker-searchbar"
               placeholder="Buscar gênero"
               name="genrePickerSearch"
               [ngModelOptions]="{ standalone: true }"
@@ -278,6 +315,13 @@
               </ion-item>
             </ion-list>
           </ion-content>
+          <ion-footer>
+            <ion-toolbar>
+              <ion-buttons slot="end">
+                <ion-button (click)="isGenrePickerOpen = false" strong="true">OK</ion-button>
+              </ion-buttons>
+            </ion-toolbar>
+          </ion-footer>
         </ng-template>
       </ion-modal>
     </form>

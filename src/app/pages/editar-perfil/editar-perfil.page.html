@@ -69,10 +69,7 @@
           <ion-item class="custom-item">
             <ion-label position="floating">Plataformas</ion-label>
             <ion-select multiple="true" interface="popover" [(ngModel)]="form.platforms" name="platforms" placeholder="Selecione">
-              <ion-select-option value="PC">PC</ion-select-option>
-              <ion-select-option value="Xbox">Xbox</ion-select-option>
-              <ion-select-option value="PS">PlayStation</ion-select-option>
-              <ion-select-option value="Mobile">Mobile</ion-select-option>
+              <ion-select-option *ngFor="let p of form.platformOptions" [value]="p.name">{{ p.name }}</ion-select-option>
             </ion-select>
           </ion-item>
           <ion-item class="custom-item">
@@ -83,11 +80,26 @@
               <ion-select-option value="Cooperativo">Cooperativo</ion-select-option>
             </ion-select>
           </ion-item>
+
+          <ion-item class="custom-item full-width">
+            <ion-label position="floating">Gêneros preferidos</ion-label>
+            <ion-select
+              multiple="true"
+              interface="popover"
+              [compareWith]="compareByNumber"
+              [(ngModel)]="form.genres"
+              name="genres"
+              placeholder="Selecione um ou mais">
+              <ion-select-option *ngFor="let g of form.genreOptions" [value]="g.id">{{ g.name }}</ion-select-option>
+            </ion-select>
+            <ion-note slot="helper">Você pode selecionar mais de um gênero</ion-note>
+          </ion-item>
         </div>
         <ng-template #prefSkeleton>
           <div class="form-grid">
             <ion-skeleton-text animated style="height:56px; border-radius:12px;"></ion-skeleton-text>
             <ion-skeleton-text animated style="height:56px; border-radius:12px;"></ion-skeleton-text>
+            <ion-skeleton-text animated style="height:56px; border-radius:12px; grid-column: 1 / -1;"></ion-skeleton-text>
           </div>
         </ng-template>
       </div>

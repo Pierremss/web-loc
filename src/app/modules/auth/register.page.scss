@@ -47,6 +47,22 @@
         transform: translateY(-1px);
       }
     }
+
+    .theme-toggle {
+      --background: rgba(var(--ion-text-color-rgb), 0.06);
+      --color: rgba(var(--ion-text-color-rgb), 0.86);
+      --border-radius: 999px;
+      --padding-start: 12px;
+      --padding-end: 12px;
+      --box-shadow: none;
+      font-weight: 600;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+
+    .theme-toggle::part(native) {
+      border: 1px solid rgba(var(--ion-text-color-rgb), 0.12);
+    }
   }
 
   .register-card {
@@ -204,6 +220,18 @@
   /* Melhor legibilidade do texto selecionado/placeholder nos selects */
   ion-select::part(text),
   ion-select::part(placeholder) {
+    color: rgba(var(--ion-text-color-rgb), 0.92);
+  }
+
+  /* Searchbar: garantir legibilidade no tema escuro */
+  ion-searchbar {
+    --color: rgba(var(--ion-text-color-rgb), 0.92);
+    --placeholder-color: rgba(var(--ion-text-color-rgb), 0.62);
+    --icon-color: rgba(var(--ion-text-color-rgb), 0.72);
+    --clear-button-color: rgba(var(--ion-text-color-rgb), 0.72);
+  }
+
+  ion-searchbar::part(input) {
     color: rgba(var(--ion-text-color-rgb), 0.92);
   }
 
@@ -441,6 +469,34 @@
 
   ion-select::part(icon) {
     color: rgba(233, 238, 252, 0.75);
+  }
+
+  /* Searchbar nos modais (overlay do ion-modal): garantir texto/placeholder claros no dark mode */
+  :host ::ng-deep ion-searchbar.picker-searchbar {
+    --color: #e9eefc;
+    --placeholder-color: rgba(233, 238, 252, 0.72);
+    --placeholder-opacity: 1;
+    --icon-color: rgba(233, 238, 252, 0.78);
+    --clear-button-color: rgba(233, 238, 252, 0.78);
+  }
+
+  :host ::ng-deep ion-searchbar.picker-searchbar::part(input) {
+    color: #e9eefc;
+  }
+
+  :host ::ng-deep ion-searchbar.picker-searchbar::part(input)::placeholder {
+    color: rgba(233, 238, 252, 0.72);
+    opacity: 1;
+  }
+
+  /* Alguns temas do Ionic usam text-input internamente; reforçar também */
+  :host ::ng-deep ion-searchbar.picker-searchbar::part(text-input) {
+    color: #e9eefc;
+  }
+
+  :host ::ng-deep ion-searchbar.picker-searchbar::part(text-input)::placeholder {
+    color: rgba(233, 238, 252, 0.72);
+    opacity: 1;
   }
 
   /* Estilo do overlay do ion-select (interface=alert) apenas nesta tela */

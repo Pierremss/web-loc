@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { UsersService } from '../../services/users.service';
 import { GenresService } from '../../services/genres.service';
 import { GameTypesService } from '../../services/game-types.service';
+import { PlatformsService } from '../../services/platforms.service';
 import { environment } from '../../../environments/environment';
 import { ToastController, LoadingController } from '@ionic/angular';
 
@@ -24,6 +25,7 @@ export class EditarPerfilPage implements OnInit {
   private readonly users = inject(UsersService);
   private readonly genresService = inject(GenresService);
   private readonly typesService = inject(GameTypesService);
+  private readonly platformsService = inject(PlatformsService);
   private readonly toastCtrl = inject(ToastController);
   private readonly loadingCtrl = inject(LoadingController);
 
@@ -41,15 +43,124 @@ export class EditarPerfilPage implements OnInit {
   horariosSelecionados: { [key: string]: string[] } = {};
 
   ngOnInit() {
+    this.loading = true;
     this.form = { ...this.auth.user };
     if (this.auth.user?.id) {
       this.form.id = this.auth.user.id;
     }
-    this.genresService.list().subscribe(list => this.form.genreOptions = list);
+
+    this.form.platforms = this.normalizePlatforms(this.form.platforms);
+    this.form.genres = this.normalizeIdArray(this.form.genres);
+    this.form.types = this.normalizeIdArray(this.form.types);
+
+    this.genresService.list().subscribe(list => {
+      const normalized = (list || []).map((g: any) => ({
+        ...g,
+        id: Number(g?.id),
+      }));
+      const sorted = normalized.slice().sort((a: any, b: any) => String(a?.name || '').localeCompare(String(b?.name || '')));
+      this.form.genreOptions = sorted;
+    });
+
+    this.platformsService.list().subscribe(list => {
+      const normalized = (list || []).map((p: any) => ({
+        ...p,
+        id: Number(p?.id),
+        name: String(p?.name ?? '').trim(),
+      })).filter((p: any) => p.name);
+      this.form.platformOptions = normalized.slice().sort((a: any, b: any) => String(a?.name || '').localeCompare(String(b?.name || '')));
+    });
     this.typesService.list().subscribe(list => this.form.typeOptions = list);
-    this.inicializarHorarios();
-    // Exibe skeleton brevemente e libera a UI
-    setTimeout(() => { this.loading = false; }, 300);
+
+    const userId = this.getLoggedUserId();
+    if (!userId) {
+      this.inicializarHorarios();
+      setTimeout(() => { this.loading = false; }, 300);
+      return;
+    }
+
+    this.http.get(`/api/users/${userId}`, this.headers()).subscribe({
+      next: (u: any) => {
+        this.form = { ...this.form, ...u };
+        this.form.id = userId;
+        this.form.platforms = this.normalizePlatforms(this.form.platforms);
+        this.form.genres = this.normalizeIdArray(this.form.genres);
+        this.form.types = this.normalizeIdArray(this.form.types);
+        this.inicializarHorarios();
+      },
+      error: () => {
+        this.inicializarHorarios();
+      }
+    }).add(() => {
+      // Exibe skeleton brevemente e libera a UI
+      setTimeout(() => { this.loading = false; }, 300);
+    });
+  }
+
+  private normalizePlatforms(value: any): string[] {
+    if (value == null) return [];
+    let raw: unknown = value;
+
+    if (typeof raw === 'string') {
+      const trimmed = raw.trim();
+      if (!trimmed) return [];
+      if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+        try {
+          const parsed = JSON.parse(trimmed);
+          raw = parsed;
+        } catch {
+          // segue com parsing CSV
+        }
+      }
+      if (typeof raw === 'string') {
+        raw = trimmed.split(',').map((p) => p.trim()).filter(Boolean);
+      }
+    }
+
+    const list = Array.isArray(raw) ? raw : [raw];
+    const normalized = list
+      .map((item) => {
+        if (typeof item === 'string') return item.trim();
+        if (item && typeof item === 'object' && 'name' in item) return String((item as any).name ?? '').trim();
+        return '';
+      })
+      .filter(Boolean);
+
+    return Array.from(new Set(normalized));
+  }
+
+  compareByNumber = (a: any, b: any): boolean => {
+    return Number(a) === Number(b);
+  };
+
+  private normalizeIdArray(value: any): number[] {
+    if (value == null) return [];
+    let rawValue: unknown = value;
+    if (typeof rawValue === 'string') {
+      const trimmed = rawValue.trim();
+      if (!trimmed) return [];
+      if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+        try {
+          const parsed = JSON.parse(trimmed);
+          rawValue = parsed;
+        } catch {
+          // ignora
+        }
+      } else if (trimmed.includes(',')) {
+        rawValue = trimmed.split(',').map((p) => p.trim()).filter(Boolean);
+      }
+    }
+
+    const raw = Array.isArray(rawValue) ? rawValue : [rawValue];
+    const ids = raw
+      .map((item) => {
+        if (typeof item === 'number') return item;
+        if (typeof item === 'string' && item.trim() !== '') return Number(item);
+        if (item && typeof item === 'object' && 'id' in item) return Number((item as any).id);
+        return NaN;
+      })
+      .filter((id) => Number.isInteger(id) && id > 0);
+    return Array.from(new Set(ids));
   }
 
   isArray(value: any): boolean {
@@ -78,6 +189,12 @@ export class EditarPerfilPage implements OnInit {
       await toast.present();
       return;
     }
+
+    // Garante consistência do payload (ion-select pode devolver string)
+    this.form.platforms = this.normalizePlatforms(this.form.platforms);
+    this.form.genres = this.normalizeIdArray(this.form.genres);
+    this.form.types = this.normalizeIdArray(this.form.types);
+
     this.loading = true;
     const loader = await this.loadingCtrl.create({ message: 'Salvando…' });
     await loader.present();

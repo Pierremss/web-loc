@@ -902,8 +902,7 @@ router.post(
       } finally {
         conn.release();
       }
-    });
-  }
+    });  }
 );
 
 // Join/leave (for public or by invite)

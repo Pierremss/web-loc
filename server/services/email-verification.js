@@ -43,6 +43,16 @@ async function ensureStructures() {
           CONSTRAINT fk_put_type FOREIGN KEY (type_id) REFERENCES game_types(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
       `);
+
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS pending_user_genres (
+          pending_user_id INT UNSIGNED NOT NULL,
+          genre_id INT NOT NULL,
+          PRIMARY KEY (pending_user_id, genre_id),
+          CONSTRAINT fk_pugr_pending_user FOREIGN KEY (pending_user_id) REFERENCES pending_users(id) ON DELETE CASCADE,
+          CONSTRAINT fk_pugr_genre FOREIGN KEY (genre_id) REFERENCES genres(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+      `);
       await pool.query(`
         CREATE TABLE IF NOT EXISTS user_types (
           user_id INT NOT NULL,
@@ -50,6 +60,16 @@ async function ensureStructures() {
           PRIMARY KEY (user_id, type_id),
           CONSTRAINT fk_ut_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
           CONSTRAINT fk_ut_type FOREIGN KEY (type_id) REFERENCES game_types(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+      `);
+
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS user_genres (
+          user_id INT NOT NULL,
+          genre_id INT NOT NULL,
+          PRIMARY KEY (user_id, genre_id),
+          CONSTRAINT fk_ugr_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+          CONSTRAINT fk_ugr_genre FOREIGN KEY (genre_id) REFERENCES genres(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
       `);
       await pool.query(`
@@ -339,6 +359,16 @@ export async function verifyEmailCode(email, code) {
           params.push(userId, type_id);
         });
         await conn.query(`INSERT IGNORE INTO user_types (user_id, type_id) VALUES ${values}`, params);
+      }
+
+      const [pendingGenres] = await conn.query('SELECT genre_id FROM pending_user_genres WHERE pending_user_id = ?', [record.pending_user_id]);
+      if (pendingGenres.length) {
+        const values = pendingGenres.map(() => '(?, ?)').join(', ');
+        const params = [];
+        pendingGenres.forEach(({ genre_id }) => {
+          params.push(userId, genre_id);
+        });
+        await conn.query(`INSERT IGNORE INTO user_genres (user_id, genre_id) VALUES ${values}`, params);
       }
     }
 

@@ -10,6 +10,20 @@
 <ion-content class="ion-padding home-page">
   <div class="home-wrapper layout-container">
     <div class="home-container surface-card stack fadein">
+      <div class="top-actions">
+        <ion-button
+          class="theme-toggle"
+          fill="solid"
+          size="small"
+          type="button"
+          (click)="toggleTheme()"
+          [attr.aria-label]="themeToggleAria"
+        >
+          <ion-icon [name]="themeToggleIcon" slot="start"></ion-icon>
+          {{ themeToggleText }}
+        </ion-button>
+      </div>
+
       <div class="logo">
         <h1 class="heading-highlight">WebLoc</h1>
         <span class="tagline text-soft">Bem-vindo ao sistema</span>
