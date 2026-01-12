@@ -15,7 +15,7 @@
 <p align="center">
   <a href="#sobre"><img src="https://img.shields.io/badge/Sobre-6366f1?style=for-the-badge&logo=book&logoColor=white" /></a>
   <a href="#funcionalidades"><img src="https://img.shields.io/badge/Funcionalidades-8b5cf6?style=for-the-badge&logo=star&logoColor=white" /></a>
-  <a href="#️tecnologias"><img src="https://img.shields.io/badge/Tecnologias-ec4899?style=for-the-badge&logo=stackshare&logoColor=white" /></a>
+  <a href="#tecnologias"><img src="https://img.shields.io/badge/Tecnologias-ec4899?style=for-the-badge&logo=stackshare&logoColor=white" /></a>
   <a href="#instalação"><img src="https://img.shields.io/badge/Instalação-10b981?style=for-the-badge&logo=download&logoColor=white" /></a>
   <a href="#uso"><img src="https://img.shields.io/badge/Uso-f59e0b?style=for-the-badge&logo=rocket&logoColor=white" /></a>
   <a href="#api"><img src="https://img.shields.io/badge/API-3b82f6?style=for-the-badge&logo=fastapi&logoColor=white" /></a>
@@ -801,6 +801,6 @@ Encontrou um bug? Por favor, abra uma [issue](https://github.com/Pierremss/weblo
 
 **Feito com ❤️ para a comunidade gamer**
 
-⬆ Voltar ao topo
+<a href="#webloc---plataforma-de-matchmaking-para-gamers"><img src="https://img.shields.io/badge/⬆_Voltar_ao_Topo-6366f1?style=for-the-badge" /></a>
 
 </div>
