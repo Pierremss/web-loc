@@ -1,8 +1,6 @@
-# WebLoc - Plataforma de Matchmaking para Gamers 
+# WebLoc 
 
 <div align="center">
-
-![WebLoc Logo](assets/icon/favicon.png)
 
 **Conecte-se com jogadores compatíveis através de interesses, estilos de jogo e horários em comum**
 
