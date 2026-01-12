@@ -50,10 +50,49 @@ function reportUploadHandler(req, res, next) {
 
 async function ensureModerationColumns() {
   try {
+    await pool.query(`ALTER TABLE users ADD COLUMN banned_until DATETIME NULL`);
+  } catch (err) {
+    if (err?.code !== 'ER_DUP_FIELDNAME') throw err;
+  }
+
+  try {
     await pool.query(`ALTER TABLE users ADD COLUMN disabled_until DATETIME NULL`);
   } catch (err) {
     if (err?.code !== 'ER_DUP_FIELDNAME') throw err;
   }
+}
+
+let ensuredAccountEventStructures;
+async function ensureAccountEventStructures() {
+  if (ensuredAccountEventStructures) return;
+  ensuredAccountEventStructures = (async () => {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS user_account_events (
+        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NULL,
+        type VARCHAR(32) NOT NULL,
+        message VARCHAR(500) NOT NULL,
+        meta JSON NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_uae_user (user_id),
+        INDEX idx_uae_created (created_at)
+      ) ENGINE=InnoDB
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS deleted_accounts (
+        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        email VARCHAR(255) NOT NULL,
+        deleted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        deleted_by INT NULL,
+        reason VARCHAR(200) NULL,
+        source VARCHAR(32) NOT NULL,
+        INDEX idx_da_email (email),
+        INDEX idx_da_deleted (deleted_at)
+      ) ENGINE=InnoDB
+    `);
+  })();
+  return ensuredAccountEventStructures;
 }
 
 function toSqlDateTime(d) {
@@ -70,7 +109,10 @@ function pickAutoAction(reportCount) {
   // 1-2: registra
   // 3-4: ban 3 dias
   // 5-6: ban 14 dias
-  // 7+: disable 30 dias
+  // 7-9: disable 30 dias
+  // 10+: exclusão automática
+  const autoDeleteThreshold = Math.max(Number(process.env.REPORT_AUTO_DELETE_THRESHOLD || 10) || 10, 1);
+  if (reportCount >= autoDeleteThreshold) return { kind: 'delete' };
   if (reportCount >= 7) return { kind: 'disable', days: 30 };
   if (reportCount >= 5) return { kind: 'ban', days: 14 };
   if (reportCount >= 3) return { kind: 'ban', days: 3 };
@@ -720,6 +762,7 @@ router.post(
     try {
       // Garante tabelas (para ambientes sem migração aplicada)
       await ensureModerationColumns();
+      await ensureAccountEventStructures();
       await pool.query(`
         CREATE TABLE IF NOT EXISTS user_reports (
           id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -774,7 +817,7 @@ router.post(
         await conn.beginTransaction();
 
         const [userRows] = await conn.query(
-          'SELECT id, is_admin, banned_until, disabled_until FROM users WHERE id = ? FOR UPDATE',
+          'SELECT id, email, is_admin, banned_until, disabled_until FROM users WHERE id = ? FOR UPDATE',
           [reportedId]
         );
         if (!userRows.length) {
@@ -810,6 +853,102 @@ router.post(
         const policy = pickAutoAction(count);
 
         if (!isAdmin && policy.kind !== 'none') {
+          if (policy.kind === 'delete') {
+            const action = 'auto_delete_reports';
+            const normalizedEmail = String(userRows?.[0]?.email || '').trim().toLowerCase();
+
+            // Captura anexos (best-effort) para tentar remover do disco após commit.
+            const [attachmentRows] = await conn.query(
+              `
+                SELECT ura.url
+                  FROM user_report_attachments ura
+                  JOIN user_reports ur ON ur.id = ura.report_id
+                 WHERE ur.reported_id = ?
+              `,
+              [reportedId]
+            );
+            const attachmentUrls = Array.isArray(attachmentRows)
+              ? attachmentRows.map((r) => String(r?.url || '')).filter(Boolean)
+              : [];
+
+            if (normalizedEmail) {
+              await conn.query(
+                'INSERT INTO deleted_accounts (email, deleted_by, reason, source) VALUES (?, ?, ?, ?)',
+                [normalizedEmail, null, 'Exclusão automática por excesso de denúncias', action]
+              );
+            }
+
+            try {
+              await conn.query(
+                'INSERT INTO user_account_events (user_id, type, message, meta) VALUES (?, ?, ?, JSON_OBJECT(\'reports\', ?))',
+                [reportedId, 'auto_delete', `Conta excluída automaticamente por denúncias (total: ${count}).`, count]
+              );
+            } catch {}
+
+            await conn.query(
+              `
+                INSERT INTO user_reports_archive (
+                  original_report_id,
+                  reporter_id,
+                  reported_id,
+                  context,
+                  reason,
+                  created_at,
+                  reporter_name,
+                  reporter_nickname,
+                  reporter_email,
+                  reported_name,
+                  reported_nickname,
+                  reported_email,
+                  action
+                )
+                SELECT
+                  ur.id,
+                  ur.reporter_id,
+                  ur.reported_id,
+                  ur.context,
+                  ur.reason,
+                  ur.created_at,
+                  reporter.name,
+                  reporter.nickname,
+                  reporter.email,
+                  reported.name,
+                  reported.nickname,
+                  reported.email,
+                  ?
+                FROM user_reports ur
+                LEFT JOIN users reporter ON reporter.id = ur.reporter_id
+                LEFT JOIN users reported ON reported.id = ur.reported_id
+                WHERE ur.reported_id = ?
+              `,
+              [action, reportedId]
+            );
+
+            // Limpa a fila de reports (anexos removem via FK ON DELETE CASCADE)
+            await conn.query('DELETE FROM user_reports WHERE reported_id = ?', [reportedId]);
+
+            // Exclui a conta
+            await conn.query('DELETE FROM users WHERE id = ?', [reportedId]);
+
+            await conn.commit();
+
+            // Best-effort: remove evidências do disco
+            for (const url of attachmentUrls) {
+              try {
+                const localPath = String(url).startsWith('/uploads/reports/')
+                  ? path.resolve(reportUploadDir, String(url).replace('/uploads/reports/', ''))
+                  : null;
+                if (!localPath) continue;
+                if (!localPath.startsWith(reportUploadDir)) continue;
+                if (fs.existsSync(localPath)) fs.unlinkSync(localPath);
+              } catch {
+                // best-effort
+              }
+            }
+
+            return res.json({ ok: true, action, reports: count });
+          }
+
           const until = new Date(Date.now() + policy.days * 24 * 60 * 60_000);
           const untilSql = toSqlDateTime(until);
           if (!untilSql) {

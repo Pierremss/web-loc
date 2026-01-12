@@ -29,8 +29,8 @@ export class GameAdminShellComponent implements OnInit, OnDestroy {
   protected readonly sortOptions = [
     { value: 'name', label: 'Nome (A-Z)', icon: 'text-outline' },
     { value: '-name', label: 'Nome (Z-A)', icon: 'swap-vertical-outline' },
-    { value: '-released', label: 'Mais recentes', icon: 'sparkles-outline' },
-    { value: 'released', label: 'Mais antigos', icon: 'time-outline' },
+    { value: '-created_at', label: 'Mais recentes', icon: 'sparkles-outline' },
+    { value: 'created_at', label: 'Mais antigos', icon: 'time-outline' },
     { value: '-rating', label: 'Nota RAWG', icon: 'star-half-outline' },
     { value: '-metacritic', label: 'Metacritic', icon: 'pulse-outline' }
   ];

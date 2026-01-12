@@ -4,9 +4,9 @@ import { resendCode, verifyEmailCode, CODE_EXPIRATION_MINUTES } from '../service
 
 const router = Router();
 
-router.post(
+router.post( //Redefinição de senha
   '/send',
-  body('email').isEmail().withMessage('Informe um e-mail válido.'),
+  body('email').isEmail().withMessage('Informe um e-mail válido.'), //Campo Obrigatório
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -34,7 +34,7 @@ router.post(
   }
 );
 
-router.post(
+router.post( //Verificação de email
   '/confirm',
   body('email').isEmail().withMessage('Informe um e-mail válido.'),
   body('code').isLength({ min: 6, max: 6 }).withMessage('Código deve ter 6 dígitos.'),
