@@ -70,7 +70,14 @@ export class EditarPerfilPage implements OnInit {
       })).filter((p: any) => p.name);
       this.form.platformOptions = normalized.slice().sort((a: any, b: any) => String(a?.name || '').localeCompare(String(b?.name || '')));
     });
-    this.typesService.list().subscribe(list => this.form.typeOptions = list);
+    this.typesService.list().subscribe(list => {
+      const normalized = (list || []).map((t: any) => ({
+        ...t,
+        id: Number(t?.id),
+      }));
+      const sorted = normalized.slice().sort((a: any, b: any) => String(a?.name || '').localeCompare(String(b?.name || '')));
+      this.form.typeOptions = sorted;
+    });
 
     const userId = this.getLoggedUserId();
     if (!userId) {

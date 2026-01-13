@@ -73,12 +73,17 @@
             </ion-select>
           </ion-item>
           <ion-item class="custom-item">
-            <ion-label position="floating">Estilo de Jogo</ion-label>
-            <ion-select interface="popover" [(ngModel)]="form.game_style" name="game_style" placeholder="Selecione">
-              <ion-select-option value="Casual">Casual</ion-select-option>
-              <ion-select-option value="Competitivo">Competitivo</ion-select-option>
-              <ion-select-option value="Cooperativo">Cooperativo</ion-select-option>
+            <ion-label position="floating">Estilos de Jogo</ion-label>
+            <ion-select
+              multiple="true"
+              interface="popover"
+              [compareWith]="compareByNumber"
+              [(ngModel)]="form.types"
+              name="types"
+              placeholder="Selecione um ou mais">
+              <ion-select-option *ngFor="let t of form.typeOptions" [value]="t.id">{{ t.name }}</ion-select-option>
             </ion-select>
+            <ion-note slot="helper">Você pode selecionar mais de um estilo</ion-note>
           </ion-item>
 
           <ion-item class="custom-item full-width">
