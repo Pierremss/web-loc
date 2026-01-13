@@ -34,7 +34,8 @@
         </form>
 
         <ng-container *ngIf="platforms?.length; else emptyPlatforms">
-          <ion-list lines="none" class="taxonomy__list">
+          <div class="taxonomy__scroll-container">
+            <ion-list lines="none" class="taxonomy__list">
             <ion-item *ngFor="let platform of platforms" class="taxonomy__item">
               <ng-container *ngIf="editContext?.kind === 'platforms' && editContext?.id === platform.id; else platformView">
                 <form [formGroup]="editForm" class="taxonomy__inline-form" (ngSubmit)="submitEdit()">
@@ -61,7 +62,8 @@
                 </ion-buttons>
               </ng-template>
             </ion-item>
-          </ion-list>
+            </ion-list>
+          </div>
         </ng-container>
         <ng-template #emptyPlatforms>
           <p class="taxonomy__empty">Nenhuma plataforma cadastrada.</p>
@@ -81,7 +83,8 @@
         </form>
 
         <ng-container *ngIf="genres?.length; else emptyGenres">
-          <ion-list lines="none" class="taxonomy__list">
+          <div class="taxonomy__scroll-container">
+            <ion-list lines="none" class="taxonomy__list">
             <ion-item *ngFor="let genre of genres" class="taxonomy__item">
               <ng-container *ngIf="editContext?.kind === 'genres' && editContext?.id === genre.id; else genreView">
                 <form [formGroup]="editForm" class="taxonomy__inline-form" (ngSubmit)="submitEdit()">
@@ -108,7 +111,8 @@
                 </ion-buttons>
               </ng-template>
             </ion-item>
-          </ion-list>
+            </ion-list>
+          </div>
         </ng-container>
         <ng-template #emptyGenres>
           <p class="taxonomy__empty">Nenhum gênero cadastrado.</p>
@@ -128,7 +132,8 @@
         </form>
 
         <ng-container *ngIf="types?.length; else emptyTypes">
-          <ion-list lines="none" class="taxonomy__list">
+          <div class="taxonomy__scroll-container">
+            <ion-list lines="none" class="taxonomy__list">
             <ion-item *ngFor="let type of types" class="taxonomy__item">
               <ng-container *ngIf="editContext?.kind === 'types' && editContext?.id === type.id; else typeView">
                 <form [formGroup]="editForm" class="taxonomy__inline-form" (ngSubmit)="submitEdit()">
@@ -155,7 +160,8 @@
                 </ion-buttons>
               </ng-template>
             </ion-item>
-          </ion-list>
+            </ion-list>
+          </div>
         </ng-container>
         <ng-template #emptyTypes>
           <p class="taxonomy__empty">Nenhum tipo cadastrado.</p>

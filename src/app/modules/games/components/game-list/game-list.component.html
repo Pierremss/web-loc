@@ -7,8 +7,8 @@
   <ion-card-content>
     <ng-container *ngIf="games && games.length; else emptyState">
       <div class="game-list__viewport">
-        <cdk-virtual-scroll-viewport itemSize="260" class="game-list__cdk-viewport">
-          <div class="game-list__virtual-item" *cdkVirtualFor="let game of (games || []); trackBy: trackByGameId">
+        <div class="game-list__scroll-container">
+          <div class="game-list__item-wrapper" *ngFor="let game of (games || []); trackBy: trackByGameId">
             <ion-item class="game-list__item">
 
               <ion-thumbnail slot="start" *ngIf="game.background_image" class="game-list__thumb">
@@ -76,7 +76,7 @@
               </div>
             </ion-item>
           </div>
-        </cdk-virtual-scroll-viewport>
+        </div>
       </div>
     </ng-container>
 

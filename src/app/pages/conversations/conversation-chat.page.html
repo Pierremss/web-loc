@@ -80,18 +80,20 @@
                         </ion-button>
                       </div>
                     </div>
-                    <div class="bubble-text" *ngIf="!m.deleted_at && hasText(m); else deletedTpl">{{ m.content }}</div>
-                    <div class="bubble-attachments" *ngIf="!m.deleted_at && imageAttachments(m).length">
-                      <img
-                        class="bubble-image"
-                        *ngFor="let a of imageAttachments(m)"
-                        [src]="normalizeMediaUrl(a.url)"
-                        [attr.alt]="'Imagem enviada por ' + (m.sender_name || 'participante')"
-                        loading="lazy"
-                        (error)="a.__error = true"
-                        [class.bubble-image--error]="a.__error"
-                      />
-                    </div>
+                    <ng-container *ngIf="!m.deleted_at; else deletedTpl">
+                      <div class="bubble-text" *ngIf="hasText(m)">{{ m.content }}</div>
+                      <div class="bubble-attachments" *ngIf="imageAttachments(m).length">
+                        <img
+                          class="bubble-image"
+                          *ngFor="let a of imageAttachments(m)"
+                          [src]="normalizeMediaUrl(a.url)"
+                          [attr.alt]="'Imagem enviada por ' + (m.sender_name || 'participante')"
+                          loading="lazy"
+                          (error)="a.__error = true"
+                          [class.bubble-image--error]="a.__error"
+                        />
+                      </div>
+                    </ng-container>
                     <ng-template #deletedTpl>
                       <div class="bubble-text" style="opacity: 0.75; font-style: italic;">Mensagem excluída</div>
                     </ng-template>

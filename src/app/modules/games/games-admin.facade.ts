@@ -143,7 +143,7 @@ export class GamesAdminFacade {
     if (normalized === this.state.search) return;
     this.searchTermSubject.next(normalized);
     this.state.search = normalized;
-    this.fetchGames({ reset: true, setLoading: true }).subscribe();
+    this.fetchGames({ reset: true }).subscribe();
   }
 
   updateFilters(filters: Partial<{ platforms: (number | string)[]; genres: (number | string)[]; types: (number | string)[]; sort: string | null; pageSize: number | string }>): void {
