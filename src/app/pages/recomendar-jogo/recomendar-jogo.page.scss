@@ -35,32 +35,109 @@
 }
 
 .option-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   font-weight: 600;
+  font-size: 1.05rem;
   color: var(--ion-color-primary, #7a7df5);
+  
+  ion-icon {
+    font-size: 1.3rem;
+  }
 }
 
 .option-hint {
   margin: 0;
   font-size: 0.85rem;
   color: rgba(var(--ion-text-color-rgb), 0.72);
+  line-height: 1.5;
 }
 
-.option-list {
+// Grid de chips selecionáveis
+.chips-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 4px 0;
+}
+
+.selectable-chip {
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  height: auto;
+  min-height: 42px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  border: 2px solid rgba(var(--ion-color-primary-rgb, 122, 125, 245), 0.2);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  user-select: none;
+  
+  ion-label {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--ion-text-color);
+    margin: 0;
+  }
+  
+  ion-icon {
+    font-size: 1.2rem;
+    color: rgba(var(--ion-text-color-rgb), 0.5);
+    transition: all 0.25s ease;
+  }
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(var(--ion-color-primary-rgb, 122, 125, 245), 0.2);
+    border-color: rgba(var(--ion-color-primary-rgb, 122, 125, 245), 0.4);
+  }
+  
+  &:active {
+    transform: translateY(0) scale(0.98);
+  }
+  
+  &.selected {
+    background: linear-gradient(135deg, var(--ion-color-primary), var(--ion-color-secondary));
+    border-color: var(--ion-color-primary);
+    box-shadow: 0 4px 16px rgba(var(--ion-color-primary-rgb, 122, 125, 245), 0.35);
+    
+    ion-label {
+      color: var(--ion-color-primary-contrast, #ffffff);
+      font-weight: 600;
+    }
+    
+    ion-icon {
+      color: var(--ion-color-primary-contrast, #ffffff);
+      transform: scale(1.1);
+    }
+    
+    &:hover {
+      transform: translateY(-3px) scale(1.02);
+      box-shadow: 0 6px 20px rgba(var(--ion-color-primary-rgb, 122, 125, 245), 0.45);
+    }
+  }
+}
+
+// Estado vazio
+.empty-state {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-}
-
-.option-item {
-  --background: var(--ion-color-step-100, rgba(255, 255, 255, 0.06));
-  --border-color: transparent;
-  border-radius: 12px;
-  padding-inline-start: 10px;
-}
-
-.option-item ion-label {
-  font-size: 0.95rem;
-  color: var(--ion-text-color);
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 32px 16px;
+  text-align: center;
+  
+  ion-icon {
+    font-size: 48px;
+    opacity: 0.3;
+    color: var(--ion-color-medium);
+  }
+  
+  ion-text {
+    font-size: 0.9rem;
+  }
 }
 
 .stack {
@@ -84,5 +161,63 @@ ion-note {
     padding: 16px;
     box-shadow: none;
     background: transparent;
+  }
+}
+
+// Tema claro
+:host-context(body:not(.dark)) {
+  .selectable-chip {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(250, 253, 255, 0.9));
+    border-color: rgba(122, 125, 245, 0.25);
+    
+    &:hover {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 1), rgba(250, 253, 255, 0.95));
+      box-shadow: 0 4px 12px rgba(122, 125, 245, 0.25);
+    }
+    
+    &.selected {
+      background: linear-gradient(135deg, #8c2ce2, #14b8a6);
+      box-shadow: 0 4px 16px rgba(140, 44, 226, 0.4);
+      
+      &:hover {
+        box-shadow: 0 6px 20px rgba(140, 44, 226, 0.5);
+      }
+    }
+  }
+  
+  .option-card {
+    background: rgba(122, 125, 245, 0.03);
+    border-color: rgba(120, 130, 200, 0.15);
+  }
+}
+
+// Tema escuro
+:host-context(body.dark) {
+  .selectable-chip {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.04));
+    border-color: rgba(122, 125, 245, 0.3);
+    
+    &:hover {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.06));
+    }
+    
+    &.selected {
+      background: linear-gradient(135deg, #a855f7, #22d3ee);
+      border-color: #a855f7;
+      box-shadow: 0 4px 16px rgba(168, 85, 247, 0.4);
+      
+      &:hover {
+        box-shadow: 0 6px 20px rgba(168, 85, 247, 0.5);
+      }
+    }
+  }
+  
+  .option-card {
+    background: rgba(122, 125, 245, 0.06);
+    border-color: rgba(120, 130, 200, 0.25);
+  }
+  
+  .option-header {
+    color: #a855f7;
   }
 }

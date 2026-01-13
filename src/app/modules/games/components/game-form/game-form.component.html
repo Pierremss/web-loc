@@ -43,13 +43,51 @@
       </ion-select>
     </ion-item>
 
+    <!-- Seção de Upload de Imagem -->
+    <div class="image-upload-section">
+      <div class="image-upload-header">
+        <ion-icon name="image-outline"></ion-icon>
+        <span>Imagem Personalizada</span>
+      </div>
+      <p class="image-upload-hint">Envie uma imagem personalizada para o jogo (opcional)</p>
+      
+      <div class="image-preview" *ngIf="imagePreview || game?.custom_image">
+        <img [src]="imagePreview || game?.custom_image" alt="Preview" />
+        <ion-button fill="clear" color="danger" size="small" (click)="removeImage()" class="remove-image-btn">
+          <ion-icon name="trash-outline" slot="icon-only"></ion-icon>
+        </ion-button>
+      </div>
+      
+      <input 
+        type="file" 
+        #fileInput 
+        accept="image/*" 
+        (change)="onFileSelected($event)" 
+        style="display: none;" />
+      
+      <ion-button 
+        expand="block" 
+        fill="outline" 
+        (click)="fileInput.click()" 
+        [disabled]="processing || uploadingImage"
+        class="upload-btn">
+        <ion-icon name="cloud-upload-outline" slot="start"></ion-icon>
+        {{ uploadingImage ? 'Enviando...' : (imagePreview || game?.custom_image ? 'Alterar imagem' : 'Escolher imagem') }}
+      </ion-button>
+      
+      <ion-note color="medium" class="image-note">
+        Formatos aceitos: JPG, PNG, GIF, WEBP (máx. 10MB)
+      </ion-note>
+    </div>
+
     <footer class="game-form__footer">
-      <ion-button fill="clear" color="medium" (click)="onCancel()" type="button">
+      <ion-button fill="clear" color="medium" (click)="onCancel()" type="button" [disabled]="uploadingImage">
         Cancelar
       </ion-button>
-      <ion-button color="primary" type="submit" [disabled]="processing">
-        <ion-icon name="save-outline" slot="start"></ion-icon>
-        {{ mode === 'create' ? 'Cadastrar jogo' : 'Salvar alterações' }}
+      <ion-button color="primary" type="submit" [disabled]="processing || uploadingImage">
+        <ion-spinner *ngIf="uploadingImage" name="crescent"></ion-spinner>
+        <ion-icon *ngIf="!uploadingImage" name="save-outline" slot="start"></ion-icon>
+        {{ uploadingImage ? 'Enviando imagem...' : (mode === 'create' ? 'Cadastrar jogo' : 'Salvar alterações') }}
       </ion-button>
     </footer>
   </form>

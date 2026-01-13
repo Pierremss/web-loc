@@ -204,17 +204,17 @@ export class GamesAdminFacade {
     );
   }
 
-  createGame(payload: GamePayload): Observable<boolean> {
+  createGame(payload: GamePayload): Observable<{ success: boolean; gameId?: number }> {
     this.processingSubject.next(true);
     return this.gamesService.create(this.normalizePayload(payload)).pipe(
       tap(() => {
         void this.presentToast('Jogo criado com sucesso', 'success');
         this.refreshGames();
       }),
-      map(() => true),
+      map((game: any) => ({ success: true, gameId: game.id })),
       catchError(err => {
         this.handleHttpError('Não foi possível criar o jogo', err);
-        return of(false);
+        return of({ success: false });
       }),
       finalize(() => this.processingSubject.next(false))
     );

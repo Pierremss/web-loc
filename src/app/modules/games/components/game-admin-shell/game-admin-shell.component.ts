@@ -1,10 +1,11 @@
-import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { FormBuilder } from '@angular/forms';
 import { InfiniteScrollCustomEvent } from '@ionic/angular';
 import { combineLatest, Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, take, takeUntil } from 'rxjs/operators';
 import { GamesAdminFacade, GameFiltersState, GamePayload } from '../../games-admin.facade';
 import { Game } from '../../games.service';
+import { GameFormComponent } from '../game-form/game-form.component';
 
 @Component({
   selector: 'app-game-admin-shell',
@@ -16,6 +17,8 @@ export class GameAdminShellComponent implements OnInit, OnDestroy {
   private readonly facade = inject(GamesAdminFacade);
   private readonly fb = inject(FormBuilder);
   private readonly destroy$ = new Subject<void>();
+
+  @ViewChild(GameFormComponent) gameFormComponent?: GameFormComponent;
 
   protected readonly searchControl = this.fb.nonNullable.control('', { updateOn: 'change' });
   protected readonly filtersGroup = this.fb.nonNullable.group({
@@ -118,15 +121,47 @@ export class GameAdminShellComponent implements OnInit, OnDestroy {
   }
 
   protected handleSave(payload: GamePayload): void {
-    const request$ = this.formMode === 'create'
-      ? this.facade.createGame(payload)
-      : this.facade.updateGame(this.currentGame!.id, payload);
-
-    request$.pipe(take(1)).subscribe(success => {
-      if (success) {
-        this.closeForm();
-      }
-    });
+    if (this.formMode === 'create') {
+      this.facade.createGame(payload).pipe(take(1)).subscribe({
+        next: async (result) => {
+          if (result.success) {
+            // Se tem gameId e componente de form, fazer upload da imagem se necessário
+            if (result.gameId && this.gameFormComponent) {
+              try {
+                await this.gameFormComponent.uploadImageIfNeeded(result.gameId);
+              } catch (err) {
+                console.error('Erro ao fazer upload da imagem', err);
+              }
+            }
+            this.closeForm();
+            this.facade.refreshGames();
+          }
+        },
+        error: (err) => {
+          console.error('Erro ao criar jogo', err);
+        }
+      });
+    } else {
+      this.facade.updateGame(this.currentGame!.id, payload).pipe(take(1)).subscribe({
+        next: async (success) => {
+          if (success) {
+            // Se tem componente de form e ID do jogo, fazer upload da imagem se necessário
+            if (this.gameFormComponent && this.currentGame?.id) {
+              try {
+                await this.gameFormComponent.uploadImageIfNeeded(this.currentGame.id);
+              } catch (err) {
+                console.error('Erro ao fazer upload da imagem', err);
+              }
+            }
+            this.closeForm();
+            this.facade.refreshGames();
+          }
+        },
+        error: (err) => {
+          console.error('Erro ao atualizar jogo', err);
+        }
+      });
+    }
   }
 
   protected async handleDelete(game: Game): Promise<void> {

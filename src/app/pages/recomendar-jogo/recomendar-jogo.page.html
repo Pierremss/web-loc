@@ -25,43 +25,79 @@
         <ion-note *ngIf="showError('gameName')" color="danger">Informe o nome do jogo.</ion-note>
 
         <div class="option-card" [class.invalid]="showError('platforms')">
-          <div class="option-header">Plataformas</div>
-          <p class="option-hint">Escolha uma ou mais plataformas onde o jogo está disponível.</p>
-          <div class="option-list">
-            <ion-item lines="none" class="option-item" *ngFor="let option of platformOptions">
-              <ion-checkbox slot="start" [checked]="isPlatformSelected(option)" (ionChange)="onTogglePlatform(option, $event.detail.checked)"></ion-checkbox>
-              <ion-label>{{ option }}</ion-label>
-            </ion-item>
+          <div class="option-header">
+            <ion-icon name="game-controller-outline"></ion-icon>
+            Plataformas
           </div>
+          <p class="option-hint">Escolha uma ou mais plataformas onde o jogo está disponível.</p>
+          <div class="chips-grid" *ngIf="platformOptions.length; else semPlataformas">
+            <ion-chip 
+              *ngFor="let platform of platformOptions"
+              [class.selected]="isPlatformSelected(platform)"
+              (click)="onTogglePlatform(platform, !isPlatformSelected(platform))"
+              class="selectable-chip">
+              <ion-icon [name]="isPlatformSelected(platform) ? 'checkmark-circle' : 'radio-button-off'"></ion-icon>
+              <ion-label>{{ platform.name }}</ion-label>
+            </ion-chip>
+          </div>
+          <ng-template #semPlataformas>
+            <div class="empty-state">
+              <ion-icon name="game-controller-outline"></ion-icon>
+              <ion-text color="medium">Nenhuma plataforma cadastrada no momento.</ion-text>
+            </div>
+          </ng-template>
         </div>
         <ion-note *ngIf="showError('platforms')" color="danger">Selecione ao menos uma plataforma.</ion-note>
 
-        <div class="option-card" [class.invalid]="showError('gameType')">
-          <div class="option-header">Tipo</div>
-          <p class="option-hint">Escolha o estilo da recomendação (casual ou competitivo).</p>
-          <ion-radio-group formControlName="gameType">
-            <ion-item lines="none" class="option-item" *ngFor="let option of typeOptions">
-              <ion-radio slot="start" [value]="option"></ion-radio>
-              <ion-label>{{ option }}</ion-label>
-            </ion-item>
-          </ion-radio-group>
-        </div>
-        <ion-note *ngIf="showError('gameType')" color="danger">Selecione o tipo do jogo.</ion-note>
-
-        <div class="option-card" [class.invalid]="showError('genre')">
-          <div class="option-header">Gênero</div>
-          <p class="option-hint">Selecione um gênero já cadastrado no WebLoc.</p>
-          <ion-radio-group formControlName="genre" *ngIf="genreOptions.length; else semGeneros">
-            <ion-item lines="none" class="option-item" *ngFor="let option of genreOptions">
-              <ion-radio slot="start" [value]="option.name"></ion-radio>
-              <ion-label>{{ option.name }}</ion-label>
-            </ion-item>
-          </ion-radio-group>
-          <ng-template #semGeneros>
-            <ion-text color="medium">Nenhum gênero cadastrado no momento.</ion-text>
+        <div class="option-card" [class.invalid]="showError('gameTypes')">
+          <div class="option-header">
+            <ion-icon name="trophy-outline"></ion-icon>
+            Tipos
+          </div>
+          <p class="option-hint">Escolha um ou mais tipos de jogo (casual, competitivo, etc.).</p>
+          <div class="chips-grid" *ngIf="typeOptions.length; else semTipos">
+            <ion-chip 
+              *ngFor="let type of typeOptions"
+              [class.selected]="isGameTypeSelected(type)"
+              (click)="onToggleGameType(type, !isGameTypeSelected(type))"
+              class="selectable-chip">
+              <ion-icon [name]="isGameTypeSelected(type) ? 'checkmark-circle' : 'radio-button-off'"></ion-icon>
+              <ion-label>{{ type.name }}</ion-label>
+            </ion-chip>
+          </div>
+          <ng-template #semTipos>
+            <div class="empty-state">
+              <ion-icon name="trophy-outline"></ion-icon>
+              <ion-text color="medium">Nenhum tipo cadastrado no momento.</ion-text>
+            </div>
           </ng-template>
         </div>
-        <ion-note *ngIf="showError('genre')" color="danger">Selecione um gênero.</ion-note>
+        <ion-note *ngIf="showError('gameTypes')" color="danger">Selecione ao menos um tipo.</ion-note>
+
+        <div class="option-card" [class.invalid]="showError('genres')">
+          <div class="option-header">
+            <ion-icon name="grid-outline"></ion-icon>
+            Gêneros
+          </div>
+          <p class="option-hint">Selecione um ou mais gêneros cadastrados no WebLoc.</p>
+          <div class="chips-grid" *ngIf="genreOptions.length; else semGeneros">
+            <ion-chip 
+              *ngFor="let genre of genreOptions"
+              [class.selected]="isGenreSelected(genre)"
+              (click)="onToggleGenre(genre, !isGenreSelected(genre))"
+              class="selectable-chip">
+              <ion-icon [name]="isGenreSelected(genre) ? 'checkmark-circle' : 'radio-button-off'"></ion-icon>
+              <ion-label>{{ genre.name }}</ion-label>
+            </ion-chip>
+          </div>
+          <ng-template #semGeneros>
+            <div class="empty-state">
+              <ion-icon name="grid-outline"></ion-icon>
+              <ion-text color="medium">Nenhum gênero cadastrado no momento.</ion-text>
+            </div>
+          </ng-template>
+        </div>
+        <ion-note *ngIf="showError('genres')" color="danger">Selecione ao menos um gênero.</ion-note>
 
         <ion-item>
           <ion-label position="stacked">Observações (opcional)</ion-label>

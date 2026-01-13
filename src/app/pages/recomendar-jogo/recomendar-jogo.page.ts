@@ -5,6 +5,9 @@ import { Router } from '@angular/router';
 import { AuthService } from '../../modules/auth/auth.service';
 import { GameRecommendationsService } from '../../services/game-recommendations.service';
 import { Genre, GenresService } from '../../services/genres.service';
+import { Platform } from '../../model/platform';
+import { PlatformsService } from '../../services/platforms.service';
+import { GameType, GameTypesService } from '../../services/game-types.service';
 
 function requireNonEmptyArray(control: AbstractControl): ValidationErrors | null {
   const value = control.value;
@@ -23,18 +26,20 @@ export class RecomendarJogoPage implements OnInit {
   private readonly router = inject(Router);
   private readonly recommendations = inject(GameRecommendationsService);
   private readonly genres = inject(GenresService);
+  private readonly platforms = inject(PlatformsService);
+  private readonly gameTypes = inject(GameTypesService);
   readonly auth = inject(AuthService);
 
   submitting = false;
-  readonly platformOptions = ['PC', 'Mobile', 'Nintendo', 'Xbox', 'PlayStation 5'];
-  readonly typeOptions = ['Casual', 'Competitivo'];
+  platformOptions: Platform[] = [];
+  typeOptions: GameType[] = [];
   genreOptions: Genre[] = [];
 
   readonly form = this.fb.nonNullable.group({
     gameName: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(255)]],
-    platforms: this.fb.nonNullable.control<string[]>([], [requireNonEmptyArray]),
-    gameType: this.fb.nonNullable.control(this.typeOptions[0], [Validators.required, Validators.minLength(2), Validators.maxLength(255)]),
-    genre: this.fb.nonNullable.control('', [Validators.required, Validators.minLength(2), Validators.maxLength(255)]),
+    platforms: this.fb.nonNullable.control<number[]>([], [requireNonEmptyArray]),
+    gameTypes: this.fb.nonNullable.control<number[]>([], [requireNonEmptyArray]),
+    genres: this.fb.nonNullable.control<number[]>([], [requireNonEmptyArray]),
     notes: ['', [Validators.maxLength(4000)]],
   });
 
@@ -45,20 +50,39 @@ export class RecomendarJogoPage implements OnInit {
     }
 
     this.loadGenres();
+    this.loadPlatforms();
+    this.loadGameTypes();
   }
 
   private loadGenres() {
     this.genres.list().subscribe({
       next: (genres) => {
         this.genreOptions = [...(genres || [])].sort((a, b) => a.name.localeCompare(b.name));
-        const current = this.form.controls.genre.value?.trim();
-        if (!current && this.genreOptions.length) {
-          this.form.controls.genre.setValue(this.genreOptions[0].name);
-        }
       },
       error: () => {
-        // se falhar, mantém vazio para o usuário perceber e tentar novamente
         this.genreOptions = [];
+      },
+    });
+  }
+
+  private loadPlatforms() {
+    this.platforms.list().subscribe({
+      next: (platforms) => {
+        this.platformOptions = [...(platforms || [])].sort((a, b) => a.name.localeCompare(b.name));
+      },
+      error: () => {
+        this.platformOptions = [];
+      },
+    });
+  }
+
+  private loadGameTypes() {
+    this.gameTypes.list().subscribe({
+      next: (types) => {
+        this.typeOptions = [...(types || [])].sort((a, b) => a.name.localeCompare(b.name));
+      },
+      error: () => {
+        this.typeOptions = [];
       },
     });
   }
@@ -67,12 +91,24 @@ export class RecomendarJogoPage implements OnInit {
     this.form.markAllAsTouched();
     if (this.form.invalid || this.submitting) return;
 
-    const { gameName, platforms, gameType, genre, notes } = this.form.getRawValue();
+    const { gameName, platforms, gameTypes, genres, notes } = this.form.getRawValue();
+    
+    // Buscar nomes das plataformas, tipos e gêneros selecionados
+    const platformNames = this.platformOptions
+      .filter(p => platforms.includes(p.id))
+      .map(p => p.name);
+    const typeNames = this.typeOptions
+      .filter(t => gameTypes.includes(t.id))
+      .map(t => t.name);
+    const genreNames = this.genreOptions
+      .filter(g => genres.includes(g.id))
+      .map(g => g.name);
+
     const payload = {
       gameName: gameName.trim(),
-      platform: platforms.map((p) => p.trim()).filter(Boolean).join(', '),
-      gameType: gameType.trim(),
-      genre: genre.trim(),
+      platform: platformNames.join(', '),
+      gameType: typeNames.join(', '),
+      genre: genreNames.join(', '),
       notes: notes && notes.trim().length ? notes.trim() : undefined,
     };
 
@@ -80,7 +116,7 @@ export class RecomendarJogoPage implements OnInit {
     this.recommendations.create(payload).subscribe({
       next: () => {
         this.submitting = false;
-        this.form.reset({ gameName: '', platforms: [] as string[], gameType: this.typeOptions[0], genre: '', notes: '' });
+        this.form.reset({ gameName: '', platforms: [] as number[], gameTypes: [] as number[], genres: [] as number[], notes: '' });
         this.presentToast('Recomendação enviada! Obrigado pela sua sugestão.', 'success');
       },
       error: (err) => {
@@ -91,24 +127,61 @@ export class RecomendarJogoPage implements OnInit {
     });
   }
 
-  showError(controlName: 'gameName' | 'platforms' | 'gameType' | 'genre' | 'notes') {
+  showError(controlName: 'gameName' | 'platforms' | 'gameTypes' | 'genres' | 'notes') {
     const control = this.form.controls[controlName];
     return control.invalid && (control.dirty || control.touched);
   }
 
-  isPlatformSelected(option: string): boolean {
-    const control = this.form.controls.platforms;
-    return control.value.includes(option);
+  isPlatformSelected(platform: Platform): boolean {
+    return this.form.controls.platforms.value.includes(platform.id);
   }
 
-  onTogglePlatform(option: string, checked: boolean) {
+  onTogglePlatform(platform: Platform, checked: boolean) {
     const control = this.form.controls.platforms;
     const current = [...control.value];
-    const next = new Set<string>(current);
+    const next = new Set<number>(current);
     if (checked) {
-      next.add(option);
+      next.add(platform.id);
     } else {
-      next.delete(option);
+      next.delete(platform.id);
+    }
+    control.setValue(Array.from(next));
+    control.markAsDirty();
+    control.markAsTouched();
+    control.updateValueAndValidity();
+  }
+
+  isGameTypeSelected(type: GameType): boolean {
+    return this.form.controls.gameTypes.value.includes(type.id);
+  }
+
+  onToggleGameType(type: GameType, checked: boolean) {
+    const control = this.form.controls.gameTypes;
+    const current = [...control.value];
+    const next = new Set<number>(current);
+    if (checked) {
+      next.add(type.id);
+    } else {
+      next.delete(type.id);
+    }
+    control.setValue(Array.from(next));
+    control.markAsDirty();
+    control.markAsTouched();
+    control.updateValueAndValidity();
+  }
+
+  isGenreSelected(genre: Genre): boolean {
+    return this.form.controls.genres.value.includes(genre.id);
+  }
+
+  onToggleGenre(genre: Genre, checked: boolean) {
+    const control = this.form.controls.genres;
+    const current = [...control.value];
+    const next = new Set<number>(current);
+    if (checked) {
+      next.add(genre.id);
+    } else {
+      next.delete(genre.id);
     }
     control.setValue(Array.from(next));
     control.markAsDirty();

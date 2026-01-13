@@ -3,8 +3,47 @@ import { body, validationResult } from 'express-validator';
 import { pool } from '../db.js';
 import { ensureAuth, ensureAdmin } from '../middleware/auth.js';
 import { importRawgCatalog } from '../services/rawg-importer.js';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 
 const router = Router();
+
+// Configuração de upload de imagens para jogos
+const gameImageUploadDir = path.resolve(process.cwd(), 'uploads', 'games');
+if (!fs.existsSync(gameImageUploadDir)) fs.mkdirSync(gameImageUploadDir, { recursive: true });
+
+const gameImageStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, gameImageUploadDir),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname) || '.jpg';
+    cb(null, `game_${Date.now()}_${Math.random().toString(36).substring(7)}${ext}`);
+  }
+});
+
+const maxImageMb = Number(process.env.GAME_IMAGE_MAX_MB || 10);
+const gameImageUpload = multer({
+  storage: gameImageStorage,
+  limits: { fileSize: maxImageMb * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (!/^(image\/jpeg|image\/png|image\/gif|image\/webp)$/.test(file.mimetype)) {
+      return cb(new Error('Tipo de arquivo não suportado'));
+    }
+    cb(null, true);
+  }
+});
+
+function gameImageUploadHandler(req, res, next) {
+  gameImageUpload.single('gameImage')(req, res, function(err) {
+    if (err) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(413).json({ error: `Imagem excede limite de ${maxImageMb}MB` });
+      }
+      return res.status(400).json({ error: err.message || 'Erro no upload' });
+    }
+    next();
+  });
+}
 
 const MAX_PAGE_SIZE = 100;
 const DEFAULT_PAGE_SIZE = Math.min(
@@ -222,7 +261,7 @@ router.get('/', async (req, res) => {
     const dataParams = filters.params.slice();
     dataParams.push(pageSize, offset);
     const [rows] = await pool.query(
-      `SELECT g.id, g.name, g.rawg_id, g.slug, g.description, g.released, g.background_image, g.rating, g.ratings_count, g.metacritic, g.created_at, g.updated_at
+      `SELECT g.id, g.name, g.rawg_id, g.slug, g.description, g.released, g.background_image, g.custom_image, g.rating, g.ratings_count, g.metacritic, g.created_at, g.updated_at
        FROM games g
        ${whereSql}
        ORDER BY ${order}
@@ -257,7 +296,7 @@ router.get('/:id', async (req, res) => {
   try {
     const id = Number(req.params.id);
     const [rows] = await pool.query(`
-      SELECT id, name, rawg_id, slug, description, released, background_image, rating, ratings_count, metacritic, created_at, updated_at
+      SELECT id, name, rawg_id, slug, description, released, background_image, custom_image, rating, ratings_count, metacritic, created_at, updated_at
       FROM games
       WHERE id = ?
     `, [id]);
@@ -476,6 +515,77 @@ router.put('/:id', ensureAuth, ensureAdmin,
     }
   }
 );
+
+// Upload de imagem personalizada para jogo (admin)
+router.post('/:id/image', ensureAuth, ensureAdmin, gameImageUploadHandler, async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    
+    console.log('Upload request received for game', id);
+    console.log('File:', req.file);
+    
+    if (!req.file) {
+      console.log('No file uploaded');
+      return res.status(400).json({ error: 'Nenhuma imagem foi enviada' });
+    }
+
+    const [existingRows] = await pool.query('SELECT id FROM games WHERE id = ?', [id]);
+    if (!existingRows.length) {
+      console.log('Game not found, removing uploaded file');
+      // Remover arquivo enviado se jogo não existe
+      fs.unlinkSync(req.file.path);
+      return res.status(404).json({ error: 'Jogo não encontrado' });
+    }
+
+    // Caminho relativo para armazenar no banco
+    const relativePath = `/uploads/games/${req.file.filename}`;
+    
+    console.log('Saving to database:', relativePath);
+    
+    // Atualizar custom_image no banco
+    await pool.query('UPDATE games SET custom_image = ? WHERE id = ?', [relativePath, id]);
+    
+    // Retornar URL completa
+    const fullUrl = `${req.protocol}://${req.get('host')}${relativePath}`;
+    console.log('Upload successful, returning:', fullUrl);
+    res.json({ id, custom_image: fullUrl });
+  } catch (err) {
+    console.error('Erro ao fazer upload de imagem do jogo', err);
+    res.status(500).json({ error: 'Erro ao fazer upload da imagem' });
+  }
+});
+
+// Remover imagem personalizada do jogo (admin)
+router.delete('/:id/image', ensureAuth, ensureAdmin, async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    
+    const [rows] = await pool.query('SELECT custom_image FROM games WHERE id = ?', [id]);
+    if (!rows.length) {
+      return res.status(404).json({ error: 'Jogo não encontrado' });
+    }
+
+    const customImage = rows[0].custom_image;
+    
+    // Remover arquivo do disco se existir
+    if (customImage) {
+      // customImage vem como /uploads/games/filename.ext, remover a barra inicial
+      const relativePath = customImage.startsWith('/') ? customImage.substring(1) : customImage;
+      const filePath = path.join(process.cwd(), relativePath);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    }
+    
+    // Limpar custom_image no banco
+    await pool.query('UPDATE games SET custom_image = NULL WHERE id = ?', [id]);
+    
+    res.status(204).send();
+  } catch (err) {
+    console.error('Erro ao remover imagem do jogo', err);
+    res.status(500).json({ error: 'Erro ao remover imagem' });
+  }
+});
 
 router.post('/import/rawg', ensureAuth, ensureAdmin, async (req, res) => {
   try {

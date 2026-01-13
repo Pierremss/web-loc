@@ -76,6 +76,90 @@
   }
 }
 
+// Seção de Upload de Imagem
+.image-upload-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: rgba(var(--ion-color-primary-rgb, 122, 125, 245), 0.05);
+  border: 2px dashed rgba(var(--ion-color-primary-rgb, 122, 125, 245), 0.25);
+  border-radius: 14px;
+  margin: 8px 0;
+  transition: all 0.3s ease;
+
+  &:hover {
+    border-color: rgba(var(--ion-color-primary-rgb, 122, 125, 245), 0.4);
+    background: rgba(var(--ion-color-primary-rgb, 122, 125, 245), 0.08);
+  }
+
+  .image-upload-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    font-size: 1.05rem;
+    color: var(--ion-color-primary);
+
+    ion-icon {
+      font-size: 1.3rem;
+    }
+  }
+
+  .image-upload-hint {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--ion-color-medium);
+    line-height: 1.4;
+  }
+
+  .image-preview {
+    position: relative;
+    width: 100%;
+    max-width: 300px;
+    max-height: 250px;
+    margin: 8px auto;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+
+    img {
+      width: 100%;
+      height: auto;
+      max-height: 250px;
+      object-fit: contain;
+      display: block;
+      background: rgba(0, 0, 0, 0.05);
+    }
+
+    .remove-image-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      --background: rgba(var(--ion-color-danger-rgb), 0.9);
+      --color: white;
+      --border-radius: 8px;
+      --padding-start: 8px;
+      --padding-end: 8px;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+  }
+
+  .upload-btn {
+    --border-radius: 10px;
+    --border-width: 2px;
+    font-weight: 600;
+    margin-top: 4px;
+  }
+
+  .image-note {
+    font-size: 0.75rem;
+    text-align: center;
+    margin-top: 4px;
+  }
+}
+
 :host-context(.dark) .game-form {
   background: linear-gradient(165deg, rgba(24, 30, 58, 0.9), rgba(16, 20, 36, 0.96));
   border-color: rgba(146, 163, 206, 0.2);

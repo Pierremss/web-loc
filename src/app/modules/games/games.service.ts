@@ -19,6 +19,7 @@ export interface Game {
   rating?: number | null;
   ratings_count?: number | null;
   metacritic?: number | null;
+  custom_image?: string | null;
   platforms: Platform[];
   genres?: { id: number; name: string }[];
   types?: { id: number; name: string }[];

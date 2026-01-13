@@ -12,8 +12,8 @@
             <article class="game-card" *ngFor="let game of (games || []); trackBy: trackByGameId">
               <div class="game-card__image-wrapper">
                 <img 
-                  *ngIf="game.background_image; else noImage" 
-                  [src]="game.background_image" 
+                  *ngIf="getGameImage(game); else noImage" 
+                  [src]="getGameImage(game)" 
                   [alt]="'Capa de ' + game.name"
                   class="game-card__image" />
                 <ng-template #noImage>

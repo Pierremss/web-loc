@@ -15,8 +15,23 @@ export class GameListComponent {
   @Output() edit = new EventEmitter<Game>();
   @Output() remove = new EventEmitter<Game>();
 
+  protected readonly serverUrl = 'http://localhost:3333';
+
   trackByGameId(_index: number, game: Game): number {
     return game.id;
+  }
+
+  getGameImage(game: Game): string | null {
+    const imagePath = game.custom_image || game.background_image;
+    if (!imagePath) return null;
+    
+    // Se já é uma URL completa, retorna como está
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      return imagePath;
+    }
+    
+    // Se começa com /, adiciona o serverUrl
+    return `${this.serverUrl}${imagePath}`;
   }
 
   formatPlatforms(game: Game): string {
