@@ -68,6 +68,12 @@ async function ensureAccountStructures() {
         CONSTRAINT fk_user_genres_genre FOREIGN KEY (genre_id) REFERENCES genres(id) ON DELETE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
+
+    try {
+      await pool.query(`ALTER TABLE user_games ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP AFTER game_id`);
+    } catch (err) {
+      if (err?.code !== 'ER_DUP_FIELDNAME') throw err;
+    }
   })();
   return ensured;
 }
@@ -220,7 +226,7 @@ router.get('/:id/favoritos', ensureAuth, async (req, res) => {
   }
 
   const [rows] = await pool.query(
-    `SELECT g.id, g.name FROM user_games ug
+    `SELECT g.id, g.name, ug.created_at AS added_at FROM user_games ug
      JOIN games g ON ug.game_id = g.id
      WHERE ug.user_id = ?
      ORDER BY g.name ASC`, [id]

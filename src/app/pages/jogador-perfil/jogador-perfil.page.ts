@@ -24,8 +24,7 @@ export class JogadorPerfilPage implements OnInit {
   private readonly genresService = inject(GenresService);
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
-  novoFavorito: number | null = null;
-  novoFavoritoNome: string | null = null;
+  novosFavoritos: number[] = [];
 
   // Picker (busca + filtro)
   isGamePickerOpen = false;
@@ -39,6 +38,8 @@ export class JogadorPerfilPage implements OnInit {
   error = '';
   filtro = '';
   ordenacao: 'az' | 'recent' = 'az';
+  mostrarTodosFavoritos = false;
+  readonly LIMITE_FAVORITOS = 12;
 
   private headers() {
     return this.auth.token ? { headers: new HttpHeaders({ Authorization: `Bearer ${this.auth.token}` }) } : {};
@@ -86,6 +87,7 @@ export class JogadorPerfilPage implements OnInit {
   }
 
   openGamePicker(): void {
+    this.novosFavoritos = [];
     this.isGamePickerOpen = true;
     this.queueGamePickerSearch();
   }
@@ -105,10 +107,55 @@ export class JogadorPerfilPage implements OnInit {
     this.queueGamePickerSearch();
   }
 
-  selectNovoFavorito(game: Game): void {
-    this.novoFavorito = Number(game?.id) || null;
-    this.novoFavoritoNome = game?.name || null;
-    this.isGamePickerOpen = false;
+  toggleGameSelection(gameId: number): void {
+    const index = this.novosFavoritos.indexOf(gameId);
+    if (index > -1) {
+      this.novosFavoritos.splice(index, 1);
+    } else {
+      this.novosFavoritos.push(gameId);
+    }
+  }
+
+  isGameSelected(gameId: number): boolean {
+    return this.novosFavoritos.includes(gameId);
+  }
+
+  confirmarSelecao(): void {
+    if (this.novosFavoritos.length === 0) {
+      this.isGamePickerOpen = false;
+      return;
+    }
+
+    const userId = this.resolveUserId();
+    if (!userId) {
+      this.error = 'Sessão inválida. Faça login novamente para continuar.';
+      return;
+    }
+
+    // Adicionar cada jogo selecionado
+    let addedCount = 0;
+    const totalToAdd = this.novosFavoritos.length;
+
+    this.novosFavoritos.forEach((gameId) => {
+      this.http.post(`/api/users/${userId}/favoritos`, { gameId }, this.headers()).subscribe({
+        next: () => {
+          addedCount++;
+          if (addedCount === totalToAdd) {
+            this.isGamePickerOpen = false;
+            this.novosFavoritos = [];
+            this.carregarFavoritos();
+          }
+        },
+        error: () => {
+          addedCount++;
+          if (addedCount === totalToAdd) {
+            this.isGamePickerOpen = false;
+            this.novosFavoritos = [];
+            this.carregarFavoritos();
+          }
+        }
+      });
+    });
   }
 
   carregarFavoritos() {
@@ -221,6 +268,21 @@ export class JogadorPerfilPage implements OnInit {
 
   get user() {
     return this.auth.user;
+  }
+
+  get favoritosExibidos(): FavoriteGame[] {
+    if (this.mostrarTodosFavoritos || this.favoritosFiltrados.length <= this.LIMITE_FAVORITOS) {
+      return this.favoritosFiltrados;
+    }
+    return this.favoritosFiltrados.slice(0, this.LIMITE_FAVORITOS);
+  }
+
+  get temMaisFavoritos(): boolean {
+    return this.favoritosFiltrados.length > this.LIMITE_FAVORITOS;
+  }
+
+  toggleMostrarTodos(): void {
+    this.mostrarTodosFavoritos = !this.mostrarTodosFavoritos;
   }
 
   private resolveUserId(): number | null {

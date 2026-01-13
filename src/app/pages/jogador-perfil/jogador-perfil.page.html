@@ -50,15 +50,9 @@
       </div>
 
       <div class="add-row">
-        <ion-item lines="none">
-          <ion-label></ion-label>
-          <ion-button fill="clear" type="button" (click)="openGamePicker()">
-            {{ novoFavoritoNome || 'Escolher um jogo' }}
-          </ion-button>
-        </ion-item>
-        <ion-button class="grad" [disabled]="novoFavorito === null" (click)="novoFavorito !== null && adicionarFavorito(novoFavorito)">
+        <ion-button class="grad" expand="block" (click)="openGamePicker()">
           <ion-icon name="add-outline" slot="start"></ion-icon>
-          Adicionar
+          Adicionar jogos favoritos
         </ion-button>
       </div>
 
@@ -72,7 +66,7 @@
               </ion-buttons>
             </ion-toolbar>
           </ion-header>
-          <ion-content class="ion-padding">
+          <ion-content class="ion-padding game-picker-content">
             <ion-searchbar
               placeholder="Buscar jogo"
               [value]="gamePickerSearch"
@@ -80,45 +74,112 @@
               debounce="250">
             </ion-searchbar>
 
-            <ion-item>
-              <ion-label position="stacked">Filtrar por gênero</ion-label>
-              <ion-select
-                multiple="true"
-                interface="popover"
-                [value]="gamePickerGenreIds"
-                (ionChange)="setGamePickerGenres($event.detail.value)">
-                <ion-select-option *ngFor="let g of genreOptions" [value]="g.id">{{ g.name }}</ion-select-option>
-              </ion-select>
-            </ion-item>
-
-            <ion-text color="medium" *ngIf="gamePickerLoading">Carregando...</ion-text>
-
-            <ion-list *ngIf="!gamePickerLoading">
-              <ion-item *ngIf="!gamePickerResults.length" lines="none">
-                <ion-label>Nenhum jogo encontrado.</ion-label>
+            <div class="filter-row">
+              <ion-item class="filter-item">
+                <ion-label position="stacked">Filtrar por gênero</ion-label>
+                <ion-select
+                  multiple="true"
+                  interface="popover"
+                  [value]="gamePickerGenreIds"
+                  (ionChange)="setGamePickerGenres($event.detail.value)">
+                  <ion-select-option *ngFor="let g of genreOptions" [value]="g.id">{{ g.name }}</ion-select-option>
+                </ion-select>
               </ion-item>
-              <ion-item
-                button="true"
-                detail="false"
+              <ion-button 
+                *ngIf="gamePickerGenreIds?.length" 
+                fill="clear" 
+                size="small" 
+                color="medium"
+                (click)="setGamePickerGenres([])">
+                <ion-icon name="close-circle-outline" slot="start"></ion-icon>
+                Limpar filtro
+              </ion-button>
+            </div>
+
+            <ion-text color="medium" *ngIf="gamePickerLoading" class="loading-text">
+              <ion-spinner name="crescent"></ion-spinner>
+              Carregando...
+            </ion-text>
+
+            <div *ngIf="!gamePickerLoading" class="game-picker-grid">
+              <div *ngIf="!gamePickerResults.length" class="empty-state">
+                <ion-icon name="game-controller-outline"></ion-icon>
+                <p>Nenhum jogo encontrado.</p>
+              </div>
+              
+              <article
                 *ngFor="let game of gamePickerResults"
-                (click)="selectNovoFavorito(game)">
-                <ion-label>{{ game.name }}</ion-label>
-                <ion-icon *ngIf="novoFavorito === game.id" name="checkmark-outline" slot="end"></ion-icon>
-              </ion-item>
-            </ion-list>
+                class="game-picker-card"
+                [class.selected]="isGameSelected(game.id)"
+                (click)="toggleGameSelection(game.id)">
+                
+                <div class="game-picker-card__image-wrapper">
+                  <img
+                    *ngIf="game.background_image; else noImage"
+                    [src]="game.background_image"
+                    [alt]="game.name"
+                    class="game-picker-card__image" />
+                  <ng-template #noImage>
+                    <div class="game-picker-card__no-image">
+                      <ion-icon name="game-controller-outline"></ion-icon>
+                    </div>
+                  </ng-template>
+                  
+                  <div class="game-picker-card__selected-overlay" *ngIf="isGameSelected(game.id)">
+                    <ion-icon name="checkmark-circle"></ion-icon>
+                  </div>
+                </div>
+                
+                <div class="game-picker-card__content">
+                  <h3 class="game-picker-card__title">{{ game.name }}</h3>
+                  <div class="game-picker-card__meta" *ngIf="game.released || game.rating">
+                    <span *ngIf="game.released">
+                      <ion-icon name="calendar-outline"></ion-icon>
+                      {{ game.released | date:'yyyy' }}
+                    </span>
+                    <span *ngIf="game.rating">
+                      <ion-icon name="star"></ion-icon>
+                      {{ game.rating }}
+                    </span>
+                  </div>
+                </div>
+              </article>
+            </div>
           </ion-content>
+          <ion-footer>
+            <ion-toolbar>
+              <ion-text color="medium" slot="start" *ngIf="novosFavoritos?.length" class="selection-counter">
+                {{ novosFavoritos.length }} selecionado{{ novosFavoritos.length === 1 ? '' : 's' }}
+              </ion-text>
+              <ion-buttons slot="end">
+                <ion-button (click)="isGamePickerOpen = false">Cancelar</ion-button>
+                <ion-button (click)="confirmarSelecao()" [disabled]="!novosFavoritos?.length" strong="true" color="primary">
+                  <ion-icon name="checkmark-outline" slot="start"></ion-icon>
+                  Adicionar
+                </ion-button>
+              </ion-buttons>
+            </ion-toolbar>
+          </ion-footer>
         </ng-template>
       </ion-modal>
 
       <ng-container *ngIf="!loading; else chipsSkeleton">
         <div class="chips" *ngIf="favoritosFiltrados?.length; else emptyFavs">
-          <ion-chip class="fav-chip" *ngFor="let jogo of favoritosFiltrados; let i = index" [style.animationDelay]="(i * 40) + 'ms'">
+          <ion-chip class="fav-chip" *ngFor="let jogo of favoritosExibidos; let i = index" [style.animationDelay]="(i * 40) + 'ms'">
             <ion-icon name="sparkles-outline"></ion-icon>
             <!-- wrap label in span for truncation and provide full title for tooltip -->
             <span class="chip-label" title="{{ jogo.name }}">{{ jogo.name }}</span>
             <ion-icon name="close-circle" class="remove" (click)="removerFavorito(jogo.id)"></ion-icon>
           </ion-chip>
         </div>
+        
+        <div class="ver-mais-container" *ngIf="temMaisFavoritos">
+          <ion-button fill="clear" size="small" (click)="toggleMostrarTodos()">
+            <ion-icon [name]="mostrarTodosFavoritos ? 'chevron-up-outline' : 'chevron-down-outline'" slot="start"></ion-icon>
+            {{ mostrarTodosFavoritos ? 'Ver menos' : 'Ver mais (' + (favoritosFiltrados.length - LIMITE_FAVORITOS) + ')' }}
+          </ion-button>
+        </div>
+        
         <ng-template #emptyFavs>
           <div class="empty">
             <ion-icon name="game-controller-outline"></ion-icon>
