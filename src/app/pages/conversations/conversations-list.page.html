@@ -1,61 +1,245 @@
 <ion-header>
   <ion-toolbar>
+      <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home" text="Voltar"></ion-back-button>
+    </ion-buttons>
     <ion-title>Salas</ion-title>
   </ion-toolbar>
 </ion-header>
 
 <ion-content class="conversations-page" fullscreen>
-  <div class="layout-container conversations-wrapper stack stack-lg fadein">
-    <header class="conversations-hero">
-      <h1>Salas de conversa</h1>
-      <p>Crie novas salas, acompanhe atividades e retome diálogos onde parou.</p>
-    </header>
-
-    <section class="conversations-section surface-card stack stack-lg">
-      <div class="create-block surface-ghost">
-        <div class="create-header">
-          <h2>Nova sala</h2>
-          <p>Defina um nome e escolha se a sala será pública.</p>
+  <div class="conversations-shell">
+    <section class="surface hero-card">
+      <div class="hero-card__text">
+        <ion-chip color="primary" class="hero-card__chip">
+          <ion-icon name="chatbubbles-outline"></ion-icon>
+          <ion-label>Conversas</ion-label>
+        </ion-chip>
+        <h1>Central de chats</h1>
+        <p>Crie grupos inspirados no WhatsApp, monitore quem está digitando e retome as conversas rapidamente.</p>
+        <div class="hero-card__stats">
+          <div class="hero-stat">
+            <span class="hero-stat__value">{{ rooms.length }}</span>
+            <span class="hero-stat__label">Salas</span>
+          </div>
+          <div class="hero-stat">
+            <span class="hero-stat__value">{{ totalUnread }}</span>
+            <span class="hero-stat__label">Não lidas</span>
+          </div>
         </div>
-        <ion-item lines="none" class="input-row">
-          <ion-label position="floating">Nome da sala</ion-label>
-          <ion-input placeholder="Nome da sala" [(ngModel)]="name"></ion-input>
-        </ion-item>
-        <div class="create-actions">
-          <ion-toggle [(ngModel)]="is_public">Pública</ion-toggle>
-          <ion-button class="btn-pill" (click)="create()" [disabled]="!name.trim()">
-            <ion-icon name="add-outline" slot="start"></ion-icon>
-            Criar
+        <div class="hero-card__actions">
+          <ion-button color="primary" (click)="openCreateModal()">
+            <ion-icon slot="start" name="add"></ion-icon>
+            Nova sala
+          </ion-button>
+          <ion-button fill="outline" routerLink="/swipe">
+            <ion-icon slot="start" name="sparkles-outline"></ion-icon>
+            Encontrar jogadores
           </ion-button>
         </div>
       </div>
+    </section>
 
-      <ion-list lines="none" class="rooms-list" *ngIf="rooms?.length; else empty">
-        <ion-item class="room-item fadein" lines="none" *ngFor="let room of rooms; let i = index" (click)="open(room)" [style.animationDelay]="(i * 30) + 'ms'">
-          <div class="avatar-ring avatar-ring--sm" slot="start">
-            <img src="assets/icon/favicon.png" alt="room" />
-          </div>
-          <ion-label>
-            <h3>{{ room.name || 'Sala sem nome' }}</h3>
-            <p>
-              <ng-container *ngIf="typing[room.id]?.size; else lastmsg">{{ typing[room.id]?.size }} digitando…</ng-container>
-              <ng-template #lastmsg>{{ room.last_message || '—' }}</ng-template>
-            </p>
-          </ion-label>
-          <ion-badge *ngIf="room.unread_count" color="primary">{{ room.unread_count }}</ion-badge>
-        </ion-item>
-      </ion-list>
+    <section class="surface quick-create">
+      <div class="quick-create__text">
+        <h2>Comece uma sala agora</h2>
+        <p>Defina nome, descrição, escolha uma foto e convide amigos com poucos toques. Use o botão "Nova sala" acima para iniciar.</p>
+      </div>
+      <div class="quick-create__steps">
+        <ion-chip color="primary" outline="true">
+          <ion-icon name="color-palette-outline"></ion-icon>
+          <ion-label>Personalize</ion-label>
+        </ion-chip>
+        <ion-chip color="primary" outline="true">
+          <ion-icon name="people-outline"></ion-icon>
+          <ion-label>Selecione amigos</ion-label>
+        </ion-chip>
+        <ion-chip color="primary" outline="true">
+          <ion-icon name="sparkles-outline"></ion-icon>
+          <ion-label>Comece o chat</ion-label>
+        </ion-chip>
+      </div>
+    </section>
 
-      <ng-template #empty>
-        <div class="empty-state surface-ghost fadein">
-          <ion-icon name="chatbubbles-outline"></ion-icon>
-          <p>Sem salas ainda. Crie uma sala ou descubra perfis para iniciar conversas.</p>
-          <ion-button routerLink="/swipe" class="btn-pill">
-            <ion-icon name="sparkles-outline" slot="start"></ion-icon>
-            Ir para Swipe
+    <section class="surface controls">
+      <ion-searchbar placeholder="Buscar salas " [value]="searchTerm" (ionInput)="onSearchInput($event)" animated="true"></ion-searchbar>
+      <ion-button fill="clear" size="small" (click)="clearSearch()" *ngIf="searchTerm">
+        Limpar busca
+      </ion-button>
+    </section>
+
+    <ng-container *ngIf="rooms.length; else noRooms">
+      <section class="threads">
+        <ng-container *ngIf="filteredRooms.length; else noResults">
+          <article class="thread surface" *ngFor="let room of filteredRooms" (click)="open(room)">
+            <div class="thread__avatar">
+              <img [src]="normalizeConversationAvatar(room.avatar_url)" (error)="onAvatarError($event)" alt="Avatar da sala" />
+            </div>
+            <div class="thread__info">
+              <div class="thread__title">
+                <h2>{{ room.name || 'Sala sem nome' }}</h2>
+                <ion-chip size="small" [color]="room.is_public ? 'success' : 'medium'">
+                  <ion-icon [name]="room.is_public ? 'globe-outline' : 'lock-closed-outline'"></ion-icon>
+                  <ion-label>{{ room.is_public ? 'Pública' : 'Privada' }}</ion-label>
+                </ion-chip>
+                <ion-button
+                  *ngIf="canDelete(room)"
+                  fill="clear"
+                  color="danger"
+                  size="small"
+                  class="thread__delete"
+                  (click)="confirmDelete(room, $event)"
+                  [disabled]="deleting[room.id]"
+                >
+                  <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+                </ion-button>
+              </div>
+              <p class="thread__last">
+                <ng-container *ngIf="typing[room.id]?.size; else lastPreview">
+                  {{ typing[room.id]?.size }} digitando…
+                </ng-container>
+                <ng-template #lastPreview>
+                  <ng-container *ngIf="room.__lastMessage; else noPreview">
+                    <span
+                      class="thread__last-sender"
+                      [class.thread__last-sender--mine]="room.__lastSenderIsMe"
+                      [class.thread__last-sender--other]="!room.__lastSenderIsMe"
+                    >{{ room.__lastSenderName }}:</span>
+                    <span class="thread__last-content">{{ room.__lastMessage }}</span>
+                  </ng-container>
+                  <ng-template #noPreview>—</ng-template>
+                </ng-template>
+              </p>
+              <p class="thread__description" *ngIf="room.description">{{ room.description }}</p>
+              <span class="thread__meta">ID {{ room.id }}</span>
+            </div>
+            <ion-icon class="thread__chevron" name="chevron-forward"></ion-icon>
+          </article>
+        </ng-container>
+      </section>
+    </ng-container>
+
+    <ng-template #noRooms>
+      <section class="surface empty-state">
+        <ion-icon name="chatbubbles-outline"></ion-icon>
+        <h2>Nenhuma sala criada</h2>
+        <p>Inicie seu primeiro grupo ou encontre novos jogadores usando o swipe.</p>
+        <ion-button color="primary" (click)="openCreateModal()">
+          Criar sala
+        </ion-button>
+      </section>
+    </ng-template>
+
+    <ng-template #noResults>
+      <section class="surface empty-state">
+        <ion-icon name="search-outline"></ion-icon>
+        <h2>Nenhuma conversa encontrada</h2>
+        <p>Ajuste o termo digitado ou limpe a busca.</p>
+        <ion-button fill="clear" size="small" (click)="clearSearch()">Limpar busca</ion-button>
+      </section>
+    </ng-template>
+  </div>
+
+  <ion-modal #createModal [isOpen]="isCreateModalOpen" cssClass="create-room-modal" class="create-room-modal" (didDismiss)="closeCreateModal()">
+    <ng-template>
+      <ion-header>
+        <ion-toolbar>
+          <ion-title>Configurações da Sala</ion-title>
+          <ion-buttons slot="end">
+            <ion-button (click)="closeCreateModal(true)">
+              <ion-icon name="close"></ion-icon>
+            </ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content class="create-modal">
+        <div class="create-modal__grid">
+          <section class="create-modal__section">
+            <div class="avatar-uploader">
+              <div
+                class="avatar-uploader__shell"
+                role="button"
+                tabindex="0"
+                (click)="fileInput.click()"
+                (keyup.enter)="fileInput.click()"
+              >
+                <div class="create-avatar__preview" [class.has-image]="newAvatarPreview">
+                  <img *ngIf="newAvatarPreview" [src]="newAvatarPreview" alt="Avatar da sala" />
+                </div>
+                <div class="avatar-uploader__camera" aria-hidden="true">
+                  <ion-icon name="camera"></ion-icon>
+                </div>
+              </div>
+              <div class="avatar-uploader__meta">
+                <ion-note color="medium">Toque para escolher uma foto</ion-note>
+                <ion-button size="small" fill="clear" color="medium" *ngIf="newAvatarPreview" (click)="clearAvatar()">
+                  Remover
+                </ion-button>
+              </div>
+              <input type="file" #fileInput hidden accept="image/*" (change)="onAvatarSelected($event)" />
+            </div>
+
+            <div class="identity-card">
+              <div class="identity-card__title">
+                <h4>Nome e descrição</h4>
+              </div>
+              <ion-item class="input" lines="none">
+                <ion-label position="stacked">Nome da sala</ion-label>
+                <ion-input [(ngModel)]="name" maxlength="200"></ion-input>
+              </ion-item>
+              <ion-item class="input" lines="none">
+                <ion-label position="stacked">Descrição</ion-label>
+                <ion-textarea autoGrow="true" maxlength="500" [(ngModel)]="description"></ion-textarea>
+              </ion-item>
+            </div>
+
+            <div class="section-heading">
+              <h3>Membros</h3>
+            </div>
+
+            <div class="members-actions">
+              <ion-searchbar placeholder="Buscar por nome" [value]="friendSearch" (ionInput)="onFriendSearch($event)"></ion-searchbar>
+              <ion-button fill="clear" color="primary" size="small" routerLink="/friends">
+                <ion-icon slot="start" name="person-add-outline"></ion-icon>
+                Adicionar amigo
+              </ion-button>
+            </div>
+
+            <div class="participant-picker">
+              <ion-spinner name="crescent" *ngIf="friendsLoading"></ion-spinner>
+              <ion-note color="medium" *ngIf="!friendsLoading && !friends.length">Você ainda não adicionou amigos.</ion-note>
+
+              <ng-container *ngIf="!friendsLoading && filteredFriendsForSelection().length; else noFriendMatches">
+                <div class="friend-chips">
+                  <ion-chip
+                    class="friend-chip"
+                    *ngFor="let friend of filteredFriendsForSelection()"
+                    [class.friend-chip--selected]="isFriendSelected(friend.id)"
+                    (click)="toggleFriendSelection(friend.id)"
+                    (keyup.enter)="toggleFriendSelection(friend.id)"
+                    tabindex="0"
+                  >
+                    <div class="friend-chip__avatar">{{ initialsFromName(displayFriendName(friend)) }}</div>
+                    <ion-label>{{ displayFriendName(friend) }}</ion-label>
+                    <ion-icon name="close-circle" *ngIf="isFriendSelected(friend.id)"></ion-icon>
+                  </ion-chip>
+                </div>
+              </ng-container>
+
+              <ng-template #noFriendMatches>
+                <ion-note color="medium" *ngIf="!friendsLoading && friends.length">Nenhum amigo encontrado.</ion-note>
+              </ng-template>
+            </div>
+          </section>
+        </div>
+
+        <div class="create-modal__actions">
+          <ion-button expand="block" color="primary" (click)="create()" [disabled]="!canSubmitCreate">
+            <ion-spinner slot="start" *ngIf="createLoading" name="crescent"></ion-spinner>
+            Criar sala
           </ion-button>
         </div>
-      </ng-template>
-    </section>
-  </div>
+      </ion-content>
+    </ng-template>
+  </ion-modal>
 </ion-content>

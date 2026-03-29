@@ -1,6 +1,20 @@
 <ion-content class="ion-padding login-page">
   <div class="login-wrapper layout-container">
     <div class="login-container surface-card stack-lg fadein">
+      <div class="top-actions">
+        <ion-button
+          class="theme-toggle"
+          fill="solid"
+          size="small"
+          type="button"
+          (click)="toggleTheme()"
+          [attr.aria-label]="themeToggleAria"
+        >
+          <ion-icon [name]="themeToggleIcon" slot="start"></ion-icon>
+          {{ themeToggleText }}
+        </ion-button>
+      </div>
+
       <div class="logo">
         <ion-chip class="chip-soft">
           <ion-icon name="flash-outline"></ion-icon>

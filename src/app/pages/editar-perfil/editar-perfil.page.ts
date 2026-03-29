@@ -3,6 +3,9 @@ import { AuthService } from '../../modules/auth/auth.service';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { UsersService } from '../../services/users.service';
+import { GenresService } from '../../services/genres.service';
+import { GameTypesService } from '../../services/game-types.service';
+import { PlatformsService } from '../../services/platforms.service';
 import { environment } from '../../../environments/environment';
 import { ToastController, LoadingController } from '@ionic/angular';
 
@@ -20,6 +23,9 @@ export class EditarPerfilPage implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
   private readonly users = inject(UsersService);
+  private readonly genresService = inject(GenresService);
+  private readonly typesService = inject(GameTypesService);
+  private readonly platformsService = inject(PlatformsService);
   private readonly toastCtrl = inject(ToastController);
   private readonly loadingCtrl = inject(LoadingController);
 
@@ -27,15 +33,141 @@ export class EditarPerfilPage implements OnInit {
     return this.auth.token ? { headers: new HttpHeaders({ Authorization: `Bearer ${this.auth.token}` }) } : {};
   }
 
-  periodos = ['Madrugada', 'Manhã', 'Tarde', 'Noite'];
+  periodos: { label: string; value: string }[] = [
+    { label: 'Manhã', value: 'Manha' },
+    { label: 'Tarde', value: 'Tarde' },
+    { label: 'Noite', value: 'Noite' },
+    { label: 'Madrugada', value: 'Madrugada' },
+  ];
   diasSemana = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
   horariosSelecionados: { [key: string]: string[] } = {};
 
   ngOnInit() {
+    this.loading = true;
     this.form = { ...this.auth.user };
-    this.inicializarHorarios();
-  // Exibe skeleton brevemente e libera a UI
-  setTimeout(() => { this.loading = false; }, 300);
+    if (this.auth.user?.id) {
+      this.form.id = this.auth.user.id;
+    }
+
+    this.form.platforms = this.normalizePlatforms(this.form.platforms);
+    this.form.genres = this.normalizeIdArray(this.form.genres);
+    this.form.types = this.normalizeIdArray(this.form.types);
+
+    this.genresService.list().subscribe(list => {
+      const normalized = (list || []).map((g: any) => ({
+        ...g,
+        id: Number(g?.id),
+      }));
+      const sorted = normalized.slice().sort((a: any, b: any) => String(a?.name || '').localeCompare(String(b?.name || '')));
+      this.form.genreOptions = sorted;
+    });
+
+    this.platformsService.list().subscribe(list => {
+      const normalized = (list || []).map((p: any) => ({
+        ...p,
+        id: Number(p?.id),
+        name: String(p?.name ?? '').trim(),
+      })).filter((p: any) => p.name);
+      this.form.platformOptions = normalized.slice().sort((a: any, b: any) => String(a?.name || '').localeCompare(String(b?.name || '')));
+    });
+    this.typesService.list().subscribe(list => {
+      const normalized = (list || []).map((t: any) => ({
+        ...t,
+        id: Number(t?.id),
+      }));
+      const sorted = normalized.slice().sort((a: any, b: any) => String(a?.name || '').localeCompare(String(b?.name || '')));
+      this.form.typeOptions = sorted;
+    });
+
+    const userId = this.getLoggedUserId();
+    if (!userId) {
+      this.inicializarHorarios();
+      setTimeout(() => { this.loading = false; }, 300);
+      return;
+    }
+
+    this.http.get(`/api/users/${userId}`, this.headers()).subscribe({
+      next: (u: any) => {
+        this.form = { ...this.form, ...u };
+        this.form.id = userId;
+        this.form.platforms = this.normalizePlatforms(this.form.platforms);
+        this.form.genres = this.normalizeIdArray(this.form.genres);
+        this.form.types = this.normalizeIdArray(this.form.types);
+        this.inicializarHorarios();
+      },
+      error: () => {
+        this.inicializarHorarios();
+      }
+    }).add(() => {
+      // Exibe skeleton brevemente e libera a UI
+      setTimeout(() => { this.loading = false; }, 300);
+    });
+  }
+
+  private normalizePlatforms(value: any): string[] {
+    if (value == null) return [];
+    let raw: unknown = value;
+
+    if (typeof raw === 'string') {
+      const trimmed = raw.trim();
+      if (!trimmed) return [];
+      if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+        try {
+          const parsed = JSON.parse(trimmed);
+          raw = parsed;
+        } catch {
+          // segue com parsing CSV
+        }
+      }
+      if (typeof raw === 'string') {
+        raw = trimmed.split(',').map((p) => p.trim()).filter(Boolean);
+      }
+    }
+
+    const list = Array.isArray(raw) ? raw : [raw];
+    const normalized = list
+      .map((item) => {
+        if (typeof item === 'string') return item.trim();
+        if (item && typeof item === 'object' && 'name' in item) return String((item as any).name ?? '').trim();
+        return '';
+      })
+      .filter(Boolean);
+
+    return Array.from(new Set(normalized));
+  }
+
+  compareByNumber = (a: any, b: any): boolean => {
+    return Number(a) === Number(b);
+  };
+
+  private normalizeIdArray(value: any): number[] {
+    if (value == null) return [];
+    let rawValue: unknown = value;
+    if (typeof rawValue === 'string') {
+      const trimmed = rawValue.trim();
+      if (!trimmed) return [];
+      if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+        try {
+          const parsed = JSON.parse(trimmed);
+          rawValue = parsed;
+        } catch {
+          // ignora
+        }
+      } else if (trimmed.includes(',')) {
+        rawValue = trimmed.split(',').map((p) => p.trim()).filter(Boolean);
+      }
+    }
+
+    const raw = Array.isArray(rawValue) ? rawValue : [rawValue];
+    const ids = raw
+      .map((item) => {
+        if (typeof item === 'number') return item;
+        if (typeof item === 'string' && item.trim() !== '') return Number(item);
+        if (item && typeof item === 'object' && 'id' in item) return Number((item as any).id);
+        return NaN;
+      })
+      .filter((id) => Number.isInteger(id) && id > 0);
+    return Array.from(new Set(ids));
   }
 
   isArray(value: any): boolean {
@@ -44,23 +176,36 @@ export class EditarPerfilPage implements OnInit {
 
   inicializarHorarios() {
     // Inicializa os horários selecionados a partir do form.available_times
-    if (this.form.available_times) {
-      try {
-        const horarios = JSON.parse(this.form.available_times);
-        this.horariosSelecionados = horarios;
-      } catch (e) {
-        this.horariosSelecionados = {};
-      }
-    } else {
-      this.horariosSelecionados = {};
-    }
+    const parsed = this.parseSchedule(this.form.available_times);
+    const normalized = this.normalizeScheduleMap(parsed);
+    this.horariosSelecionados = normalized;
+    this.form.available_times = JSON.stringify(normalized);
   }
 
   async salvar() {
+    if (!this.hasAtLeastOneScheduleSlot()) {
+      this.error = 'Selecione pelo menos um dia e horário em que joga';
+      const t = await this.toastCtrl.create({ message: this.error, color: 'warning', duration: 2500 });
+      await t.present();
+      return;
+    }
+    const userId = this.getLoggedUserId();
+    if (!userId) {
+      this.error = 'Sessão inválida. Faça login novamente para continuar.';
+      const toast = await this.toastCtrl.create({ message: this.error, color: 'danger', duration: 2500 });
+      await toast.present();
+      return;
+    }
+
+    // Garante consistência do payload (ion-select pode devolver string)
+    this.form.platforms = this.normalizePlatforms(this.form.platforms);
+    this.form.genres = this.normalizeIdArray(this.form.genres);
+    this.form.types = this.normalizeIdArray(this.form.types);
+
     this.loading = true;
     const loader = await this.loadingCtrl.create({ message: 'Salvando…' });
     await loader.present();
-    this.http.put(`/api/users/${this.form.id}`, this.form, this.headers()).subscribe({
+    this.http.put(`/api/users/${userId}`, this.form, this.headers()).subscribe({
       next: async (updated: any) => {
         // Atualiza estado local (form)
         this.form = { ...updated };
@@ -94,9 +239,16 @@ export class EditarPerfilPage implements OnInit {
       await t.present();
       return;
     }
+    const userId = this.getLoggedUserId();
+    if (!userId) {
+      this.error = 'Sessão inválida. Faça login novamente para continuar.';
+      const toast = await this.toastCtrl.create({ message: this.error, color: 'danger', duration: 2500 });
+      await toast.present();
+      return;
+    }
     const loader = await this.loadingCtrl.create({ message: 'Enviando imagem…' });
     await loader.present();
-    this.users.uploadAvatar(this.form.id, file).subscribe({
+    this.users.uploadAvatar(userId, file).subscribe({
       next: async res => {
         this.form.avatar_url = res.avatar_url;
         if (this.auth.user) {
@@ -117,20 +269,119 @@ export class EditarPerfilPage implements OnInit {
   }
 
   onHorarioChange(dia: string, periodo: string, checked: boolean) {
-    if (!this.horariosSelecionados[dia]) {
-      this.horariosSelecionados[dia] = [];
-    }
-
+    const normalizedValue = this.normalizePeriodValue(periodo);
+    if (!normalizedValue) return;
+    const base = Array.isArray(this.horariosSelecionados[dia]) ? [...this.horariosSelecionados[dia]] : [];
+    let current = this.normalizePeriodList(base);
     if (checked) {
-      if (!this.horariosSelecionados[dia].includes(periodo)) {
-        this.horariosSelecionados[dia].push(periodo);
-      }
+      if (!current.includes(normalizedValue)) current.push(normalizedValue);
     } else {
-      this.horariosSelecionados[dia] = this.horariosSelecionados[dia].filter(p => p !== periodo);
+      current = current.filter((value) => value !== normalizedValue);
     }
+    current = this.normalizePeriodList(current);
+    const draft = { ...this.horariosSelecionados, [dia]: current };
+    const normalized = this.normalizeScheduleMap(draft);
+    this.horariosSelecionados = normalized;
+    this.form.available_times = JSON.stringify(normalized);
+  }
 
-    // Atualiza o form.available_times com os horários selecionados
-    this.form.available_times = JSON.stringify(this.horariosSelecionados);
+  private readonly periodMap: Record<string, string> = {
+    manha: 'Manha',
+    tarde: 'Tarde',
+    noite: 'Noite',
+    madrugada: 'Madrugada',
+  };
+
+  private parseSchedule(raw: unknown): Record<string, string[]> {
+    if (!raw) return {};
+    let value: unknown = raw;
+    if (typeof raw === 'string') {
+      const trimmed = raw.trim();
+      if (!trimmed) return {};
+      try {
+        value = JSON.parse(trimmed);
+      } catch {
+        return {};
+      }
+    }
+    const result: Record<string, string[]> = {};
+    if (Array.isArray(value)) {
+      value.forEach((entry) => {
+        if (!entry || typeof entry !== 'object') return;
+        const day = 'day' in entry ? String((entry as any).day) : '';
+        const periods = Array.isArray((entry as any).periods)
+          ? (entry as any).periods.map((p: unknown) => String(p))
+          : [];
+        if (day && periods.length) {
+          result[day] = periods;
+        }
+      });
+      return result;
+    }
+    if (value && typeof value === 'object') {
+      Object.entries(value as Record<string, unknown>).forEach(([day, periods]) => {
+        if (Array.isArray(periods)) {
+          result[day] = periods.map((p) => String(p));
+        }
+      });
+      return result;
+    }
+    return {};
+  }
+
+  private normalizeScheduleMap(source: Record<string, string[]>): Record<string, string[]> {
+    const byDayKey = new Map<string, string[]>();
+    Object.entries(source || {}).forEach(([dia, periods]) => {
+      const key = this.normalizeDayKey(dia);
+      if (!Array.isArray(periods)) return;
+      const list = this.normalizePeriodList(periods);
+      if (!byDayKey.has(key)) {
+        byDayKey.set(key, list);
+      } else {
+        byDayKey.set(key, this.normalizePeriodList([...(byDayKey.get(key) ?? []), ...list]));
+      }
+    });
+    const normalized: Record<string, string[]> = {};
+    this.diasSemana.forEach((dia) => {
+      const key = this.normalizeDayKey(dia);
+      normalized[dia] = this.normalizePeriodList(byDayKey.get(key) ?? []);
+    });
+    return normalized;
+  }
+
+  private hasAtLeastOneScheduleSlot(): boolean {
+    return Object.values(this.horariosSelecionados || {}).some((periods) => Array.isArray(periods) && periods.length > 0);
+  }
+
+  private normalizePeriodValue(value: string): string {
+    const trimmed = String(value ?? '').trim();
+    if (!trimmed) return '';
+    const key = trimmed
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+    return this.periodMap[key] || trimmed;
+  }
+
+  private normalizePeriodList(values: string[]): string[] {
+    const seen = new Set<string>();
+    const result: string[] = [];
+    values.forEach((value) => {
+      const normalized = this.normalizePeriodValue(value);
+      if (!normalized || seen.has(normalized)) return;
+      seen.add(normalized);
+      result.push(normalized);
+    });
+    const order = new Map(this.periodos.map((option, index) => [option.value, index]));
+    result.sort((a, b) => (order.get(a) ?? 100) - (order.get(b) ?? 100));
+    return result;
+  }
+
+  private normalizeDayKey(value: string): string {
+    return String(value ?? '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
   }
 
   normalizeAvatar(url?: string | null) {
@@ -145,5 +396,24 @@ export class EditarPerfilPage implements OnInit {
     if ((img as any).dataset && (img as any).dataset.fallbackApplied) return;
     try { (img as any).dataset.fallbackApplied = '1'; } catch {}
     img.src = 'assets/icon/favicon.png';
+  }
+
+  getPeriodIcon(periodo: string): string {
+    const icons: Record<string, string> = {
+      'Manha': 'sunny-outline',
+      'Tarde': 'partly-sunny-outline',
+      'Noite': 'moon-outline',
+      'Madrugada': 'moon-outline'
+    };
+    return icons[periodo] || 'time-outline';
+  }
+
+  private getLoggedUserId(): number | null {
+    const raw = this.auth.user?.id ?? this.form?.id;
+    const parsed = Number(raw);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      return null;
+    }
+    return parsed;
   }
 }

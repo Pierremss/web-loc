@@ -1,0 +1,10 @@
+<div class="room-card">
+  <div class="meta">
+    <h4>{{ room.name }}</h4>
+    <p class="desc">{{ room.description || (room.link ? room.link : '—') }}</p>
+  </div>
+  <div class="actions">
+    <a *ngIf="room.link" [href]="room.link" target="_blank" class="open">Abrir</a>
+  <button (click)="copyLink()" class="copy">Copiar link</button>
+  </div>
+</div>

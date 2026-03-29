@@ -9,6 +9,7 @@ export interface SwipeDeckFilters {
   platformIds?: number[];
   gameStyle?: string | null;
   period?: string | null;
+  genreIds?: number[];
 }
 
 export interface SwipeDeckResponse {
@@ -19,6 +20,7 @@ export interface SwipeDeckResponse {
       gameStyle: string | null;
       period: string | null;
       minCompatibility: number;
+      genreIds: number[];
     };
   };
 }
@@ -74,6 +76,7 @@ export class SwipeService {
     if (filters.platformIds?.length) params = params.set('platformIds', filters.platformIds.join(','));
     if (filters.gameStyle) params = params.set('gameStyle', filters.gameStyle);
     if (filters.period) params = params.set('period', filters.period);
+    if (filters.genreIds?.length) params = params.set('genreIds', filters.genreIds.join(','));
     return this.http.get<SwipeDeckResponse>(`${this.base}/deck`, { params });
   }
 

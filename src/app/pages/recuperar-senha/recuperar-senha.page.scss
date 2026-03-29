@@ -1,0 +1,82 @@
+.reset-wrapper {
+	min-height: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.reset-card {
+	width: 100%;
+	max-width: 440px;
+}
+
+.helper-text {
+	font-size: 0.95rem;
+	color: var(--ion-color-medium);
+	margin-bottom: 1rem;
+}
+
+.input-elevated {
+	--background: var(--ion-color-light, #f8f9fc);
+	--padding-start: 16px;
+	--border-radius: 14px;
+	--color: #1d2530;
+	--placeholder-color: rgba(29, 37, 48, 0.5);
+	margin-bottom: 0.5rem;
+}
+
+:host-context(.dark) .input-elevated {
+	--background: rgba(255, 255, 255, 0.92);
+	--color: #1d2530;
+	--placeholder-color: rgba(29, 37, 48, 0.45);
+	box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+}
+
+ion-note {
+	display: block;
+	margin: 0 0 1rem 0.25rem;
+}
+
+.actions {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 0.5rem;
+	margin: 0.5rem 0 1rem;
+}
+
+.pill {
+	border-radius: 999px;
+}
+
+.success-state {
+	text-align: center;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 1rem;
+}
+
+.reset-card {
+	ion-card-title,
+	ion-card-subtitle {
+		color: inherit;
+	}
+}
+
+:host-context(.dark) .reset-card {
+	ion-card-title,
+	ion-card-subtitle {
+		color: #f4f6fa;
+	}
+}
+
+.success-state ion-icon {
+	font-size: 3rem;
+	color: var(--ion-color-success);
+}
+
+.success-state p {
+	color: var(--ion-color-medium);
+	margin: 0 0 0.5rem;
+}

@@ -1,0 +1,146 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home" text="Voltar"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Recomendações de Jogos</ion-title>
+    <ion-buttons slot="end">
+      <ion-button
+        *ngIf="!loading && recommendations.length"
+        size="small"
+        color="danger"
+        fill="outline"
+        (click)="confirmClearAll()"
+        aria-label="Apagar todas as recomendações"
+      >
+        <ion-icon slot="start" name="trash-outline"></ion-icon>
+        Apagar tudo
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+
+<ion-content>
+  <ion-refresher slot="fixed" (ionRefresh)="load($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <div class="page-container">
+    <section class="summary">
+      <ion-chip color="warning" *ngIf="counts.pending > 0">
+        <ion-icon name="alert-circle-outline"></ion-icon>
+        <ion-label>{{ counts.pending }} pendente(s)</ion-label>
+      </ion-chip>
+      <ion-chip color="success" *ngIf="counts.accepted > 0">
+        <ion-icon name="checkmark-circle-outline"></ion-icon>
+        <ion-label>{{ counts.accepted }} aceitas</ion-label>
+      </ion-chip>
+      <ion-chip color="danger" *ngIf="counts.rejected > 0">
+        <ion-icon name="close-circle-outline"></ion-icon>
+        <ion-label>{{ counts.rejected }} rejeitadas</ion-label>
+      </ion-chip>
+    </section>
+
+    <section class="order-controls" *ngIf="!loading && recommendations.length">
+      <ion-segment [value]="selectedOrder" (ionChange)="onOrderChange($event.detail.value)">
+        <ion-segment-button value="created-desc">
+          <ion-label>Mais recentes</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="created-asc">
+          <ion-label>Mais antigas</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="name-asc">
+          <ion-label>A–Z</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="name-desc">
+          <ion-label>Z–A</ion-label>
+        </ion-segment-button>
+      </ion-segment>
+    </section>
+
+    <ion-note color="danger" class="error" *ngIf="error && !loading">
+      {{ error }}
+    </ion-note>
+
+    <section *ngIf="loading" class="skeleton-list">
+      <ion-card *ngFor="let idx of [1,2,3]">
+        <ion-card-header>
+          <ion-skeleton-text animated style="width: 120px; height: 18px; border-radius: 8px;"></ion-skeleton-text>
+          <ion-skeleton-text animated style="width: 60%; height: 22px; border-radius: 10px; margin-top: 12px;"></ion-skeleton-text>
+        </ion-card-header>
+        <ion-card-content>
+          <ion-skeleton-text animated style="width: 90%; height: 16px; border-radius: 8px; margin-bottom: 8px;"></ion-skeleton-text>
+          <ion-skeleton-text animated style="width: 70%; height: 16px; border-radius: 8px; margin-bottom: 8px;"></ion-skeleton-text>
+          <ion-skeleton-text animated style="width: 40%; height: 14px; border-radius: 8px; margin-bottom: 16px;"></ion-skeleton-text>
+          <div class="actions">
+            <ion-skeleton-text animated style="width: 96px; height: 32px; border-radius: 16px;"></ion-skeleton-text>
+            <ion-skeleton-text animated style="width: 96px; height: 32px; border-radius: 16px;"></ion-skeleton-text>
+          </div>
+        </ion-card-content>
+      </ion-card>
+    </section>
+
+    <ion-card color="light" *ngIf="!loading && !recommendations.length">
+      <ion-card-content class="empty-state">
+        <ion-icon name="bulb-outline"></ion-icon>
+        <p>Nenhuma recomendação recebida até o momento.</p>
+        <p class="hint">Quando os jogadores enviarem sugestões, elas aparecerão aqui para que você aprove ou rejeite.</p>
+      </ion-card-content>
+    </ion-card>
+
+  <ion-list *ngIf="!loading && recommendations.length" lines="none">
+      <ion-card *ngFor="let rec of recommendations; trackBy: trackById" [class.pending]="rec.status === 'pending'">
+        <ion-card-header>
+          <div class="header-row">
+            <ion-badge [color]="statusColor(rec.status)">{{ statusLabel(rec.status) }}</ion-badge>
+            <span class="date">{{ formatDate(rec.createdAt) }}</span>
+          </div>
+          <ion-card-title>{{ rec.gameName }}</ion-card-title>
+          <ion-card-subtitle>
+            {{ rec.platform }} · {{ rec.gameType }} · {{ rec.genre }}
+          </ion-card-subtitle>
+        </ion-card-header>
+        <ion-card-content>
+          <div class="meta">
+            <ion-icon name="person-circle-outline"></ion-icon>
+            <span>
+              {{ rec.user?.name || rec.user?.nickname || ('Jogador #' + rec.user?.id) }}
+              <ng-container *ngIf="rec.user?.email"> · {{ rec.user?.email }}</ng-container>
+            </span>
+          </div>
+
+          <div class="notes" *ngIf="rec.notes">
+            <strong>Mensagem do jogador:</strong>
+            <p>{{ rec.notes }}</p>
+          </div>
+
+          <ion-note color="medium" *ngIf="rec.adminNotes">
+            <strong>Notas do admin:</strong> {{ rec.adminNotes }}
+          </ion-note>
+
+          <div class="timestamps" *ngIf="rec.resolvedAt && rec.status !== 'pending'">
+            <ion-icon name="time-outline"></ion-icon>
+            <span>Atualizado em {{ formatDate(rec.resolvedAt) }}</span>
+          </div>
+
+          <div class="actions">
+            <ion-button size="small" color="success" (click)="decide(rec, 'accepted')" *ngIf="rec.status === 'pending'">
+              <ion-icon slot="start" name="checkmark-outline"></ion-icon>
+              Aceitar
+            </ion-button>
+            <ion-button size="small" color="danger" (click)="decide(rec, 'rejected')" *ngIf="rec.status === 'pending'">
+              <ion-icon slot="start" name="close-outline"></ion-icon>
+              Rejeitar
+            </ion-button>
+
+            <ion-button size="small" fill="clear" color="danger" (click)="confirmDelete(rec)" aria-label="Apagar recomendação">
+              <ion-icon slot="start" name="trash-outline"></ion-icon>
+              Apagar
+            </ion-button>
+          </div>
+        </ion-card-content>
+      </ion-card>
+    </ion-list>
+  </div>
+</ion-content>

@@ -1,6 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { AuthService } from './modules/auth/auth.service';
 import { environment } from '../environments/environment';
+import { ThemeService } from './services/theme.service';
 
 @Component({
   selector: 'app-home',
@@ -11,6 +12,23 @@ import { environment } from '../environments/environment';
 export class HomePage implements OnInit {
   loading = true;
   readonly auth = inject(AuthService);
+  readonly theme = inject(ThemeService);
+
+  get themeToggleIcon(): string {
+    return this.theme.isDark ? 'sunny-outline' : 'moon-outline';
+  }
+
+  get themeToggleText(): string {
+    return this.theme.isDark ? 'Tema claro' : 'Tema escuro';
+  }
+
+  get themeToggleAria(): string {
+    return this.theme.isDark ? 'Ativar tema claro' : 'Ativar tema escuro';
+  }
+
+  toggleTheme() {
+    this.theme.toggle();
+  }
 
   ngOnInit() {
     // Breve skeleton na abertura

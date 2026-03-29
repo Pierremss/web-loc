@@ -12,7 +12,9 @@ export function attachRealtime(app) {
     if (!token) return next(new Error('unauthorized'));
     try {
       const payload = jwt.verify(token, process.env.JWT_SECRET);
-      socket.data.userId = Number(payload.id || payload.sub);
+      const numericId = Number(payload.id || payload.sub);
+      if (!Number.isFinite(numericId)) return next(new Error('unauthorized'));
+      socket.data.userId = numericId;
       return next();
     } catch {
       return next(new Error('unauthorized'));
@@ -20,7 +22,11 @@ export function attachRealtime(app) {
   });
 
   io.on('connection', (socket) => {
-    const userId = socket.data.userId;
+    const userId = Number(socket.data.userId);
+    if (!Number.isFinite(userId)) {
+      socket.disconnect(true);
+      return;
+    }
     socket.join(`user:${userId}`);
 
     socket.on('message:send', async ({ toUserId, content }) => {
@@ -61,6 +67,8 @@ export function attachRealtime(app) {
       if (msg.receiver_id !== userId) return;
       await pool.query('UPDATE messages SET read_at = NOW() WHERE id = ?', [messageId]);
       io.to(`user:${msg.sender_id}`).emit('message:read', { messageId, by: userId });
+      // Também notifica o próprio leitor (para atualizar badges/listas em tempo real)
+      io.to(`user:${userId}`).emit('message:read', { messageId, by: userId });
     });
 
     socket.on('message:edit', async ({ messageId, content }) => {
@@ -123,39 +131,61 @@ export function attachRealtime(app) {
 
     // ===== Group conversations (salas) =====
     socket.on('conv:join', async ({ conversationId }) => {
-      if (!conversationId) return;
-      const [mem] = await pool.query('SELECT 1 FROM conversation_members WHERE conversation_id = ? AND user_id = ? LIMIT 1', [conversationId, userId]);
+      const convId = Number(conversationId);
+      if (!Number.isFinite(convId)) return;
+      const [mem] = await pool.query('SELECT 1 FROM conversation_members WHERE conversation_id = ? AND user_id = ? LIMIT 1', [convId, userId]);
       if (!mem.length) return; // not a member
-      socket.join(`conv:${conversationId}`);
-      socket.emit('conv:joined', { conversationId });
-  io.to(`conv:${conversationId}`).emit('conv:user:join', { userId });
+      socket.join(`conv:${convId}`);
+      socket.emit('conv:joined', { conversationId: convId });
+      io.to(`conv:${convId}`).emit('conv:user:join', { userId });
     });
 
     socket.on('conv:leave', ({ conversationId }) => {
-      if (!conversationId) return;
-      socket.leave(`conv:${conversationId}`);
-      socket.emit('conv:left', { conversationId });
-  io.to(`conv:${conversationId}`).emit('conv:user:leave', { userId });
+      const convId = Number(conversationId);
+      if (!Number.isFinite(convId)) return;
+      socket.leave(`conv:${convId}`);
+      socket.emit('conv:left', { conversationId: convId });
+      io.to(`conv:${convId}`).emit('conv:user:leave', { userId });
     });
 
     socket.on('conv:typing', ({ conversationId, typing }) => {
-      if (!conversationId) return;
-      socket.to(`conv:${conversationId}`).emit('conv:typing', { userId, typing: !!typing });
+      const convId = Number(conversationId);
+      if (!Number.isFinite(convId)) return;
+      socket.to(`conv:${convId}`).emit('conv:typing', { userId, typing: !!typing });
     });
 
     socket.on('conv:message:send', async ({ conversationId, content, reply_to_id }) => {
-      if (!conversationId || !content) return;
-      const [mem] = await pool.query('SELECT 1 FROM conversation_members WHERE conversation_id = ? AND user_id = ? LIMIT 1', [conversationId, userId]);
+      const convId = Number(conversationId);
+      if (!Number.isFinite(convId) || !content) return;
+      const [mem] = await pool.query('SELECT 1 FROM conversation_members WHERE conversation_id = ? AND user_id = ? LIMIT 1', [convId, userId]);
       if (!mem.length) return; // not a member
-      const [r] = await pool.query('INSERT INTO conversation_messages (conversation_id, sender_id, content, reply_to_id) VALUES (?, ?, ?, ?)', [conversationId, userId, content, reply_to_id || null]);
-      const [rows] = await pool.query('SELECT * FROM conversation_messages WHERE id = ?', [r.insertId]);
-      io.to(`conv:${conversationId}`).emit('conv:message:new', rows[0]);
+      const [r] = await pool.query('INSERT INTO conversation_messages (conversation_id, sender_id, content, reply_to_id) VALUES (?, ?, ?, ?)', [convId, userId, content, reply_to_id || null]);
+      const [[message]] = await pool.query(
+        `SELECT cm.*, COALESCE(u.nickname, u.name, u.email) AS sender_name, u.avatar_url AS sender_avatar
+           FROM conversation_messages cm
+           JOIN users u ON u.id = cm.sender_id
+          WHERE cm.id = ?`,
+        [r.insertId]
+      );
+      message.read_by = [];
+      io.to(`conv:${convId}`).emit('conv:message:new', message);
+
+      // Notificação (inbox) para membros mesmo fora da sala.
+      // Evento separado para evitar duplicar mensagens em quem está com a sala aberta.
+      const [members] = await pool.query('SELECT user_id FROM conversation_members WHERE conversation_id = ?', [convId]);
+      for (const m of members) {
+        const uid = Number(m.user_id);
+        if (!Number.isFinite(uid) || uid === userId) continue;
+        io.to(`user:${uid}`).emit('conv:message:notify', message);
+      }
     });
 
     socket.on('conv:read', async ({ conversationId, last_read_message_id }) => {
-      if (!conversationId || !last_read_message_id) return;
-      await pool.query('UPDATE conversation_members SET last_read_message_id = ? WHERE conversation_id = ? AND user_id = ?', [last_read_message_id, conversationId, userId]);
-      io.to(`conv:${conversationId}`).emit('conv:read', { userId, last_read_message_id });
+      const convId = Number(conversationId);
+      const lastId = Number(last_read_message_id);
+      if (!Number.isFinite(convId) || !Number.isFinite(lastId)) return;
+      await pool.query('UPDATE conversation_members SET last_read_message_id = ? WHERE conversation_id = ? AND user_id = ?', [lastId, convId, userId]);
+      io.to(`conv:${convId}`).emit('conv:read', { conversationId: convId, userId, last_read_message_id: lastId });
     });
   });
 

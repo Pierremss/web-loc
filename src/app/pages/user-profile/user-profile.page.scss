@@ -1,18 +1,55 @@
 .user-profile-page {
-	--background: linear-gradient(180deg, #2f0147 0%, #1b1c2c 100%);
-	color: white;
+	--bg-top: color-mix(in srgb, var(--ion-background-color, #0f1022) 80%, #2f0147 20%);
+	--bg-bottom: color-mix(in srgb, var(--ion-background-color, #0f1022) 90%, #1b1c2c 10%);
+	--card-bg: var(--ion-card-background, rgba(255,255,255,0.04));
+	--card-border: 1px solid rgba(255,255,255,0.08);
+	--text-strong: var(--ion-text-color, #e2e8f0);
+	--text-muted: color-mix(in srgb, var(--ion-text-color, #e2e8f0) 70%, transparent 30%);
+	background: linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
+	color: var(--text-strong);
+	min-height: 100%;
+
+	// Garante contraste no tema escuro (Ionic pode manter títulos com cor padrão)
+	ion-card-title {
+		--color: var(--ion-text-color);
+		color: var(--ion-text-color);
+		font-weight: 800;
+	}
+
+	ion-card-subtitle {
+		--color: rgba(var(--ion-text-color-rgb), 0.76);
+		color: rgba(var(--ion-text-color-rgb), 0.76);
+	}
+
+	.profile-head h2 {
+		color: var(--ion-text-color);
+		margin: 0;
+	}
+
+	.tag {
+		color: rgba(var(--ion-text-color-rgb), 0.86);
+	}
+
+	.nickname {
+		color: rgba(var(--ion-text-color-rgb), 0.86);
+	}
+
+	.profile-text {
+		color: rgba(var(--ion-text-color-rgb), 0.9);
+	}
 
 	.profile-container {
-		background-color: #1e1e2f;
-		border-radius: 16px;
-		padding: 24px 20px;
-		max-width: 720px;
+		background-color: color-mix(in srgb, var(--ion-background-color, #0f1022) 70%, transparent 30%);
+		border-radius: 20px;
+		padding: 28px 24px;
+		max-width: 880px;
 		margin: auto;
 		margin-top: 5vh;
-		box-shadow: 0 0 20px rgba(0, 0, 0, 0.6);
+		box-shadow: 0 30px 80px rgba(0, 0, 0, 0.28);
 		display: flex;
 		flex-direction: column;
 		gap: 16px;
+		border: 1px solid rgba(255, 255, 255, 0.05);
 	}
 
 	.logo {
@@ -21,38 +58,129 @@
 		color: #7a7df5;
 		margin: 0;
 		text-align: center;
+		letter-spacing: 1px;
 	}
 
 	.loading { display: flex; justify-content: center; }
 	.erro { text-align: center; }
 
-	.card-section { background: #23243a; border-radius: 12px; }
+	.card-section {
+		background: var(--card-bg);
+		border: var(--card-border);
+		border-radius: 18px;
+		backdrop-filter: blur(8px);
+		box-shadow: 0 18px 46px rgba(0,0,0,0.16);
+		transition: transform 160ms ease, box-shadow 160ms ease;
+	}
+
+	.card-section:hover { transform: translateY(-2px); box-shadow: 0 22px 60px rgba(0,0,0,0.2); }
+
+	.profile-card { overflow: hidden; }
 
 	.profile-head {
 		display: flex;
 		align-items: center;
-		gap: 16px;
+		gap: 18px;
 	}
 
 	.avatar-xl {
-		width: 72px;
-		height: 72px;
-		background: #2a2b3d;
-		border-radius: 50%;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-weight: bold;
-		color: #a18bff;
-		font-size: 1.4rem;
+		width: 92px;
+		height: 92px;
+		border-radius: 18px;
+		background: linear-gradient(135deg, #6f5ddb, #1f2339);
+		border: 2px solid rgba(134, 126, 255, 0.4);
+		box-shadow: 0 18px 38px rgba(0,0,0,0.35);
+		display: grid;
+		place-items: center;
+		color: rgba(var(--ion-text-color-rgb), 0.94);
+		text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+		font-weight: 800;
+		font-size: 1.6rem;
+		background-size: cover;
+		background-position: center;
 	}
 
-	.nickname { color: #a18bff; }
+	.info { display: flex; flex-direction: column; gap: 6px; }
+
+	.name-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+	.tag {
+		background: rgba(255, 255, 255, 0.08);
+		border: 1px solid rgba(255,255,255,0.12);
+		border-radius: 999px;
+		padding: 4px 10px;
+		font-size: 0.75rem;
+		color: #d0d5ff;
+	}
+
+	.nickname { color: #a18bff; margin: 0; }
+
+	.profile-text { margin: 0; color: rgba(226,232,240,0.9); }
 
 	.btn-primary {
 		--background: linear-gradient(90deg, #8c2ce2, #3c88f7);
 		--border-radius: 12px;
 		--box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 		font-weight: 600;
+	}
+
+	.pill-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+
+	.pill-group { background: rgba(255,255,255,0.02); border-radius: 12px; padding: 12px; border: 1px solid rgba(255,255,255,0.05); }
+
+	.pill-group .label {
+		margin: 0 0 6px;
+		color: rgba(var(--ion-text-color-rgb), 0.76);
+		font-weight: 700;
+		font-size: 0.9rem;
+		letter-spacing: 0.2px;
+	}
+
+	.pills { display: flex; flex-wrap: wrap; gap: 8px; }
+
+	.pill {
+		background: rgba(255,255,255,0.08);
+		border: 1px solid rgba(255,255,255,0.12);
+		border-radius: 999px;
+		padding: 6px 12px;
+		font-weight: 600;
+		color: #e8e9ff;
+		transition: transform 140ms ease, box-shadow 140ms ease;
+	}
+
+	.pill:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0,0,0,0.2); }
+
+	.pill.muted { color: rgba(226,232,240,0.65); border-style: dashed; }
+
+	.card-section ion-card-subtitle {
+		--color: rgba(var(--ion-text-color-rgb), 0.76);
+		color: rgba(var(--ion-text-color-rgb), 0.76);
+	}
+
+	.actions { display: flex; flex-direction: column; gap: 10px; }
+}
+
+// Tema do app (Ionic): o ThemeService alterna a classe `.dark` no body.
+// Não use prefers-color-scheme aqui porque ele segue o tema do sistema (OS).
+:host-context(body:not(.dark)) {
+	.user-profile-page {
+		--card-bg: rgba(255,255,255,0.9);
+		--card-border: 1px solid rgba(15,23,42,0.08);
+		--text-strong: #0f172a;
+		--text-muted: rgba(15,23,42,0.65);
+		background: radial-gradient(circle at 20% 20%, #f1e9ff, #f8fafc 32%),
+		            radial-gradient(circle at 80% 0%, #e0f2fe, #f8fafc 40%),
+		            #f8fafc;
+
+		.avatar-xl { color: #111827; background: linear-gradient(135deg, #ede9fe, #c7d2fe); border-color: rgba(99,102,241,0.35); text-shadow: none; }
+		.tag { background: rgba(99,102,241,0.12); border-color: rgba(99,102,241,0.22); color: #4338ca; }
+		.pill { background: rgba(59,130,246,0.08); border-color: rgba(59,130,246,0.16); color: #0f172a; }
+		.pill.muted { color: rgba(15,23,42,0.55); }
+		.nickname { color: #4338ca; }
+		.profile-text { color: #1f2937; }
+		.pill-group { background: rgba(59,130,246,0.03); border-color: rgba(15,23,42,0.06); }
+		.pill-group .label { color: rgba(15,23,42,0.65); }
+		ion-card-title { --color: #0f172a; color: #0f172a; }
+		ion-card-subtitle { --color: rgba(15,23,42,0.65); color: rgba(15,23,42,0.65); }
 	}
 }

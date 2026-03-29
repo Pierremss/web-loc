@@ -1,9 +1,12 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../modules/auth/auth.service';
-import { GamesService } from '../../modules/games/games.service';
+import { GamesService, Game } from '../../modules/games/games.service';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
+import { GenresService, Genre } from '../../services/genres.service';
+import { Subject, catchError, debounceTime, finalize, of, switchMap } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-jogador-perfil',
@@ -15,17 +18,28 @@ export class JogadorPerfilPage implements OnInit {
   // Tipagem dos favoritos com suporte a timestamp
   favoritos: FavoriteGame[] = [];
   favoritosFiltrados: FavoriteGame[] = [];
-  todosJogos: any[] = [];
+  genreOptions: Genre[] = [];
   readonly auth = inject(AuthService);
   private readonly gamesService = inject(GamesService);
+  private readonly genresService = inject(GenresService);
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
-  user: any = this.auth.user;
-  novoFavorito: number | null = null;
+  novosFavoritos: number[] = [];
+
+  // Picker (busca + filtro)
+  isGamePickerOpen = false;
+  gamePickerSearch = '';
+  gamePickerGenreIds: number[] = [];
+  gamePickerLoading = false;
+  gamePickerResults: Game[] = [];
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly gameSearchTrigger$ = new Subject<void>();
   loading = false;
   error = '';
   filtro = '';
   ordenacao: 'az' | 'recent' = 'az';
+  mostrarTodosFavoritos = false;
+  readonly LIMITE_FAVORITOS = 12;
 
   private headers() {
     return this.auth.token ? { headers: new HttpHeaders({ Authorization: `Bearer ${this.auth.token}` }) } : {};
@@ -33,13 +47,128 @@ export class JogadorPerfilPage implements OnInit {
 
   ngOnInit() {
     this.carregarFavoritos();
-    this.gamesService.list().subscribe(jogos => this.todosJogos = jogos);
+    this.loadGenres();
+    this.setupGamePickerSearch();
+  }
+
+  private loadGenres(): void {
+    this.genresService.list().subscribe({
+      next: (list) => {
+        this.genreOptions = [...(list || [])].sort((a, b) => a.name.localeCompare(b.name));
+      },
+      error: () => {
+        this.genreOptions = [];
+      }
+    });
+  }
+
+  private setupGamePickerSearch(): void {
+    this.gameSearchTrigger$
+      .pipe(
+        debounceTime(200),
+        switchMap(() => {
+          this.gamePickerLoading = true;
+          const search = (this.gamePickerSearch || '').trim();
+          const genres = Array.isArray(this.gamePickerGenreIds)
+            ? this.gamePickerGenreIds.map((v) => Number(v)).filter((v) => Number.isInteger(v) && v > 0)
+            : [];
+          return this.gamesService
+            .list({ pageSize: 60, order: 'name', search: search || undefined, genres: genres.length ? genres : undefined })
+            .pipe(
+              catchError(() => of([] as Game[])),
+              finalize(() => (this.gamePickerLoading = false))
+            );
+        }),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe((games) => {
+        this.gamePickerResults = [...(games || [])].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      });
+  }
+
+  openGamePicker(): void {
+    this.novosFavoritos = [];
+    this.isGamePickerOpen = true;
+    this.queueGamePickerSearch();
+  }
+
+  queueGamePickerSearch(): void {
+    this.gameSearchTrigger$.next();
+  }
+
+  setGamePickerSearch(value: string): void {
+    this.gamePickerSearch = value;
+    this.queueGamePickerSearch();
+  }
+
+  setGamePickerGenres(value: any): void {
+    const raw = Array.isArray(value) ? value : [];
+    this.gamePickerGenreIds = raw.map((v) => Number(v)).filter((v) => Number.isInteger(v) && v > 0);
+    this.queueGamePickerSearch();
+  }
+
+  toggleGameSelection(gameId: number): void {
+    const index = this.novosFavoritos.indexOf(gameId);
+    if (index > -1) {
+      this.novosFavoritos.splice(index, 1);
+    } else {
+      this.novosFavoritos.push(gameId);
+    }
+  }
+
+  isGameSelected(gameId: number): boolean {
+    return this.novosFavoritos.includes(gameId);
+  }
+
+  confirmarSelecao(): void {
+    if (this.novosFavoritos.length === 0) {
+      this.isGamePickerOpen = false;
+      return;
+    }
+
+    const userId = this.resolveUserId();
+    if (!userId) {
+      this.error = 'Sessão inválida. Faça login novamente para continuar.';
+      return;
+    }
+
+    // Adicionar cada jogo selecionado
+    let addedCount = 0;
+    const totalToAdd = this.novosFavoritos.length;
+
+    this.novosFavoritos.forEach((gameId) => {
+      this.http.post(`/api/users/${userId}/favoritos`, { gameId }, this.headers()).subscribe({
+        next: () => {
+          addedCount++;
+          if (addedCount === totalToAdd) {
+            this.isGamePickerOpen = false;
+            this.novosFavoritos = [];
+            this.carregarFavoritos();
+          }
+        },
+        error: () => {
+          addedCount++;
+          if (addedCount === totalToAdd) {
+            this.isGamePickerOpen = false;
+            this.novosFavoritos = [];
+            this.carregarFavoritos();
+          }
+        }
+      });
+    });
   }
 
   carregarFavoritos() {
+    const userId = this.resolveUserId();
+    if (!userId) {
+      this.error = 'Sessão inválida. Faça login novamente para visualizar os favoritos.';
+      this.loading = false;
+      return;
+    }
     this.loading = true;
-    this.http.get<any[]>(`/api/users/${this.user.id}/favoritos`, this.headers()).subscribe({
+    this.http.get<any[]>(`/api/users/${userId}/favoritos`, this.headers()).subscribe({
       next: favs => {
+        this.error = '';
         // Mapeia possíveis campos de data vindos do backend para _ts
         this.favoritos = (favs || []).map((f: any, idx: number) => {
           const rawTs = f.created_at || f.added_at || f.favorited_at || f.updated_at || f.timestamp;
@@ -79,13 +208,23 @@ export class JogadorPerfilPage implements OnInit {
   }
 
   adicionarFavorito(gameId: number) {
-    this.http.post(`/api/users/${this.user.id}/favoritos`, { gameId }, this.headers()).subscribe(() => {
+    const userId = this.resolveUserId();
+    if (!userId) {
+      this.error = 'Sessão inválida. Faça login novamente para continuar.';
+      return;
+    }
+    this.http.post(`/api/users/${userId}/favoritos`, { gameId }, this.headers()).subscribe(() => {
       this.carregarFavoritos();
     });
   }
 
   removerFavorito(gameId: number) {
-    this.http.delete(`/api/users/${this.user.id}/favoritos/${gameId}`, this.headers()).subscribe(() => {
+    const userId = this.resolveUserId();
+    if (!userId) {
+      this.error = 'Sessão inválida. Faça login novamente para continuar.';
+      return;
+    }
+    this.http.delete(`/api/users/${userId}/favoritos/${gameId}`, this.headers()).subscribe(() => {
       this.carregarFavoritos();
     });
   }
@@ -101,7 +240,12 @@ export class JogadorPerfilPage implements OnInit {
 
   excluirConta() {
     if (confirm('Tem certeza que deseja excluir sua conta?')) {
-      this.http.delete(`/api/users/${this.user.id}`, this.headers()).subscribe(() => {
+      const userId = this.resolveUserId();
+      if (!userId) {
+        this.error = 'Sessão inválida. Faça login novamente para continuar.';
+        return;
+      }
+      this.http.delete(`/api/users/${userId}`, this.headers()).subscribe(() => {
         this.auth.logout();
         this.router.navigate(['/login']);
       });
@@ -120,6 +264,34 @@ export class JogadorPerfilPage implements OnInit {
     if ((img as any).dataset && (img as any).dataset.fallbackApplied) return;
     try { (img as any).dataset.fallbackApplied = '1'; } catch {}
     img.src = 'assets/icon/favicon.png';
+  }
+
+  get user() {
+    return this.auth.user;
+  }
+
+  get favoritosExibidos(): FavoriteGame[] {
+    if (this.mostrarTodosFavoritos || this.favoritosFiltrados.length <= this.LIMITE_FAVORITOS) {
+      return this.favoritosFiltrados;
+    }
+    return this.favoritosFiltrados.slice(0, this.LIMITE_FAVORITOS);
+  }
+
+  get temMaisFavoritos(): boolean {
+    return this.favoritosFiltrados.length > this.LIMITE_FAVORITOS;
+  }
+
+  toggleMostrarTodos(): void {
+    this.mostrarTodosFavoritos = !this.mostrarTodosFavoritos;
+  }
+
+  private resolveUserId(): number | null {
+    const raw = this.auth.user?.id;
+    const parsed = Number(raw);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      return null;
+    }
+    return parsed;
   }
 }
 

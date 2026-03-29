@@ -14,8 +14,14 @@ import messageRoutes from './routes/messages.js';
 import conversationRoutes from './routes/conversations.js';
 import swipeRoutes from './routes/swipe.js';
 import platformRoutes from './routes/platforms.js';
+import roomsRoutes from './routes/rooms.js';
+import genresRoutes from './routes/genres.js';
+import gameTypesRoutes from './routes/game-types.js';
+import gameRecommendationRoutes from './routes/game-recommendations.js';
+import emailVerificationRoutes from './routes/email-verification.js';
 import { attachRealtime } from './realtime.js';
 import { createServer } from 'http';
+import { pool } from './db.js';
 
 const app = express();
 app.use(cors({ origin: true, credentials: true }));
@@ -34,6 +40,51 @@ app.use('/uploads', (req, res, next) => {
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 
+// Suporte a "apagar mensagens" apenas para o usuário que solicitou
+// (marca mensagens como ocultas para um usuário sem apagar do outro lado).
+try {
+	await pool.query(`
+		CREATE TABLE IF NOT EXISTS message_deletions (
+			user_id INT NOT NULL,
+			message_id BIGINT UNSIGNED NOT NULL,
+			deleted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			PRIMARY KEY (user_id, message_id),
+			KEY idx_md_user (user_id),
+			KEY idx_md_message (message_id)
+		) ENGINE=InnoDB;
+	`);
+} catch (e) {
+	console.error('[db] Falha ao garantir tabela message_deletions', e);
+}
+
+// Suporte a "apagar mensagens" em salas APENAS para o usuário que solicitou
+// (oculta a mensagem para um usuário, sem apagar para os demais).
+try {
+	await pool.query(`
+		CREATE TABLE IF NOT EXISTS conversation_message_deletions (
+			user_id INT NOT NULL,
+			message_id BIGINT UNSIGNED NOT NULL,
+			deleted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			PRIMARY KEY (user_id, message_id),
+			KEY idx_cmd_user (user_id),
+			KEY idx_cmd_message (message_id)
+		) ENGINE=InnoDB;
+	`);
+} catch (e) {
+	console.error('[db] Falha ao garantir tabela conversation_message_deletions', e);
+}
+
+// Suporte a avatar de conversa (coluna adicionada em 20251202_add_conversation_avatar.sql)
+try {
+	const [cols] = await pool.query("SHOW COLUMNS FROM conversations LIKE 'avatar_url'");
+	if (!cols || !cols.length) {
+		await pool.query('ALTER TABLE conversations ADD COLUMN avatar_url VARCHAR(500) NULL AFTER is_public');
+		console.log('[db] Coluna conversations.avatar_url criada');
+	}
+} catch (e) {
+	console.error('[db] Falha ao garantir coluna conversations.avatar_url', e);
+}
+
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/games', gameRoutes);
@@ -42,8 +93,40 @@ app.use('/api/messages', messageRoutes);
 app.use('/api/conversations', conversationRoutes);
 app.use('/api/swipe', swipeRoutes);
 app.use('/api/platforms', platformRoutes);
+app.use('/api/rooms', roomsRoutes);
+app.use('/api/genres', genresRoutes);
+app.use('/api/game-types', gameTypesRoutes);
+app.use('/api/game-recommendations', gameRecommendationRoutes);
+app.use('/api/verification', emailVerificationRoutes);
 
 const port = process.env.PORT || 3333;
 // Criar HTTP server e anexar Socket.IO
 const { server } = attachRealtime(app);
 server.listen(port, () => console.log(`WebLoc API + Realtime em http://localhost:${port}`));
+
+
+
+
+/*
+const nodemailer = require('nodemailer')
+const transport = nodemailer.createTransport({
+	host: 'smtp.gmail.com',
+	port: 465,
+	secure: true,
+	auth: {
+		user: 'webloc00@gmail.com',
+		pass: 'pomo cnlo urqz gyou'
+	}
+})
+	
+transport.sendMail({
+from:'Manual do Dev <webloc00@gmail.com>',
+to: 'pedrolucasmc6@gmail.com',
+subject: 'Enviando email com Nodemailer',
+html: '<h1> Olá dev </h1> <p> Esse é um email de teste </p>',
+text: 'Olá, Dev este é um email de teste',
+})
+.then((response ) => console.log ('Email enviado com sucesso !!'))
+.catch({err}  => console.log('Erro ao enviar email: ', err));
+
+*/

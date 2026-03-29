@@ -37,9 +37,19 @@
 
 /* @import "@ionic/angular/css/palettes/dark.always.css"; */
 /* @import "@ionic/angular/css/palettes/dark.class.css"; */
-@import "@ionic/angular/css/palettes/dark.system.css";
 
 :root { --radius: var(--app-radius); }
+
+html {
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  transition: background-color 280ms ease, color 280ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html, body { transition: none; }
+}
 
 html, body, ion-app, ion-content, ion-router-outlet { height: 100%; }
 body {
@@ -50,6 +60,7 @@ body {
     radial-gradient(120% 120% at 90% 130%, rgba(34,211,238,0.16), transparent 70%),
     var(--ion-background-color);
   color: var(--ion-text-color);
+  transition: background 280ms ease, color 280ms ease;
 }
 
 a {
@@ -79,7 +90,7 @@ ion-card-header {
 
 /* Toolbar e menus */
 ion-toolbar {
-  --background: rgba(16,22,40,0.78);
+  --background: var(--app-surface-1);
   --border-color: var(--ion-border-color);
   --color: var(--ion-text-color);
   backdrop-filter: blur(10px);
@@ -100,8 +111,23 @@ ion-item {
 }
 
 ion-item:hover {
-  --background: rgba(146,163,206,0.08);
+  --background: rgba(var(--ion-text-color-rgb), 0.06);
   transform: translateY(-1px);
+}
+
+/* Toast (barra) de notificação - grupos (salas) */
+ion-toast.webloc-toast--group::part(container) {
+  max-width: min(420px, calc(100vw - 24px));
+}
+
+ion-toast.webloc-toast--group::part(header) {
+  font-weight: 700;
+  font-size: 0.98rem;
+}
+
+ion-toast.webloc-toast--group::part(message) {
+  font-size: 1rem;
+  line-height: 1.35;
 }
 
 /* Botões */
@@ -121,11 +147,358 @@ ion-fab-button {
   --box-shadow: var(--app-shadow-md);
 }
 
+/* Swipe: Profile modal theming (ion-modal content is rendered outside component host) */
+body:not(.dark) ion-modal .profile-modal {
+  --profile-bg: linear-gradient(180deg, rgba(248, 250, 252, 0.98), rgba(241, 245, 249, 0.96));
+  --profile-card: rgba(255, 255, 255, 0.98);
+  --profile-border: rgba(148, 163, 184, 0.26);
+  --profile-text: rgba(15, 23, 42, 0.95);
+  --profile-subtext: rgba(71, 85, 105, 0.82);
+  --profile-hero-bg: linear-gradient(135deg, rgba(99, 102, 241, 0.14), rgba(59, 130, 246, 0.1));
+  --profile-highlight-bg: rgba(241, 245, 249, 0.92);
+  --profile-highlight-border: rgba(148, 163, 184, 0.22);
+  --profile-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
+  --profile-actions-bg: rgba(255, 255, 255, 0.96);
+  --profile-actions-border: rgba(148, 163, 184, 0.22);
+  --profile-pill-bg: rgba(241, 245, 249, 0.92);
+  --profile-pill-border: rgba(148, 163, 184, 0.22);
+  --profile-avatar-shell-bg: rgba(255, 255, 255, 0.72);
+  --profile-avatar-shell-border: rgba(255, 255, 255, 0.95);
+  --profile-chip-bg: rgba(226, 232, 240, 0.75);
+  --profile-chip-color: rgba(15, 23, 42, 0.9);
+}
+
+body.dark ion-modal .profile-modal {
+  --profile-bg: linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(2, 6, 23, 0.96));
+  --profile-card: rgba(15, 23, 42, 0.55);
+  --profile-border: rgba(148, 163, 184, 0.14);
+  --profile-text: rgba(248, 250, 252, 0.96);
+  --profile-subtext: rgba(226, 232, 240, 0.78);
+  --profile-hero-bg: linear-gradient(135deg, rgba(56, 189, 248, 0.16), rgba(99, 102, 241, 0.16));
+  --profile-highlight-bg: rgba(2, 6, 23, 0.35);
+  --profile-highlight-border: rgba(148, 163, 184, 0.14);
+  --profile-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+  --profile-actions-bg: rgba(2, 6, 23, 0.74);
+  --profile-actions-border: rgba(148, 163, 184, 0.12);
+  --profile-pill-bg: rgba(2, 6, 23, 0.32);
+  --profile-pill-border: rgba(148, 163, 184, 0.14);
+  --profile-avatar-shell-bg: rgba(2, 6, 23, 0.35);
+  --profile-avatar-shell-border: rgba(255, 255, 255, 0.18);
+  --profile-chip-bg: rgba(15, 23, 42, 0.55);
+  --profile-chip-color: rgba(241, 245, 249, 0.92);
+}
+
 /* Containers */
 .container,
 ion-list {
   max-width: 1080px;
   margin: 0 auto;
   padding: 0 clamp(16px, 4vw, 32px);
+}
+
+/* Ajustes globais para selects no tema escuro (alert interface) */
+body.dark ion-alert.webloc-select,
+body.dark .dark ion-alert.webloc-select {
+  --background: #101831;
+  --ion-background-color: #101831;
+  --ion-text-color: rgba(255, 255, 255, 0.94);
+  --ion-text-color-rgb: 255, 255, 255;
+  --color: rgba(255, 255, 255, 0.94);
+}
+
+body.dark ion-alert.webloc-select .alert-wrapper,
+body.dark .dark ion-alert.webloc-select .alert-wrapper {
+  background: #101831;
+  color: rgba(255, 255, 255, 0.94);
+}
+
+body.dark ion-alert.webloc-select .alert-title,
+body.dark ion-alert.webloc-select .alert-message {
+  color: rgba(255, 255, 255, 0.94);
+}
+
+/* Alert (Denúncia enviada) - garante contraste no tema escuro */
+body.dark ion-alert.report-sent-alert,
+body.dark .dark ion-alert.report-sent-alert,
+body.ion-color-scheme-dark ion-alert.report-sent-alert,
+body.ion-color-scheme-dark .dark ion-alert.report-sent-alert {
+  --background: var(--ion-background-color);
+  --ion-background-color: var(--ion-background-color);
+  --ion-text-color: var(--ion-text-color);
+  --color: var(--ion-text-color);
+}
+
+body.dark ion-alert.report-sent-alert .alert-wrapper,
+body.dark .dark ion-alert.report-sent-alert .alert-wrapper,
+body.ion-color-scheme-dark ion-alert.report-sent-alert .alert-wrapper,
+body.ion-color-scheme-dark .dark ion-alert.report-sent-alert .alert-wrapper {
+  background: var(--ion-background-color);
+  color: var(--ion-text-color);
+  border: 1px solid var(--ion-color-step-200);
+}
+
+body.dark ion-alert.report-sent-alert .alert-title,
+body.dark ion-alert.report-sent-alert .alert-message,
+body.ion-color-scheme-dark ion-alert.report-sent-alert .alert-title,
+body.ion-color-scheme-dark ion-alert.report-sent-alert .alert-message {
+  color: var(--ion-text-color);
+}
+
+body.dark ion-alert.report-sent-alert .alert-button,
+body.ion-color-scheme-dark ion-alert.report-sent-alert .alert-button {
+  color: var(--ion-text-color);
+}
+
+body.dark ion-alert.report-sent-alert .report-sent-block,
+body.ion-color-scheme-dark ion-alert.report-sent-alert .report-sent-block {
+  color: var(--ion-color-danger);
+}
+
+@media (prefers-color-scheme: dark) {
+  ion-alert.report-sent-alert {
+    --background: var(--ion-background-color);
+    --ion-background-color: var(--ion-background-color);
+    --ion-text-color: var(--ion-text-color);
+    --color: var(--ion-text-color);
+  }
+}
+
+/* ActionSheet do chat (menu dos 3 pontinhos) - tema escuro */
+body.dark ion-action-sheet.chat-action-sheet,
+body.dark .chat-action-sheet,
+.dark ion-action-sheet.chat-action-sheet,
+.dark .chat-action-sheet {
+  --background: rgba(18, 20, 32, 0.96) !important;
+  --color: rgba(255, 255, 255, 0.96) !important;
+  --ion-text-color: rgba(255, 255, 255, 0.96) !important;
+  --button-color: rgba(255, 255, 255, 0.96) !important;
+  --button-color-hover: rgba(255, 255, 255, 0.96) !important;
+  --button-color-activated: rgba(255, 255, 255, 0.96) !important;
+  --header-color: rgba(255, 255, 255, 0.96) !important;
+  --button-background: transparent !important;
+  --button-background-hover: rgba(255, 255, 255, 0.08) !important;
+  --button-background-activated: rgba(255, 255, 255, 0.12) !important;
+  --border-color: rgba(148, 163, 184, 0.18) !important;
+  --backdrop-opacity: 0.45;
+}
+
+/* Em alguns temas/paletas o wrapper pode herdar fundo claro; força escuro */
+body.dark .chat-action-sheet .action-sheet-wrapper,
+.dark .chat-action-sheet .action-sheet-wrapper {
+  background: rgba(18, 20, 32, 0.96) !important;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+body.dark .chat-action-sheet .action-sheet-group,
+.dark .chat-action-sheet .action-sheet-group {
+  border-top: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+body.dark .chat-action-sheet .action-sheet-title,
+body.dark .chat-action-sheet .action-sheet-sub-title,
+body.dark .chat-action-sheet .action-sheet-button,
+body.dark .chat-action-sheet .action-sheet-button .action-sheet-button-inner,
+body.dark .chat-action-sheet .action-sheet-button-inner,
+body.dark .chat-action-sheet button,
+.dark .chat-action-sheet .action-sheet-title,
+.dark .chat-action-sheet .action-sheet-sub-title,
+.dark .chat-action-sheet .action-sheet-button,
+.dark .chat-action-sheet .action-sheet-button .action-sheet-button-inner,
+.dark .chat-action-sheet .action-sheet-button-inner,
+.dark .chat-action-sheet button {
+  color: rgba(255, 255, 255, 0.96) !important;
+}
+
+/* Mantém o destrutivo com destaque no tema escuro */
+body.dark .chat-action-sheet .action-sheet-button[role='destructive'],
+.dark .chat-action-sheet .action-sheet-button[role='destructive'] {
+  color: var(--ion-color-danger) !important;
+}
+
+/* Alert (Denunciar jogador) - tema escuro */
+body.dark ion-alert.report-user-alert,
+body.dark .report-user-alert {
+  --background: rgba(18, 20, 32, 0.96);
+  --ion-background-color: rgba(18, 20, 32, 0.96);
+  --ion-text-color: rgba(226, 232, 240, 0.96);
+  --ion-text-color-rgb: 226, 232, 240;
+  --color: rgba(226, 232, 240, 0.96);
+}
+
+body.dark ion-alert.report-user-alert .alert-wrapper,
+body.dark .report-user-alert .alert-wrapper {
+  background: rgba(18, 20, 32, 0.96);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+}
+
+body.dark ion-alert.report-user-alert .alert-title,
+body.dark ion-alert.report-user-alert .alert-message,
+body.dark .report-user-alert .alert-title,
+body.dark .report-user-alert .alert-message,
+body.dark .report-user-alert .alert-head h2,
+body.dark .report-user-alert .alert-head h3 {
+  color: rgba(226, 232, 240, 0.96) !important;
+}
+
+body.dark ion-alert.report-user-alert .alert-input,
+body.dark .report-user-alert .alert-input {
+  background: rgba(15, 22, 38, 0.92);
+  color: rgba(226, 232, 240, 0.96);
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 12px;
+}
+
+body.dark ion-alert.report-user-alert .alert-input::placeholder,
+body.dark .report-user-alert .alert-input::placeholder {
+  color: rgba(148, 163, 184, 0.9);
+}
+
+/* Modal de criar sala (/conversations) - tema escuro */
+body.dark ion-modal.create-room-modal .members-actions ion-searchbar {
+  --color: var(--ion-text-color);
+  --placeholder-color: rgba(var(--ion-text-color-rgb), 0.7);
+  --icon-color: rgba(var(--ion-text-color-rgb), 0.85);
+  --clear-button-color: rgba(var(--ion-text-color-rgb), 0.85);
+  --cancel-button-color: rgba(var(--ion-text-color-rgb), 0.85);
+}
+
+/* Modal de criar sala (/conversations) - layout/profissional */
+ion-modal.create-room-modal {
+  --border-radius: var(--app-radius-lg);
+  --box-shadow: var(--app-shadow-lg);
+  --width: min(920px, calc(100% - 24px));
+  --height: min(760px, 92vh);
+}
+
+ion-modal.create-room-modal::part(content) {
+  border-radius: var(--app-radius-lg);
+  overflow: hidden;
+  box-shadow: var(--app-shadow-lg);
+}
+
+ion-modal.create-room-modal::part(backdrop) {
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  background: rgba(0, 0, 0, 0.55);
+}
+
+ion-modal.create-room-modal ion-toolbar {
+  --border-color: transparent;
+  --border-width: 0;
+}
+
+ion-modal.create-room-modal ion-title {
+  font-weight: 800;
+  font-size: 1.1rem;
+  letter-spacing: -0.02em;
+}
+
+/* Modal gerenciar integrantes (salas -> conversa) - tema escuro */
+body.dark ion-modal.members-manager-modal ion-searchbar {
+  --color: var(--ion-text-color);
+  --placeholder-color: var(--ion-text-color);
+  --placeholder-opacity: 1;
+  --icon-color: rgba(var(--ion-text-color-rgb), 0.9);
+  --clear-button-color: rgba(var(--ion-text-color-rgb), 0.9);
+  --cancel-button-color: rgba(var(--ion-text-color-rgb), 0.9);
+}
+
+body.dark ion-modal.members-manager-modal ion-searchbar::part(input) {
+  color: var(--ion-text-color) !important;
+}
+
+body.dark ion-modal.members-manager-modal ion-searchbar::part(input)::placeholder {
+  color: var(--ion-text-color) !important;
+  opacity: 1 !important;
+}
+
+/* Cadastro (/register) - modais (jogos/plataformas/tipos/gêneros): searchbar legível no tema escuro */
+body.dark ion-modal ion-searchbar.picker-searchbar {
+  --color: var(--ion-text-color);
+  --placeholder-color: rgba(var(--ion-text-color-rgb), 0.72);
+  --placeholder-opacity: 1;
+  --icon-color: rgba(var(--ion-text-color-rgb), 0.9);
+  --clear-button-color: rgba(var(--ion-text-color-rgb), 0.9);
+  --cancel-button-color: rgba(var(--ion-text-color-rgb), 0.9);
+}
+
+body.dark ion-modal ion-searchbar.picker-searchbar::part(input) {
+  color: var(--ion-text-color) !important;
+}
+
+body.dark ion-modal ion-searchbar.picker-searchbar::part(input)::placeholder {
+  color: rgba(var(--ion-text-color-rgb), 0.72) !important;
+  opacity: 1 !important;
+}
+body.dark ion-alert.webloc-select .alert-radio-label,
+body.dark ion-alert.webloc-select .alert-checkbox-label,
+body.dark .dark ion-alert.webloc-select .alert-title,
+body.dark .dark ion-alert.webloc-select .alert-message,
+body.dark .dark ion-alert.webloc-select .alert-radio-label,
+body.dark .dark ion-alert.webloc-select .alert-checkbox-label {
+  color: rgba(255, 255, 255, 0.94) !important;
+  font-weight: 500;
+}
+
+body.dark ion-alert.webloc-select .alert-tappable,
+body.dark .dark ion-alert.webloc-select .alert-tappable {
+  color: rgba(255, 255, 255, 0.92);
+  transition: background 0.18s ease;
+}
+
+body.dark ion-alert.webloc-select .alert-tappable:hover,
+body.dark ion-alert.webloc-select .alert-tappable[aria-checked="true"],
+body.dark ion-alert.webloc-select .alert-tappable[aria-selected="true"],
+body.dark .dark ion-alert.webloc-select .alert-tappable:hover,
+body.dark .dark ion-alert.webloc-select .alert-tappable[aria-checked="true"],
+body.dark .dark ion-alert.webloc-select .alert-tappable[aria-selected="true"] {
+  background: rgba(167, 139, 250, 0.22);
+}
+
+body.dark ion-alert.webloc-select .alert-tappable:hover .alert-checkbox-label,
+body.dark ion-alert.webloc-select .alert-tappable:hover .alert-radio-label,
+body.dark ion-alert.webloc-select .alert-tappable[aria-checked="true"] .alert-checkbox-label,
+body.dark ion-alert.webloc-select .alert-tappable[aria-selected="true"] .alert-radio-label,
+body.dark .dark ion-alert.webloc-select .alert-tappable:hover .alert-checkbox-label,
+body.dark .dark ion-alert.webloc-select .alert-tappable:hover .alert-radio-label,
+body.dark .dark ion-alert.webloc-select .alert-tappable[aria-checked="true"] .alert-checkbox-label,
+body.dark .dark ion-alert.webloc-select .alert-tappable[aria-selected="true"] .alert-radio-label {
+  color: #ffffff !important;
+}
+
+/* Popover interface for filter selects */
+ion-select-popover.webloc-filter-popover {
+  --background: #f8fafc;
+  --ion-text-color: rgba(15, 23, 42, 0.94);
+}
+
+ion-select-popover.webloc-filter-popover ion-list,
+ion-select-popover.webloc-filter-popover ion-item,
+ion-select-popover.webloc-filter-popover ion-label {
+  color: rgba(15, 23, 42, 0.94);
+}
+
+body.dark ion-select-popover.webloc-filter-popover {
+  --background: #101831;
+  --ion-text-color: rgba(248, 250, 252, 0.96);
+  color: rgba(248, 250, 252, 0.96);
+  box-shadow: 0 18px 46px rgba(15, 23, 42, 0.55);
+}
+
+body.dark ion-select-popover.webloc-filter-popover ion-list,
+body.dark ion-select-popover.webloc-filter-popover ion-item,
+body.dark ion-select-popover.webloc-filter-popover ion-label {
+  color: rgba(248, 250, 252, 0.96);
+}
+
+body.dark ion-select-popover.webloc-filter-popover ion-item {
+  --background: transparent;
+  --color: rgba(248, 250, 252, 0.96);
+}
+
+body.dark ion-select-popover.webloc-filter-popover ion-item:hover,
+body.dark ion-select-popover.webloc-filter-popover ion-item[aria-selected="true"] {
+  --background: rgba(99, 102, 241, 0.24);
+  color: #ffffff;
 }
 

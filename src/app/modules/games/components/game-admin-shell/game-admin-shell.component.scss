@@ -1,0 +1,194 @@
+:host {
+  display: block;
+}
+
+.games-admin {
+  background: var(--app-surface-base);
+  border: 1px solid var(--app-glass-border, rgba(98, 108, 140, 0.18));
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: var(--app-shadow-lg, 0 24px 48px rgba(0, 0, 0, 0.18));
+  backdrop-filter: blur(18px);
+  max-width: 1200px;
+  margin: 0 auto;
+  color: var(--ion-text-color);
+  transition: background 220ms ease, color 220ms ease, border-color 220ms ease;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+
+  &__brand {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  &__back {
+    --padding-start: 12px;
+    --padding-end: 16px;
+    --border-radius: 12px;
+    --box-shadow: 0 12px 32px rgba(35, 137, 255, 0.35);
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+
+  &__title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: clamp(1.5rem, 2.8vw, 2.1rem);
+    margin: 0;
+    color: var(--ion-color-primary);
+  }
+
+  &__subtitle {
+    margin: 4px 0 0 0;
+    color: var(--ion-color-medium);
+    font-size: 0.95rem;
+  }
+
+  &__cta {
+    --border-radius: 12px;
+    font-weight: 600;
+    --box-shadow: 0 12px 24px rgba(0, 0, 0, 0.24);
+  }
+
+  &__toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin: 18px 0 24px;
+  }
+
+  &__metrics {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  &__filters {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  &__filters-row {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    align-items: center;
+  }
+
+  &__sort {
+    --background: rgba(255, 255, 255, 0.06);
+    border-radius: 14px;
+    padding: 8px;
+    display: flex;
+    justify-content: center;
+
+    ion-segment-button {
+      min-width: 140px;
+      font-size: 0.78rem;
+      text-transform: none;
+    }
+  }
+
+  &__clear {
+    justify-self: end;
+    font-weight: 600;
+    --color: rgba(255, 255, 255, 0.85);
+  }
+
+  &__filters ion-select {
+    --placeholder-opacity: 0.8;
+    --placeholder-color: rgba(255, 255, 255, 0.7);
+    --border-radius: 12px;
+    --background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  &__grid {
+    --ion-grid-column-padding: 12px;
+  }
+
+  &__row {
+    align-items: stretch;
+  }
+
+  &__loading-card {
+    --background: var(--webloc-surface-elevated, rgba(255, 255, 255, 0.86));
+    --border-radius: 16px;
+    margin-top: 16px;
+    --color: var(--ion-text-color);
+  }
+
+  &__modal::part(content) {
+    --width: min(640px, 95vw);
+    --min-height: 520px;
+    --border-radius: 20px;
+  }
+
+  ion-searchbar {
+    flex: 1 1 320px;
+    --background: rgba(var(--ion-background-color-rgb, 248, 250, 252), 0.92);
+    --color: var(--ion-text-color, #0b1220);
+    --placeholder-color: rgba(var(--ion-text-color-rgb, 11, 18, 32), 0.56);
+    --placeholder-opacity: 1;
+    --icon-color: rgba(var(--ion-text-color-rgb, 11, 18, 32), 0.62);
+    border-radius: 16px;
+    border: 1px solid var(--app-glass-border, rgba(98, 108, 140, 0.18));
+    box-shadow: var(--app-shadow-sm, 0 12px 20px rgba(15, 23, 42, 0.12));
+    backdrop-filter: saturate(1.05) blur(14px);
+    transition: border-color 220ms ease, box-shadow 220ms ease;
+  }
+
+  ion-chip {
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+
+  @media (max-width: 960px) {
+    padding: 16px;
+
+    &__brand {
+      width: 100%;
+      justify-content: space-between;
+    }
+
+    &__cta {
+      width: 100%;
+    }
+
+    &__filters-row {
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    }
+  }
+}
+
+:host-context(.dark) .games-admin {
+  background: linear-gradient(160deg, rgba(24, 30, 56, 0.82), rgba(18, 23, 46, 0.94));
+  border-color: rgba(132, 148, 220, 0.22);
+  box-shadow: var(--app-shadow-md, 0 22px 44px rgba(0, 0, 0, 0.38));
+
+  ion-searchbar {
+    --background: rgba(28, 34, 64, 0.82);
+    --color: var(--ion-text-color, #e5e7eb);
+    --placeholder-color: rgba(var(--ion-text-color-rgb, 229, 231, 235), 0.58);
+    --icon-color: rgba(var(--ion-text-color-rgb, 229, 231, 235), 0.72);
+    border: 1px solid rgba(132, 148, 220, 0.24);
+    box-shadow: var(--app-shadow-sm, 0 20px 40px rgba(2, 10, 32, 0.42));
+  }
+
+  &__loading-card {
+    --background: rgba(24, 26, 46, 0.92);
+    --color: var(--ion-text-color);
+  }
+}

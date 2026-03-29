@@ -1,14 +1,20 @@
-import { Component, OnInit, ViewChild, inject } from '@angular/core';
+import { Component, NgZone, OnInit, ViewChild, inject } from '@angular/core';
 import { IonModal, ToastController } from '@ionic/angular';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { PlatformsService } from '../../services/platforms.service';
+import { GenresService, Genre } from '../../services/genres.service';
 import { SwipeDeckFilters, SwipeDeckItem, SwipeProfile, SwipeService } from '../../services/swipe.service';
 import { Platform } from '../../model/platform';
 
 interface CompatibilitySummary {
   label: string;
   details: string;
+}
+
+interface AvailabilityBlock {
+  day: string;
+  periods: string[];
 }
 
 @Component({
@@ -27,32 +33,137 @@ export class SwipePage implements OnInit {
   angle = 0;
   Math = Math;
 
-  filters: SwipeDeckFilters = { limit: 20, minCompatibility: 0 };
+  filters: SwipeDeckFilters = { limit: 20, minCompatibility: 0, genreIds: [] };
   platformOptions: Platform[] = [];
+  genreOptions: Genre[] = [];
   styleOptions = ['Casual', 'Competitivo', 'Cooperativo'];
   periodOptions = ['Manha', 'Tarde', 'Noite', 'Madrugada'];
   compatibilityFloor = 0;
+  filterPopoverOptions = { cssClass: 'webloc-filter-popover' };
+
+  // Pickers (busca para listas grandes)
+  isPlatformPickerOpen = false;
+  isGenrePickerOpen = false;
+  platformPickerSearch = '';
+  genrePickerSearch = '';
+  private readonly dayOrder = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
+  private readonly dayLabels: Record<string, string> = {
+    Segunda: 'Seg.',
+    'Segunda-feira': 'Seg.',
+    Terça: 'Ter.',
+    'Terça-feira': 'Ter.',
+    Quarta: 'Qua.',
+    'Quarta-feira': 'Qua.',
+    Quinta: 'Qui.',
+    'Quinta-feira': 'Qui.',
+    Sexta: 'Sex.',
+    'Sexta-feira': 'Sex.',
+    'Sábado': 'Sáb.',
+    Domingo: 'Dom.'
+  };
+  private readonly periodLabels: Record<string, string> = {
+    manha: 'Manhã',
+    manhã: 'Manhã',
+    tarde: 'Tarde',
+    noite: 'Noite',
+    madrugada: 'Madrugada'
+  };
 
   profileDetails: SwipeProfile | null = null;
+  profileDeckItem: SwipeDeckItem | null = null;
   profileLoading = false;
   isProfileOpen = false;
   isFilterOpen = false;
 
+  matchFlash = false;
+  private matchFlashTimer: any;
+
+  private dragLock = false;
+  private dragStartX = 0;
+  private dragStartY = 0;
+  private dragCardWidth = 320;
+  private rafId: number | null = null;
+  private pendingDx = 0;
+  private pendingDy = 0;
+
+  private boundMouseMove?: (ev: MouseEvent) => void;
+  private boundMouseUp?: (ev: MouseEvent) => void;
+  private boundTouchMove?: (ev: TouchEvent) => void;
+  private boundTouchEnd?: (ev: TouchEvent) => void;
+
   private readonly swipe = inject(SwipeService);
   private readonly platforms = inject(PlatformsService);
+  private readonly genres = inject(GenresService);
   private readonly toast = inject(ToastController);
+  private readonly zone = inject(NgZone);
   @ViewChild('profileModal') profileModal?: IonModal;
   @ViewChild('filterModal') filterModal?: IonModal;
 
   ngOnInit() {
     this.loadPlatforms();
+    this.loadGenres();
     void this.load('initial');
+  }
+
+  openPlatformPicker(): void {
+    this.isPlatformPickerOpen = true;
+  }
+
+  openGenrePicker(): void {
+    this.isGenrePickerOpen = true;
+  }
+
+  selectionCountLabel(values: any[] | null | undefined, emptyLabel: string, allLabel?: string): string {
+    const normalized = Array.isArray(values)
+      ? values.map((v) => Number(v)).filter((v) => Number.isFinite(v) && v > 0)
+      : [];
+    if (!normalized.length) return allLabel ?? emptyLabel;
+    return normalized.length === 1 ? '1 selecionado' : `${normalized.length} selecionados`;
+  }
+
+  isFilterSelected(field: 'platformIds' | 'genreIds', id: number): boolean {
+    const current = (this.filters as any)?.[field];
+    const list = Array.isArray(current) ? current.map((v: any) => Number(v)).filter((v: number) => Number.isFinite(v) && v > 0) : [];
+    return list.includes(Number(id));
+  }
+
+  toggleFilterSelection(field: 'platformIds' | 'genreIds', id: number, checked: boolean): void {
+    const current = (this.filters as any)?.[field];
+    const list = Array.isArray(current) ? current.map((v: any) => Number(v)).filter((v: number) => Number.isFinite(v) && v > 0) : [];
+    const next = new Set<number>(list);
+    if (checked) next.add(Number(id));
+    else next.delete(Number(id));
+    (this.filters as any)[field] = Array.from(next);
+  }
+
+  filteredPlatforms(): Platform[] {
+    const term = (this.platformPickerSearch || '').trim().toLowerCase();
+    if (!term) return this.platformOptions;
+    return this.platformOptions.filter((p) => (p?.name || '').toLowerCase().includes(term));
+  }
+
+  filteredGenres(): Genre[] {
+    const term = (this.genrePickerSearch || '').trim().toLowerCase();
+    if (!term) return this.genreOptions;
+    return this.genreOptions.filter((g) => (g?.name || '').toLowerCase().includes(term));
+  }
+
+  trackById(_: number, item: any): number {
+    return Number(item?.id) || 0;
   }
 
   private loadPlatforms() {
     this.platforms.list().subscribe({
       next: (platforms) => {
         this.platformOptions = [...platforms].sort((a, b) => a.name.localeCompare(b.name));
+      },
+    });
+  }
+
+  private loadGenres() {
+    this.genres.list().subscribe({
+      next: (genres) => {
+        this.genreOptions = [...genres].sort((a, b) => a.name.localeCompare(b.name));
       },
     });
   }
@@ -114,7 +225,7 @@ export class SwipePage implements OnInit {
       next: (res) => {
         this.pop();
         if (res?.matched) {
-          void this.presentToast(res.message || 'É um match!', 'dark');
+          this.showMatchFlash();
         }
       },
       error: async () => {
@@ -122,6 +233,16 @@ export class SwipePage implements OnInit {
         await this.presentToast('Erro ao enviar like', 'danger');
       },
     });
+  }
+
+  private showMatchFlash(): void {
+    this.matchFlash = true;
+    if (this.matchFlashTimer) {
+      clearTimeout(this.matchFlashTimer);
+    }
+    this.matchFlashTimer = setTimeout(() => {
+      this.matchFlash = false;
+    }, 1200);
   }
 
   onPass() {
@@ -142,18 +263,19 @@ export class SwipePage implements OnInit {
     this.items.shift();
     this.busy = false;
     this.profileDetails = null;
+    this.profileDeckItem = null;
     this.isProfileOpen = false;
     if (this.items.length < 5) void this.load('auto');
   }
 
   onImgError(ev: Event) {
-    const img = ev.target as HTMLImageElement | null;
-    if (!img) return;
-    if ((img as any).dataset && (img as any).dataset.fallbackApplied) return;
+    const target = ev.target;
+    if (!(target instanceof HTMLImageElement)) return;
+    if (target.dataset['fallbackApplied']) return;
     try {
-      (img as any).dataset.fallbackApplied = '1';
+      target.dataset['fallbackApplied'] = '1';
     } catch {}
-    img.src = 'assets/icon/favicon.png';
+    target.src = 'assets/icon/favicon.png';
   }
 
   normalizeAvatar(url?: string | null) {
@@ -162,18 +284,85 @@ export class SwipePage implements OnInit {
     return `${environment.socketUrl}${url}`;
   }
 
+  availabilitySummary(raw?: string | null): string {
+    const value = typeof raw === 'string' ? raw.trim() : '';
+    if (!value) return '';
+    const schedule = this.parseScheduleObject(value);
+    if (schedule) {
+      const summary = this.buildScheduleSummary(schedule);
+      if (summary) return summary;
+    }
+    return this.formatFallbackSchedule(value);
+  }
+
+  availabilityLayout(raw?: string | null): { blocks: AvailabilityBlock[]; more: number } {
+    const value = typeof raw === 'string' ? raw.trim() : '';
+    if (!value) return { blocks: [], more: 0 };
+
+    const schedule = this.parseScheduleObject(value);
+    const blocks = schedule ? this.scheduleObjectToBlocks(schedule) : this.scheduleTextToBlocks(value);
+    if (!blocks.length) return { blocks: [], more: 0 };
+
+    // Keep it compact on the card.
+    const limit = 4;
+    const sliced = blocks.slice(0, limit);
+    const more = Math.max(0, blocks.length - sliced.length);
+    return { blocks: sliced, more };
+  }
+
   platformList(item?: SwipeDeckItem) {
     if (!item) return '';
-    return item.platforms.map((p) => p.name).join(', ');
+    const names = item.platforms.map((p) => p.name).filter(Boolean);
+    if (names.length <= 2) return names.join(', ');
+    return `${names.slice(0, 2).join(', ')} +${names.length - 2}`;
+  }
+
+  bioText(item?: SwipeDeckItem): string | null {
+    if (!item) return null;
+
+    const fromSummary = item.summary?.bio;
+    if (typeof fromSummary === 'string' && fromSummary.trim()) return fromSummary.trim();
+
+    // Defensive fallback: if the backend shape changed, try common fields.
+    const anyItem = item as unknown as Record<string, unknown>;
+    const anySummary = (anyItem['summary'] as Record<string, unknown> | undefined) ?? undefined;
+    const candidates: unknown[] = [
+      anySummary?.['bio'],
+      anySummary?.['profile'],
+      anyItem['profile'],
+      anyItem['descricao'],
+      anyItem['description'],
+      anyItem['bio'],
+    ];
+
+    for (const value of candidates) {
+      if (typeof value === 'string' && value.trim()) return value.trim();
+    }
+    return null;
+  }
+
+  shouldShowBioMore(item: SwipeDeckItem, renderedBio: string): boolean {
+    // We only have the full description in the Profile modal.
+    // In the deck payload, bio is typically summarized/truncated; show a discreet link when it looks truncated.
+    const summaryBio = item.summary?.bio;
+    const value = (typeof summaryBio === 'string' && summaryBio.trim()) ? summaryBio.trim() : renderedBio.trim();
+    if (!value) return false;
+
+    // Backend truncation uses "..."; keep heuristic simple.
+    if (value.endsWith('...')) return true;
+    if (value.length >= 140) return true;
+    return false;
   }
 
   async openProfile(item: SwipeDeckItem) {
     if (this.profileLoading) return;
     this.profileLoading = true;
+    this.profileDeckItem = item;
     try {
       this.profileDetails = await firstValueFrom(this.swipe.profile(item.id));
       this.isProfileOpen = true;
     } catch {
+      this.profileDeckItem = null;
       await this.presentToast('Não foi possível carregar o perfil.', 'danger');
     } finally {
       this.profileLoading = false;
@@ -184,6 +373,7 @@ export class SwipePage implements OnInit {
     this.isProfileOpen = false;
     if (!this.profileLoading) {
       this.profileDetails = null;
+      this.profileDeckItem = null;
     }
   }
 
@@ -212,6 +402,11 @@ export class SwipePage implements OnInit {
     this.filters.platformIds = (this.filters.platformIds || [])
       .map((v) => Number(v))
       .filter((v) => Number.isFinite(v) && v > 0);
+    this.filters.genreIds = (this.filters.genreIds || [])
+      .map((v) => Number(v))
+      .filter((v) => Number.isFinite(v) && v > 0);
+    this.filters.gameStyle = this.filters.gameStyle || undefined;
+    this.filters.period = this.filters.period || undefined;
     this.filters.limit = 20;
     void this.load('refresh');
     this.isFilterOpen = false;
@@ -219,7 +414,7 @@ export class SwipePage implements OnInit {
   }
 
   resetFilters() {
-    this.filters = { limit: 20, minCompatibility: 0 };
+    this.filters = { limit: 20, minCompatibility: 0, genreIds: [] };
     this.compatibilityFloor = 0;
     void this.load('refresh');
     this.isFilterOpen = false;
@@ -235,30 +430,64 @@ export class SwipePage implements OnInit {
     this.filterModal?.dismiss();
   }
 
-  onDragStart(_event?: TouchEvent | MouseEvent) {
+  private shouldIgnoreDragStart(event?: TouchEvent | MouseEvent): boolean {
+    const target = (event?.target ?? null) as EventTarget | null;
+    if (!(target instanceof Element)) return false;
+
+    // Ignore gestures that start from interactive controls.
+    // This prevents accidental likes when tapping buttons (e.g., "Perfil").
+    const interactiveSelector = [
+      'ion-button',
+      'button',
+      'a',
+      'ion-select',
+      'ion-range',
+      'ion-chip',
+      'ion-input',
+      'ion-textarea',
+      'input',
+      'textarea',
+      'select',
+      '[role="button"]',
+    ].join(',');
+
+    return Boolean(target.closest(interactiveSelector));
+  }
+
+  onDragStart(event?: TouchEvent | MouseEvent) {
+    if (this.busy) return;
+    if (this.shouldIgnoreDragStart(event)) return;
     this.dragging = true;
+    this.dragLock = false;
     this.dx = 0;
     this.dy = 0;
     this.angle = 0;
+
+    const card = document.getElementById('swipe-card');
+    const rect = card?.getBoundingClientRect();
+    this.dragCardWidth = rect?.width ? Math.max(200, rect.width) : 320;
+
+    const point = event && 'touches' in event ? event.touches[0] : (event as MouseEvent | undefined);
+    this.dragStartX = point?.clientX ?? 0;
+    this.dragStartY = point?.clientY ?? 0;
+
+    // Listeners no document (fora do Angular) para evitar CD em alta frequência.
+    this.attachDocumentDragListeners();
   }
 
+  // Mantido para compatibilidade (chamado apenas se ainda houver bindings no template)
   onDragMove(ev: TouchEvent | MouseEvent) {
-    if (!this.dragging) return;
-    const point = 'touches' in ev ? ev.touches[0] : (ev as MouseEvent);
-    const card = document.getElementById('swipe-card');
-    if (!card) return;
-    const rect = card.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
-    this.dx = point.clientX - cx;
-    this.dy = point.clientY - cy;
-    this.angle = (this.dx / rect.width) * 15;
+    this.handleDragMove(ev as any);
   }
 
   onDragEnd(_event?: TouchEvent | MouseEvent) {
     if (!this.dragging) return;
     this.dragging = false;
-    const threshold = 120;
+
+    this.detachDocumentDragListeners();
+
+    const card = document.getElementById('swipe-card');
+    const threshold = card ? Math.max(90, Math.round(card.getBoundingClientRect().width * 0.25)) : 120;
     if (this.dx > threshold) {
       this.onLike();
     } else if (this.dx < -threshold) {
@@ -267,6 +496,71 @@ export class SwipePage implements OnInit {
     this.dx = 0;
     this.dy = 0;
     this.angle = 0;
+    this.dragLock = false;
+  }
+
+  private attachDocumentDragListeners(): void {
+    if (this.boundMouseMove) return;
+    this.boundMouseMove = (ev: MouseEvent) => this.handleDragMove(ev);
+    this.boundMouseUp = (_ev: MouseEvent) => this.zone.run(() => this.onDragEnd());
+    this.boundTouchMove = (ev: TouchEvent) => this.handleDragMove(ev);
+    this.boundTouchEnd = (_ev: TouchEvent) => this.zone.run(() => this.onDragEnd());
+
+    this.zone.runOutsideAngular(() => {
+      document.addEventListener('mousemove', this.boundMouseMove!, { passive: true });
+      document.addEventListener('mouseup', this.boundMouseUp!, { passive: true });
+      document.addEventListener('touchmove', this.boundTouchMove!, { passive: false });
+      document.addEventListener('touchend', this.boundTouchEnd!, { passive: true });
+      document.addEventListener('touchcancel', this.boundTouchEnd!, { passive: true });
+    });
+  }
+
+  private detachDocumentDragListeners(): void {
+    if (!this.boundMouseMove) return;
+    document.removeEventListener('mousemove', this.boundMouseMove);
+    document.removeEventListener('mouseup', this.boundMouseUp!);
+    document.removeEventListener('touchmove', this.boundTouchMove!);
+    document.removeEventListener('touchend', this.boundTouchEnd!);
+    document.removeEventListener('touchcancel', this.boundTouchEnd!);
+    this.boundMouseMove = undefined;
+    this.boundMouseUp = undefined;
+    this.boundTouchMove = undefined;
+    this.boundTouchEnd = undefined;
+
+    if (this.rafId != null) {
+      cancelAnimationFrame(this.rafId);
+      this.rafId = null;
+    }
+  }
+
+  private handleDragMove(ev: MouseEvent | TouchEvent): void {
+    if (!this.dragging) return;
+    const point = 'touches' in ev ? ev.touches[0] : (ev as MouseEvent);
+    if (!point) return;
+
+    const dx = (point.clientX ?? 0) - this.dragStartX;
+    const dy = (point.clientY ?? 0) - this.dragStartY;
+    this.pendingDx = dx;
+    this.pendingDy = dy;
+
+    const movedX = Math.abs(dx);
+    const movedY = Math.abs(dy);
+    if (!this.dragLock && movedX > 10 && movedX > movedY) {
+      this.dragLock = true;
+    }
+    if (this.dragLock && 'touches' in ev) {
+      try { (ev as TouchEvent).preventDefault(); } catch {}
+    }
+
+    if (this.rafId != null) return;
+    this.rafId = requestAnimationFrame(() => {
+      this.rafId = null;
+      this.zone.run(() => {
+        this.dx = this.pendingDx;
+        this.dy = this.pendingDy;
+        this.angle = (this.dx / this.dragCardWidth) * 15;
+      });
+    });
   }
 
   private async presentToast(message: string, color: 'dark' | 'danger' = 'dark') {
@@ -279,5 +573,251 @@ export class SwipePage implements OnInit {
       });
       await toast.present();
     } catch {}
+  }
+
+  private parseScheduleObject(raw: string): Record<string, string[]> | null {
+    const first = raw.trim()[0];
+    if (first !== '{' && first !== '[') return null;
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        const result: Record<string, string[]> = {};
+        parsed.forEach((entry) => {
+          if (!entry || typeof entry !== 'object') return;
+          const day = 'day' in entry ? String((entry as any).day) : '';
+          const periods = Array.isArray((entry as any).periods)
+            ? (entry as any).periods.map((p: unknown) => String(p))
+            : [];
+          if (day && periods.length) {
+            result[day] = periods;
+          }
+        });
+        return Object.keys(result).length ? result : null;
+      }
+      if (parsed && typeof parsed === 'object') {
+        const result: Record<string, string[]> = {};
+        Object.entries(parsed as Record<string, unknown>).forEach(([day, periods]) => {
+          if (Array.isArray(periods) && periods.length) {
+            result[day] = periods.map((p) => String(p));
+          }
+        });
+        return Object.keys(result).length ? result : null;
+      }
+    } catch {}
+    return null;
+  }
+
+  private buildScheduleSummary(schedule: Record<string, string[]>): string {
+    const segments: string[] = [];
+    this.dayOrder.forEach((day) => {
+      const formatted = this.formatPeriods(schedule[day]);
+      if (!formatted.length) return;
+      const label = this.dayLabels[day] || this.normalizeDayLabel(day);
+      segments.push(`${label}: ${formatted.join(', ')}`);
+    });
+    if (!segments.length) {
+      Object.entries(schedule).forEach(([day, periods]) => {
+        const formatted = this.formatPeriods(periods);
+        if (!formatted.length) return;
+        const label = this.dayLabels[day] || this.normalizeDayLabel(day);
+        segments.push(`${label}: ${formatted.join(', ')}`);
+      });
+    }
+    const trimmed = segments.map((s) => s.trim()).filter(Boolean);
+    if (!trimmed.length) return '';
+    if (trimmed.length <= 2) return trimmed.join(' • ');
+    return `${trimmed.slice(0, 2).join(' • ')} • +${trimmed.length - 2}`;
+  }
+
+  private scheduleObjectToBlocks(schedule: Record<string, string[]>): AvailabilityBlock[] {
+    const result: AvailabilityBlock[] = [];
+
+    // Prefer standard order when possible
+    this.dayOrder.forEach((day) => {
+      const periods = this.formatPeriods(schedule[day]);
+      if (!periods.length) return;
+      const label = this.dayLabels[day] || this.normalizeDayLabel(day);
+      result.push({ day: label, periods });
+    });
+
+    if (result.length) return result;
+
+    Object.entries(schedule).forEach(([day, periods]) => {
+      const formatted = this.formatPeriods(periods);
+      if (!formatted.length) return;
+      const label = this.dayLabels[day] || this.normalizeDayLabel(day);
+      result.push({ day: label, periods: formatted });
+    });
+
+    return result;
+  }
+
+  private scheduleTextToBlocks(text: string): AvailabilityBlock[] {
+    const formattedText = this.formatFallbackSchedule(text);
+    if (!formattedText) return [];
+    const segments = formattedText
+      .split(/\s*•\s*/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    const blocks: AvailabilityBlock[] = [];
+    segments.forEach((segment) => {
+      const [dayPart, rest] = segment.split(':');
+      const day = this.normalizeDayLabel(dayPart || segment);
+      if (!rest) {
+        blocks.push({ day, periods: [] });
+        return;
+      }
+      const periods = this.uniqueSequence(
+        rest
+          .split(/,|\//)
+          .map((v) => this.normalizePeriodLabel(v))
+          .filter(Boolean)
+      );
+      blocks.push({ day: this.dayLabels[day] || day, periods });
+    });
+    return blocks;
+  }
+
+  private formatFallbackSchedule(text: string): string {
+    const cleaned = text
+      .replace(/[{}\[\]"]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!cleaned) return '';
+    const normalizedSeparators = cleaned.replace(/,\s*(?=[^:]+:)/g, '; ');
+    const segments = normalizedSeparators.split(/;|\||•/).map((segment) => segment.trim()).filter(Boolean);
+    if (!segments.length) {
+      return this.normalizeDayAndPeriod(cleaned);
+    }
+    const formatted = segments.map((segment) => {
+      const [dayPart, rest] = segment.split(':');
+      if (!rest) {
+        return this.normalizeDayAndPeriod(segment);
+      }
+      const dayLabel = this.normalizeDayLabel(dayPart);
+      const periods = this.uniqueSequence(
+        rest.split(/,|\//)
+          .map((value) => this.normalizePeriodLabel(value))
+          .filter(Boolean)
+      );
+      return periods.length ? `${dayLabel}: ${periods.join(', ')}` : dayLabel;
+    });
+    const trimmed = formatted.map((s) => s.trim()).filter(Boolean);
+    if (!trimmed.length) return '';
+    if (trimmed.length <= 2) return trimmed.join(' • ');
+    return `${trimmed.slice(0, 2).join(' • ')} • +${trimmed.length - 2}`;
+  }
+
+  private formatPeriods(periods: unknown): string[] {
+    if (!Array.isArray(periods)) return [];
+    const formatted = periods
+      .map((period) => this.normalizePeriodLabel(String(period)))
+      .filter(Boolean);
+    return this.uniqueSequence(formatted);
+  }
+
+  selectedGenreNames(): string[] {
+    if (!this.filters.genreIds?.length) return [];
+    const selected = new Set(this.filters.genreIds);
+    return this.genreOptions.filter((genre) => selected.has(genre.id)).map((genre) => genre.name);
+  }
+
+  genreFilterLabel(): string {
+    const names = this.selectedGenreNames();
+    if (!names.length) return '';
+    if (names.length === 1) return names[0];
+    if (names.length === 2) return names.join(', ');
+    return `${names.slice(0, 2).join(', ')} +${names.length - 2}`;
+  }
+
+  private normalizePeriodLabel(period: string): string {
+    const trimmed = period.trim();
+    if (!trimmed) return '';
+    const normalized = trimmed
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+    return this.periodLabels[normalized] || this.titleize(trimmed);
+  }
+
+  private normalizeDayLabel(day: string | undefined): string {
+    if (!day) return '';
+    const trimmed = day.trim();
+    if (!trimmed) return '';
+    const normalized = trimmed
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+    const map: Record<string, string> = {
+      segunda: 'Segunda',
+      'segunda-feira': 'Segunda',
+      seg: 'Segunda',
+      terca: 'Terça',
+      'terca-feira': 'Terça',
+      ter: 'Terça',
+      quarta: 'Quarta',
+      'quarta-feira': 'Quarta',
+      qua: 'Quarta',
+      quinta: 'Quinta',
+      'quinta-feira': 'Quinta',
+      qui: 'Quinta',
+      sexta: 'Sexta',
+      'sexta-feira': 'Sexta',
+      sex: 'Sexta',
+      sabado: 'Sábado',
+      sab: 'Sábado',
+      domingo: 'Domingo',
+      dom: 'Domingo'
+    };
+    return map[normalized] || this.titleize(trimmed);
+  }
+
+  private normalizeDayAndPeriod(fragment: string): string {
+    if (!fragment.includes(':')) {
+      return this.uniqueSequence(
+        fragment
+          .split(/,|\//)
+          .map((piece) => this.normalizePeriodLabel(piece))
+          .filter(Boolean)
+      ).join(', ');
+    }
+    return fragment
+      .split(/\s*•\s*|;\s*|\|\s*/)
+      .map((segment) => {
+        const [dayPart, rest] = segment.split(':');
+        if (!dayPart) return '';
+        const dayLabel = this.normalizeDayLabel(dayPart);
+        if (!rest) return dayLabel;
+        const periods = this.uniqueSequence(
+          rest.split(/,|\//)
+            .map((piece) => this.normalizePeriodLabel(piece))
+            .filter(Boolean)
+        );
+        return periods.length ? `${dayLabel}: ${periods.join(', ')}` : dayLabel;
+      })
+      .filter(Boolean)
+      .join(' • ');
+  }
+
+  private titleize(value: string): string {
+    const trimmed = value.trim().toLowerCase();
+    if (!trimmed) return '';
+    return trimmed.replace(/(^|\s|\-)([a-zá-ú])/g, (_match: string, prefix: string, letter: string) => {
+      const safePrefix = prefix ?? '';
+      const safeLetter = letter ?? '';
+      return `${safePrefix}${safeLetter.toUpperCase()}`;
+    });
+  }
+
+  private uniqueSequence(values: string[]): string[] {
+    const seen = new Set<string>();
+    const result: string[] = [];
+    values.forEach((value) => {
+      if (!value || seen.has(value)) return;
+      seen.add(value);
+      result.push(value);
+    });
+    return result;
   }
 }

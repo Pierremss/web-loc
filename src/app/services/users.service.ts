@@ -8,6 +8,17 @@ export interface UserSummary {
   nickname?: string;
   email?: string;
   avatar_url?: string;
+  profile?: string;
+  platforms?: string[] | string | null;
+  game_style?: string | null;
+  favorite_genre?: string | null;
+  available_times?: string | null;
+  created_at?: string | null;
+}
+
+export interface FavoriteGame {
+  id: number;
+  name: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -27,6 +38,10 @@ export class UsersService {
   // Add public profile fetch
   getPublicProfile(id: number) {
     return this.http.get<UserSummary>(`${this.base}/${id}/public`);
+  }
+
+  getFavorites(id: number) {
+    return this.http.get<FavoriteGame[]>(`${this.base}/${id}/favoritos`);
   }
 
   uploadAvatar(id: number, file: File) {

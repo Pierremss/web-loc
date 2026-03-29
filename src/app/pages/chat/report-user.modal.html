@@ -1,0 +1,75 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>{{ titleLabel() }}</ion-title>
+    <ion-buttons slot="end">
+      <ion-button fill="clear" (click)="close('cancel')" aria-label="Fechar">
+        <ion-icon name="close"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <div class="report-container">
+    <ion-card class="report-card">
+      <ion-card-header>
+        <ion-card-subtitle>Ajude a manter a comunidade segura</ion-card-subtitle>
+        <ion-card-title>O que aconteceu?</ion-card-title>
+      </ion-card-header>
+
+      <ion-card-content>
+        <ion-item lines="full">
+          <ion-label position="stacked">Categoria</ion-label>
+          <ion-select [(ngModel)]="category" interface="popover" placeholder="Selecione">
+            <ion-select-option *ngFor="let c of categories" [value]="c">{{ c }}</ion-select-option>
+          </ion-select>
+        </ion-item>
+
+        <ion-item lines="full">
+          <ion-label position="stacked">Detalhes (opcional)</ion-label>
+          <ion-textarea
+            [(ngModel)]="details"
+            placeholder="Descreva rapidamente o que aconteceu"
+            autoGrow="true"
+            maxlength="900"
+          ></ion-textarea>
+        </ion-item>
+
+        <div class="photos">
+          <div class="photos-header">
+            <div class="label">Evidências (fotos)</div>
+            <div class="hint">Opcional · JPG/PNG/WebP</div>
+          </div>
+
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            (change)="onFilesSelected($event)"
+            class="file-input"
+            aria-label="Selecionar fotos"
+          />
+
+          <div class="previews" *ngIf="photoPreviews.length">
+            <div class="preview" *ngFor="let p of photoPreviews; index as i">
+              <img [src]="p.url" alt="Foto selecionada" />
+              <ion-button size="small" fill="clear" color="danger" (click)="removePhoto(i)" aria-label="Remover foto">
+                <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+              </ion-button>
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <ion-button expand="block" fill="outline" (click)="close('cancel')" [disabled]="submitting">
+            Cancelar
+          </ion-button>
+          <ion-button expand="block" color="danger" (click)="submit()" [disabled]="submitting">
+            <ion-spinner *ngIf="submitting" name="crescent" style="margin-right: 10px"></ion-spinner>
+            Enviar denúncia
+          </ion-button>
+        </div>
+      </ion-card-content>
+    </ion-card>
+  </div>
+</ion-content>

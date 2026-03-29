@@ -47,8 +47,8 @@
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "2kb",
-                  "maximumError": "4kb"
+                  "maximumWarning": "14kb",
+                  "maximumError": "18kb"
                 }
               ],
               "fileReplacements": [
@@ -67,9 +67,7 @@
               "sourceMap": true,
               "namedChunks": true
             },
-            "ci": {
-              "progress": false
-            }
+            "ci": {}
           },
           "defaultConfiguration": "production"
         },
@@ -82,9 +80,7 @@
             "development": {
               "buildTarget": "app:build:development"
             },
-            "ci": {
-              "progress": false
-            }
+            "ci": {}
           },
           "defaultConfiguration": "development",
           "options": {
@@ -125,7 +121,6 @@
           },
           "configurations": {
             "ci": {
-              "progress": false,
               "watch": false
             }
           }

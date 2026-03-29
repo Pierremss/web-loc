@@ -5,7 +5,9 @@
 export const environment = {
   production: false,
   apiBase: 'http://localhost:3333/api',
-  socketUrl: 'http://localhost:3333'
+  socketUrl: 'http://localhost:3333',
+  rawgApiBaseUrl: 'https://api.rawg.io/api',
+  rawgApiKey: 'a3420474864f406a8576d158f286b5ff'
 };
 
 /*

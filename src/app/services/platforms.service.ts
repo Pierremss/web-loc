@@ -3,12 +3,13 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Platform } from '../model/platform';
 import { AuthService } from '../modules/auth/auth.service';
+import { environment } from '../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class PlatformsService {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthService);
-  private base = '/api/platforms';
+  private base = `${environment.apiBase}/platforms`;
 
   private headers() {
     return this.auth.token ? { headers: new HttpHeaders({ Authorization: `Bearer ${this.auth.token}` }) } : {};

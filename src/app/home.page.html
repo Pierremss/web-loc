@@ -10,6 +10,20 @@
 <ion-content class="ion-padding home-page">
   <div class="home-wrapper layout-container">
     <div class="home-container surface-card stack fadein">
+      <div class="top-actions">
+        <ion-button
+          class="theme-toggle"
+          fill="solid"
+          size="small"
+          type="button"
+          (click)="toggleTheme()"
+          [attr.aria-label]="themeToggleAria"
+        >
+          <ion-icon [name]="themeToggleIcon" slot="start"></ion-icon>
+          {{ themeToggleText }}
+        </ion-button>
+      </div>
+
       <div class="logo">
         <h1 class="heading-highlight">WebLoc</h1>
         <span class="tagline text-soft">Bem-vindo ao sistema</span>
@@ -35,7 +49,7 @@
             </div>
             <ng-template #noAvatar>
               <div class="avatar-placeholder avatar-ring">
-                <div class="initials">{{ (auth.user?.name || auth.user?.nickname || '?')?.charAt(0) }}</div>
+                <div class="initials">{{ (auth.user?.name || auth.user?.nickname || '?').charAt(0) }}</div>
               </div>
             </ng-template>
             <div class="texts">
@@ -70,6 +84,16 @@
           Gerenciar Usuários
         </ion-button>
 
+        <ion-button *ngIf="auth.isAdmin() && !loading" expand="block" routerLink="/admin/recomendacoes" class="btn-primary pill">
+          <ion-icon name="bulb-outline" slot="start"></ion-icon>
+          Recomendações dos jogadores
+        </ion-button>
+
+        <ion-button *ngIf="auth.isAdmin() && !loading" expand="block" routerLink="/admin/denuncias" class="btn-primary pill">
+          <ion-icon name="flag-outline" slot="start"></ion-icon>
+          Denúncias de jogadores
+        </ion-button>
+
         <ion-button *ngIf="!auth.isAdmin() && !loading" expand="block" routerLink="/jogador-perfil" class="btn-primary pill">
           <ion-icon name="person-outline" slot="start"></ion-icon>
           Meu Perfil
@@ -79,6 +103,17 @@
           <ion-icon name="people-circle-outline" slot="start"></ion-icon>
           Amigos
         </ion-button>
+
+        <ion-button *ngIf="!auth.isAdmin() && !loading" expand="block" routerLink="/conversations" class="btn-primary pill">
+          <ion-icon name="chatbubbles-outline" slot="start"></ion-icon>
+          Salas
+        </ion-button>
+
+        <ion-button *ngIf="!auth.isAdmin() && !loading" expand="block" routerLink="/recomendar-jogo" class="btn-primary pill">
+          <ion-icon name="bulb-outline" slot="start"></ion-icon>
+          Recomendar jogo
+        </ion-button>
+        
 
         <ion-button *ngIf="!loading" expand="block" color="medium" (click)="auth.logout(); navigateToLogin()" class="btn-secondary pill btn-outline">
           <ion-icon name="log-out-outline" slot="start"></ion-icon>

@@ -1,9 +1,31 @@
 <ion-header>
-  <ion-toolbar>
-    <ion-buttons slot="start">
-      <ion-menu-button></ion-menu-button>
+  <ion-toolbar class="chat-toolbar">
+    <ion-buttons slot="start" class="chat-toolbar-back">
+      <ion-back-button
+        defaultHref="/conversations"
+        text=""
+        aria-label="Voltar"
+      ></ion-back-button>
     </ion-buttons>
-    <ion-title>Chat</ion-title>
+    <ion-title>
+      <div class="chat-toolbar-profile" aria-live="polite">
+        <img
+          class="chat-toolbar-avatar"
+          [src]="peerAvatar"
+          [alt]="peerName"
+          (error)="onAvatarError($event)"
+        />
+        <div class="chat-toolbar-text">
+          <span class="chat-toolbar-name">{{ peerName }}</span>
+          <span class="chat-toolbar-subtitle" *ngIf="isTyping">Digitando…</span>
+        </div>
+      </div>
+    </ion-title>
+    <ion-buttons slot="end">
+      <ion-button fill="clear" aria-label="Opções do contato" (click)="openChatActions()">
+        <ion-icon name="ellipsis-vertical"></ion-icon>
+      </ion-button>
+    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
@@ -11,38 +33,122 @@
   <div class="layout-container chat-wrapper">
     <div class="chat-container surface-card">
       <div class="messages" (scroll)="onScroll($event)">
-        <div *ngFor="let m of messages" class="message-row" [class.mine]="m.sender_id === auth.user?.id">
+        <ng-container *ngFor="let m of messages">
+          <div class="date-divider" *ngIf="m.__isMarker">
+            <span class="line"></span>
+            <span class="label">{{ m.__label }}</span>
+            <span class="line"></span>
+          </div>
+          <div *ngIf="!m.__isMarker" class="message-row" [class.mine]="m.sender_id === auth.user?.id">
           <div class="avatar-col" *ngIf="m.sender_id !== auth.user?.id">
             <img class="avatar-img" [src]="peerAvatar" alt="Avatar" (error)="onAvatarError($event)" />
           </div>
-          <div class="bubble" [class.mine]="m.sender_id === auth.user?.id">
+          <div
+            class="bubble"
+            [class.mine]="m.sender_id === auth.user?.id"
+            [class.reply-source]="replyingTo?.id === m.id"
+            [class.swipe-active]="isSwipeActive(m)"
+            [class.swipe-releasing]="isSwipeReleasing(m)"
+            [style.transform]="getSwipeTransform(m)"
+            (pointerdown)="onBubblePointerDown($event, m)"
+            (pointermove)="onBubblePointerMove($event)"
+            (pointerup)="onBubblePointerEnd($event)"
+            (pointercancel)="onBubblePointerCancel($event)"
+            (pointerleave)="onBubblePointerCancel($event)"
+          >
             <ng-container *ngIf="!m.deleted_at; else deletedTpl">
-              <div class="header" *ngIf="m.sender_id !== auth.user?.id">
-                <span class="name">{{ peerName }}</span>
-              </div>
-              <div class="text">{{ m.content }}</div>
-              <div class="meta">
-                <ion-text color="medium" *ngIf="m.edited_at">(editada)</ion-text>
-                <ion-text color="success" *ngIf="m.read_at">Lida</ion-text>
-                <ion-text color="medium" *ngIf="!m.read_at && m.delivered_at">Entregue</ion-text>
-              </div>
-              <div class="actions">
-                <ion-button size="small" fill="clear" (click)="openReactions($event, m)">
-                  <ion-icon name="happy-outline"></ion-icon>
-                </ion-button>
-                <ion-button *ngIf="m.sender_id === auth.user?.id" size="small" fill="clear" (click)="edit(m)">
-                  <ion-icon name="create-outline"></ion-icon>
-                </ion-button>
-                <ion-button *ngIf="m.sender_id === auth.user?.id" size="small" fill="clear" color="danger" (click)="remove(m)">
-                  <ion-icon name="trash-outline"></ion-icon>
-                </ion-button>
+              <ion-button
+                size="small"
+                fill="clear"
+                class="bubble-menu"
+                aria-label="Opções da mensagem"
+                type="button"
+                (click)="openMessageOptions(m)"
+              >
+                <ion-icon slot="icon-only" name="ellipsis-horizontal"></ion-icon>
+              </ion-button>
+              <div class="bubble-body">
+                <ng-container *ngIf="m.reply_to_id as replyId">
+                  <ng-container *ngIf="m.__replyTarget as target; else replyFallback">
+                    <div
+                      class="reply-card"
+                      [class.mine]="target.sender_id === auth.user?.id"
+                      [class.deleted]="target.deleted_at"
+                    >
+                      <div class="reply-bar"></div>
+                      <div class="reply-content">
+                        <span class="reply-author">
+                          {{ target.sender_id === auth.user?.id ? 'Você' : peerName }}
+                        </span>
+                        <div class="reply-text">
+                          {{ target.deleted_at ? 'Mensagem excluída' : target.content }}
+                        </div>
+                      </div>
+                    </div>
+                  </ng-container>
+                  <ng-template #replyFallback>
+                    <div class="reply-card missing">
+                      <div class="reply-bar"></div>
+                      <div class="reply-content">
+                        <span class="reply-author">Mensagem anterior</span>
+                        <div class="reply-text">Prévia indisponível.</div>
+                      </div>
+                    </div>
+                  </ng-template>
+                </ng-container>
+                <div class="text">{{ m.content }}</div>
+                <div class="meta">
+                  <div class="meta-left">
+                    <div class="status-group" *ngIf="m.edited_at || m.read_at || (!m.read_at && m.delivered_at)">
+                      <ion-text class="status" color="medium" *ngIf="m.edited_at">(editada)</ion-text>
+                      <ion-text class="status" color="success" *ngIf="m.read_at">Lida</ion-text>
+                      <ion-text class="status" color="medium" *ngIf="!m.read_at && m.delivered_at">Entregue</ion-text>
+                    </div>
+                  </div>
+                  <div class="meta-right">
+                    <span class="time">{{ m.__displayTime }}</span>
+                    <span class="date" *ngIf="m.__displayDate">{{ m.__displayDate }}</span>
+                  </div>
+                </div>
               </div>
             </ng-container>
             <ng-template #deletedTpl>
+              <ng-container *ngIf="m.reply_to_id as replyId">
+                <ng-container *ngIf="m.__replyTarget as target; else deletedReplyFallback">
+                  <div class="reply-card" [class.deleted]="target.deleted_at">
+                    <div class="reply-bar"></div>
+                    <div class="reply-content">
+                      <span class="reply-author">
+                        {{ target.sender_id === auth.user?.id ? 'Você' : peerName }}
+                      </span>
+                      <div class="reply-text">
+                        {{ target.deleted_at ? 'Mensagem excluída' : target.content }}
+                      </div>
+                    </div>
+                  </div>
+                </ng-container>
+                <ng-template #deletedReplyFallback>
+                  <div class="reply-card missing">
+                    <div class="reply-bar"></div>
+                    <div class="reply-content">
+                      <span class="reply-author">Mensagem anterior</span>
+                      <div class="reply-text">Prévia indisponível.</div>
+                    </div>
+                  </div>
+                </ng-template>
+              </ng-container>
               <div class="text deleted">Mensagem excluída</div>
+              <div class="meta">
+                <div class="meta-left"></div>
+                <div class="meta-right">
+                  <span class="time">{{ m.__displayTime }}</span>
+                  <span class="date" *ngIf="m.__displayDate">{{ m.__displayDate }}</span>
+                </div>
+              </div>
             </ng-template>
           </div>
-        </div>
+          </div>
+        </ng-container>
       </div>
       <div class="scroll-bottom" *ngIf="!atBottom && newMessages > 0">
         <ion-button size="small" (click)="scrollToBottom()">
@@ -54,15 +160,39 @@
 </ion-content>
 
 <ion-footer class="chat-input">
-  <ion-toolbar>
-    <ion-item lines="none">
-  <ion-input placeholder="Mensagem" [(ngModel)]="content" (ionInput)="onTyping()" (keyup.enter)="send()"></ion-input>
-  <ion-button (click)="send()" [disabled]="!content.trim()">
+  <ion-toolbar class="composer-toolbar">
+    <ion-item class="blocked-banner" lines="none" *ngIf="blocked">
+      <ion-icon name="ban" slot="start" color="medium"></ion-icon>
+      <ion-text color="medium" *ngIf="blockedByMe">Você bloqueou este jogador. Desbloqueie para voltar a enviar mensagens.</ion-text>
+      <ion-text color="medium" *ngIf="!blockedByMe">Este jogador bloqueou o contato. Não é possível enviar mensagens neste chat.</ion-text>
+    </ion-item>
+    <ion-item class="reply-banner" lines="none" *ngIf="replyingTo">
+      <div class="reply-banner-content">
+        <span class="reply-banner-label">
+          Respondendo a {{ replyingTo.sender_id === auth.user?.id ? 'você mesmo' : peerName }}
+        </span>
+        <div class="reply-banner-text">
+          {{ replyingTo.deleted_at ? 'Mensagem excluída' : replyingTo.content }}
+        </div>
+      </div>
+      <ion-button slot="end" fill="clear" size="small" (click)="clearReply()" aria-label="Cancelar resposta">
+        <ion-icon slot="icon-only" name="close"></ion-icon>
+      </ion-button>
+    </ion-item>
+    <ion-item class="composer-item" lines="none">
+      <ion-input
+        placeholder="Mensagem"
+        [(ngModel)]="content"
+        (ionInput)="onTyping()"
+        (keyup.enter)="send()"
+        [readonly]="blocked"
+      ></ion-input>
+      <ion-button class="send-btn" (click)="send()" [disabled]="blocked || !content.trim()">
         <ion-icon name="send-outline"></ion-icon>
       </ion-button>
     </ion-item>
-    <ion-item lines="none" *ngIf="isTyping">
+    <div class="typing" *ngIf="isTyping">
       <ion-text color="medium">Digitando…</ion-text>
-    </ion-item>
+    </div>
   </ion-toolbar>
 </ion-footer>

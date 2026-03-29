@@ -5,9 +5,10 @@ import { IonicModule } from '@ionic/angular';
 import { ConversationsRoutingModule } from './conversations-routing.module';
 import { ConversationsListPage } from './conversations-list.page';
 import { ConversationChatPage } from './conversation-chat.page';
+import { RoomCardComponent } from '../../components/room-card/room-card.component';
 
 @NgModule({
   imports: [CommonModule, FormsModule, IonicModule, ConversationsRoutingModule],
-  declarations: [ConversationsListPage, ConversationChatPage]
+  declarations: [ConversationsListPage, ConversationChatPage, RoomCardComponent]
 })
 export class ConversationsModule {}

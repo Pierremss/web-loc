@@ -1,6 +1,24 @@
 <ion-content class="register-page" fullscreen>
   <div class="layout-container register-wrapper">
     <section class="register-card surface-card stack stack-lg fadein">
+      <div class="register-nav">
+        <ion-button *ngIf="etapaAtual > 1" fill="clear" class="nav-btn nav-btn--home" (click)="goToHome()">
+          <ion-icon slot="start" name="home-outline"></ion-icon>
+          <span>Menu principal</span>
+        </ion-button>
+
+        <ion-button
+          class="nav-btn theme-toggle"
+          fill="solid"
+          size="small"
+          type="button"
+          (click)="toggleTheme()"
+          [attr.aria-label]="themeToggleAria"
+        >
+          <ion-icon [name]="themeToggleIcon" slot="start"></ion-icon>
+          {{ themeToggleText }}
+        </ion-button>
+      </div>
       <header class="logo stack">
         <h1>WebLoc</h1>
         <p class="subtitle">Crie sua conta</p>
@@ -20,6 +38,11 @@
         <div class="step" [class.active]="etapaAtual === 3">
           <ion-icon name="ellipse-outline"></ion-icon>
           <span>Interesse</span>
+        </div>
+        <div class="divider"></div>
+        <div class="step" [class.active]="etapaAtual === 4">
+          <ion-icon name="ellipse-outline"></ion-icon>
+          <span>Verificação</span>
         </div>
       </div>
 
@@ -51,6 +74,16 @@
           Próximo
           <ion-icon name="arrow-forward-outline" slot="end"></ion-icon>
         </ion-button>
+        <ion-button
+          expand="block"
+          color="medium"
+          class="btn-secondary"
+          type="button"
+          routerLink="/home"
+        >
+          <ion-icon name="arrow-back-outline" slot="start"></ion-icon>
+          Voltar
+        </ion-button>
       </form>
 
     <form *ngIf="etapaAtual === 2" (ngSubmit)="avancarEtapa()" class="form-stage surface-ghost stack">
@@ -70,27 +103,31 @@
 
       <ion-item>
         <ion-label>Jogos Favoritos</ion-label>
-        <ion-select multiple="true" [(ngModel)]="form.jogos_favoritos" name="jogos_favoritos">
-          <ion-select-option *ngFor="let g of jogos" [value]="g.id">{{g.name}}</ion-select-option>
-        </ion-select>
+        <ion-button fill="clear" slot="end" type="button" (click)="openGamePicker()">
+          {{ selectionCountLabel(form.jogos_favoritos, 'Selecionar') }}
+        </ion-button>
       </ion-item>
       <div *ngIf="erros['jogos_favoritos']" class="error-message">{{ erros['jogos_favoritos'] }}</div>
       <ion-item>
         <ion-label>Plataformas</ion-label>
-        <ion-select multiple="true" [(ngModel)]="form.platforms" name="platforms">
-          <ion-select-option *ngFor="let p of platformOptions" [value]="p.id">{{ p.name }}</ion-select-option>
-        </ion-select>
+        <ion-button fill="clear" slot="end" type="button" (click)="openPlatformPicker()">
+          {{ selectionCountLabel(form.platforms, 'Selecionar') }}
+        </ion-button>
       </ion-item>
       <div *ngIf="erros['platforms']" class="error-message">{{ erros['platforms'] }}</div>
       <ion-item>
-        <ion-label>Estilo de Jogo</ion-label>
-        <ion-select [(ngModel)]="form.game_style" name="game_style">
-          <ion-select-option value="Casual">Casual</ion-select-option>
-          <ion-select-option value="Competitivo">Competitivo</ion-select-option>
-          <ion-select-option value="Cooperativo">Cooperativo</ion-select-option>
-        </ion-select>
+        <ion-label>Tipo de Jogo</ion-label>
+        <ion-button fill="clear" slot="end" type="button" (click)="openTypePicker()">
+          {{ selectionCountLabel(form.types, 'Selecionar') }}
+        </ion-button>
       </ion-item>
-      <div *ngIf="erros['game_style']" class="error-message">{{ erros['game_style'] }}</div>
+      <div *ngIf="erros['types']" class="error-message">{{ erros['types'] }}</div>
+      <ion-item>
+        <ion-label>Gêneros Preferidos</ion-label>
+        <ion-button fill="clear" slot="end" type="button" (click)="openGenrePicker()">
+          {{ selectionCountLabel(form.genres, 'Selecionar') }}
+        </ion-button>
+      </ion-item>
 
       <ion-item>
         <ion-label position="floating">Descrição</ion-label>
@@ -107,6 +144,261 @@
         Voltar
         <ion-icon name="arrow-back-outline" slot="start"></ion-icon>
       </ion-button>
+
+      <!-- Modal: Jogos Favoritos (busca + filtro por gênero) -->
+      <ion-modal [isOpen]="isGamePickerOpen" (didDismiss)="isGamePickerOpen = false">
+        <ng-template>
+          <ion-header>
+            <ion-toolbar>
+              <ion-title>Selecionar jogos</ion-title>
+              <ion-buttons slot="end">
+                <ion-button (click)="isGamePickerOpen = false">Fechar</ion-button>
+              </ion-buttons>
+            </ion-toolbar>
+          </ion-header>
+          <ion-content class="ion-padding game-picker-content">
+            <ion-searchbar
+              class="picker-searchbar"
+              placeholder="Buscar jogo"
+              [value]="gamePickerSearch"
+              (ionInput)="setGamePickerSearch($any($event.target).value)"
+              debounce="250">
+            </ion-searchbar>
+
+            <div class="filter-row">
+              <ion-item class="filter-item">
+                <ion-label position="stacked">Filtrar por gênero</ion-label>
+                <ion-select
+                  multiple="true"
+                  interface="popover"
+                  [value]="gamePickerGenreIds"
+                  (ionChange)="setGamePickerGenres($event.detail.value)">
+                  <ion-select-option *ngFor="let g of genreOptions; trackBy: trackById" [value]="g.id">{{ g.name }}</ion-select-option>
+                </ion-select>
+              </ion-item>
+              <ion-button 
+                *ngIf="gamePickerGenreIds?.length" 
+                fill="clear" 
+                size="small" 
+                color="medium"
+                (click)="setGamePickerGenres([])">
+                <ion-icon name="close-circle-outline" slot="start"></ion-icon>
+                Limpar filtro
+              </ion-button>
+            </div>
+
+            <ion-text color="medium" *ngIf="gamePickerLoading" class="loading-text">
+              <ion-spinner name="crescent"></ion-spinner>
+              Carregando...
+            </ion-text>
+
+            <div *ngIf="!gamePickerLoading" class="game-picker-grid">
+              <div *ngIf="!gamePickerResults.length" class="empty-state">
+                <ion-icon name="game-controller-outline"></ion-icon>
+                <p>Nenhum jogo encontrado.</p>
+              </div>
+              
+              <article
+                *ngFor="let game of gamePickerResults; trackBy: trackById"
+                class="game-picker-card"
+                [class.selected]="isSelected('jogos_favoritos', game.id)"
+                (click)="toggleSelection('jogos_favoritos', game.id, !isSelected('jogos_favoritos', game.id))">
+                
+                <div class="game-picker-card__image-wrapper">
+                  <img
+                    *ngIf="game.background_image; else noImage"
+                    [src]="game.background_image"
+                    [alt]="game.name"
+                    class="game-picker-card__image" />
+                  <ng-template #noImage>
+                    <div class="game-picker-card__no-image">
+                      <ion-icon name="game-controller-outline"></ion-icon>
+                    </div>
+                  </ng-template>
+                  
+                  <div class="game-picker-card__selected-overlay" *ngIf="isSelected('jogos_favoritos', game.id)">
+                    <ion-icon name="checkmark-circle"></ion-icon>
+                  </div>
+                </div>
+                
+                <div class="game-picker-card__content">
+                  <h3 class="game-picker-card__title">{{ game.name }}</h3>
+                  <div class="game-picker-card__meta" *ngIf="game.released || game.rating">
+                    <span *ngIf="game.released">
+                      <ion-icon name="calendar-outline"></ion-icon>
+                      {{ game.released | date:'yyyy' }}
+                    </span>
+                    <span *ngIf="game.rating">
+                      <ion-icon name="star"></ion-icon>
+                      {{ game.rating }}
+                    </span>
+                  </div>
+                </div>
+              </article>
+            </div>
+          </ion-content>
+          <ion-footer>
+            <ion-toolbar>
+              <ion-buttons slot="end">
+                <ion-button (click)="isGamePickerOpen = false" strong="true">OK</ion-button>
+              </ion-buttons>
+            </ion-toolbar>
+          </ion-footer>
+        </ng-template>
+      </ion-modal>
+
+      <!-- Modal: Plataformas -->
+      <ion-modal [isOpen]="isPlatformPickerOpen" (didDismiss)="isPlatformPickerOpen = false">
+        <ng-template>
+          <ion-header>
+            <ion-toolbar>
+              <ion-title>Selecionar plataformas</ion-title>
+              <ion-buttons slot="end">
+                <ion-button (click)="isPlatformPickerOpen = false">Fechar</ion-button>
+              </ion-buttons>
+            </ion-toolbar>
+          </ion-header>
+          <ion-content class="ion-padding chip-picker-content">
+            <ion-searchbar
+              class="picker-searchbar"
+              placeholder="Buscar plataforma"
+              name="platformPickerSearch"
+              [ngModelOptions]="{ standalone: true }"
+              [(ngModel)]="platformPickerSearch"
+              debounce="200">
+            </ion-searchbar>
+            
+            <div class="chip-picker-grid">
+              <div 
+                *ngFor="let p of filteredPlatforms(); trackBy: trackById"
+                class="selectable-chip"
+                [class.selected]="isSelected('platforms', p.id)"
+                (click)="toggleSelection('platforms', p.id, !isSelected('platforms', p.id))">
+                <ion-icon name="hardware-chip-outline"></ion-icon>
+                <span>{{ p.name }}</span>
+                <ion-icon *ngIf="isSelected('platforms', p.id)" name="checkmark-circle" class="check-icon"></ion-icon>
+              </div>
+            </div>
+            
+            <div *ngIf="!filteredPlatforms()?.length" class="empty-state">
+              <ion-icon name="search-outline"></ion-icon>
+              <p>Nenhuma plataforma encontrada</p>
+            </div>
+          </ion-content>
+          <ion-footer>
+            <ion-toolbar>
+              <ion-text color="medium" slot="start" *ngIf="form.platforms?.length" class="selection-counter">
+                {{ form.platforms.length }} selecionada{{ form.platforms.length === 1 ? '' : 's' }}
+              </ion-text>
+              <ion-buttons slot="end">
+                <ion-button (click)="isPlatformPickerOpen = false" strong="true">OK</ion-button>
+              </ion-buttons>
+            </ion-toolbar>
+          </ion-footer>
+        </ng-template>
+      </ion-modal>
+
+      <!-- Modal: Tipos -->
+      <ion-modal [isOpen]="isTypePickerOpen" (didDismiss)="isTypePickerOpen = false">
+        <ng-template>
+          <ion-header>
+            <ion-toolbar>
+              <ion-title>Selecionar tipos</ion-title>
+              <ion-buttons slot="end">
+                <ion-button (click)="isTypePickerOpen = false">Fechar</ion-button>
+              </ion-buttons>
+            </ion-toolbar>
+          </ion-header>
+          <ion-content class="ion-padding chip-picker-content">
+            <ion-searchbar
+              class="picker-searchbar"
+              placeholder="Buscar tipo"
+              name="typePickerSearch"
+              [ngModelOptions]="{ standalone: true }"
+              [(ngModel)]="typePickerSearch"
+              debounce="200">
+            </ion-searchbar>
+            
+            <div class="chip-picker-grid">
+              <div 
+                *ngFor="let t of filteredTypes(); trackBy: trackById"
+                class="selectable-chip"
+                [class.selected]="isSelected('types', t.id)"
+                (click)="toggleTypeSelection(t.id, !isSelected('types', t.id))">
+                <ion-icon name="game-controller-outline"></ion-icon>
+                <span>{{ t.name }}</span>
+                <ion-icon *ngIf="isSelected('types', t.id)" name="checkmark-circle" class="check-icon"></ion-icon>
+              </div>
+            </div>
+            
+            <div *ngIf="!filteredTypes()?.length" class="empty-state">
+              <ion-icon name="search-outline"></ion-icon>
+              <p>Nenhum tipo encontrado</p>
+            </div>
+          </ion-content>
+          <ion-footer>
+            <ion-toolbar>
+              <ion-text color="medium" slot="start" *ngIf="form.types?.length" class="selection-counter">
+                {{ form.types.length }} selecionado{{ form.types.length === 1 ? '' : 's' }}
+              </ion-text>
+              <ion-buttons slot="end">
+                <ion-button (click)="isTypePickerOpen = false" strong="true">OK</ion-button>
+              </ion-buttons>
+            </ion-toolbar>
+          </ion-footer>
+        </ng-template>
+      </ion-modal>
+
+      <!-- Modal: Gêneros -->
+      <ion-modal [isOpen]="isGenrePickerOpen" (didDismiss)="isGenrePickerOpen = false">
+        <ng-template>
+          <ion-header>
+            <ion-toolbar>
+              <ion-title>Selecionar gêneros</ion-title>
+              <ion-buttons slot="end">
+                <ion-button (click)="isGenrePickerOpen = false">Fechar</ion-button>
+              </ion-buttons>
+            </ion-toolbar>
+          </ion-header>
+          <ion-content class="ion-padding chip-picker-content">
+            <ion-searchbar
+              class="picker-searchbar"
+              placeholder="Buscar gênero"
+              name="genrePickerSearch"
+              [ngModelOptions]="{ standalone: true }"
+              [(ngModel)]="genrePickerSearch"
+              debounce="200">
+            </ion-searchbar>
+            
+            <div class="chip-picker-grid">
+              <div 
+                *ngFor="let g of filteredGenres(); trackBy: trackById"
+                class="selectable-chip"
+                [class.selected]="isSelected('genres', g.id)"
+                (click)="toggleSelection('genres', g.id, !isSelected('genres', g.id))">
+                <ion-icon name="color-filter-outline"></ion-icon>
+                <span>{{ g.name }}</span>
+                <ion-icon *ngIf="isSelected('genres', g.id)" name="checkmark-circle" class="check-icon"></ion-icon>
+              </div>
+            </div>
+            
+            <div *ngIf="!filteredGenres()?.length" class="empty-state">
+              <ion-icon name="search-outline"></ion-icon>
+              <p>Nenhum gênero encontrado</p>
+            </div>
+          </ion-content>
+          <ion-footer>
+            <ion-toolbar>
+              <ion-text color="medium" slot="start" *ngIf="form.genres?.length" class="selection-counter">
+                {{ form.genres.length }} selecionado{{ form.genres.length === 1 ? '' : 's' }}
+              </ion-text>
+              <ion-buttons slot="end">
+                <ion-button (click)="isGenrePickerOpen = false" strong="true">OK</ion-button>
+              </ion-buttons>
+            </ion-toolbar>
+          </ion-footer>
+        </ng-template>
+      </ion-modal>
     </form>
 
     <form *ngIf="etapaAtual === 3" (ngSubmit)="avancarEtapa()" class="form-stage surface-ghost stack">
@@ -120,14 +412,14 @@
           <table style="width:100%;text-align:center;">
             <tr>
               <th></th>
-              <th *ngFor="let periodo of periodos">{{periodo}}</th>
+              <th *ngFor="let periodo of periodos">{{ periodo.label }}</th>
             </tr>
             <tr *ngFor="let dia of diasSemana">
               <td>{{dia}}</td>
               <td *ngFor="let periodo of periodos">
                 <ion-checkbox
-                  [checked]="isArray(horariosSelecionados[dia]) && horariosSelecionados[dia].includes(periodo)"
-                  (ionChange)="onHorarioChange(dia, periodo, $event.detail.checked)">
+                  [checked]="isArray(horariosSelecionados[dia]) && horariosSelecionados[dia].includes(periodo.value)"
+                  (ionChange)="onHorarioChange(dia, periodo.value, $event.detail.checked)">
                 </ion-checkbox>
               </td>
             </tr>
@@ -144,9 +436,9 @@
             <h4>{{ dia }}</h4>
             <div class="chips-row">
               <ion-chip *ngFor="let periodo of periodos" class="select-chip"
-                [class.selected]="isArray(horariosSelecionados[dia]) && horariosSelecionados[dia].includes(periodo)"
-                (click)="onHorarioChange(dia, periodo, !(isArray(horariosSelecionados[dia]) && horariosSelecionados[dia].includes(periodo)))">
-                <ion-label>{{ periodo }}</ion-label>
+                [class.selected]="isArray(horariosSelecionados[dia]) && horariosSelecionados[dia].includes(periodo.value)"
+                (click)="onHorarioChange(dia, periodo.value, !(isArray(horariosSelecionados[dia]) && horariosSelecionados[dia].includes(periodo.value)))">
+                <ion-label>{{ periodo.label }}</ion-label>
               </ion-chip>
             </div>
           </div>
@@ -173,6 +465,51 @@
         <div *ngIf="ok && !loading" class="sucesso-global">Conta criada! Redirecionando...</div>
       </div>
     </form>
+
+    <form *ngIf="etapaAtual === 4" (ngSubmit)="confirmVerification()" class="form-stage surface-ghost stack">
+      <h2 class="form-title">Verifique seu e-mail</h2>
+      <p class="text-soft">
+        Enviamos um código de 6 dígitos para <strong>{{ verificationEmail }}</strong>. Digite-o abaixo para finalizar o cadastro.
+      </p>
+      <ion-item>
+        <ion-label position="floating">Código de verificação</ion-label>
+        <ion-input
+          inputmode="numeric"
+          maxlength="6"
+          [(ngModel)]="verificationCode"
+          name="verificationCode">
+        </ion-input>
+      </ion-item>
+      <div *ngIf="verificationInfo" class="info-message">{{ verificationInfo }}</div>
+      <div *ngIf="verificationMessage" class="success-message">{{ verificationMessage }}</div>
+      <div *ngIf="verificationError" class="error-message">{{ verificationError }}</div>
+
+      <ion-button expand="block" class="btn-primary grad" type="submit" [disabled]="verificationConfirmLoading">
+        <ion-spinner slot="start" *ngIf="verificationConfirmLoading"></ion-spinner>
+        Confirmar código
+      </ion-button>
+
+      <ion-button
+        expand="block"
+        color="medium"
+        class="btn-secondary"
+        type="button"
+        (click)="resendVerification()"
+        [disabled]="verificationResendLoading"
+      >
+        <ion-spinner slot="start" *ngIf="verificationResendLoading"></ion-spinner>
+        Reenviar código
+      </ion-button>
+
+
+      <div class="mensagens-retorno">
+        <div *ngIf="verificationSuccess" class="sucesso-global">
+          E-mail verificado! Redirecionando para o login...
+        </div>
+      </div>
+    </form>
     </section>
   </div>
+  
+  
 </ion-content>

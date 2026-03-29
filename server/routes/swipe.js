@@ -44,13 +44,22 @@ function parseSchedule(raw) {
   return {};
 }
 
+function normalizeToken(value) {
+  if (value === null || value === undefined) return '';
+  return String(value)
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
 function scheduleOverlap(a, b) {
   const overlap = [];
   let count = 0;
   Object.entries(a).forEach(([day, periods]) => {
     if (!Array.isArray(periods) || !periods.length) return;
-    const other = new Set(b[day] || []);
-    const shared = periods.filter(p => other.has(p));
+    const other = new Set((b[day] || []).map(normalizeToken));
+    const shared = periods.filter(p => other.has(normalizeToken(p)));
     if (shared.length) {
       overlap.push({ day, periods: shared });
       count += shared.length;
@@ -91,6 +100,27 @@ async function loadUserFavorites(userIds) {
   rows.forEach((row) => {
     if (!grouped.has(row.user_id)) grouped.set(row.user_id, []);
     grouped.get(row.user_id).push({ id: row.id, name: row.name });
+  });
+  return grouped;
+}
+
+async function loadUserGenres(userIds) {
+  if (!userIds.length) return new Map();
+  const [rows] = await pool.query(
+    `SELECT ug.user_id, gg.genre_id, ge.name AS genre_name
+     FROM user_games ug
+     JOIN game_genres gg ON gg.game_id = ug.game_id
+     JOIN genres ge ON ge.id = gg.genre_id
+     WHERE ug.user_id IN (?)`,
+    [userIds]
+  );
+  const grouped = new Map();
+  rows.forEach((row) => {
+    if (!grouped.has(row.user_id)) grouped.set(row.user_id, []);
+    const list = grouped.get(row.user_id);
+    if (!list.some((genre) => genre.id === row.genre_id)) {
+      list.push({ id: row.genre_id, name: row.genre_name });
+    }
   });
   return grouped;
 }
@@ -150,6 +180,7 @@ router.get('/deck', ensureAuth, async (req, res) => {
   const platformIdsFilter = parseNumericArray(req.query.platformIds);
   const gameStyleFilter = String(req.query.gameStyle || '').trim();
   const periodFilter = String(req.query.period || '').trim();
+  const genreIdsFilter = parseNumericArray(req.query.genreIds);
 
   try {
     const [[meRow]] = await pool.query(
@@ -202,6 +233,9 @@ router.get('/deck', ensureAuth, async (req, res) => {
 
     const candidateIds = rows.map((row) => row.id);
     const favoritesMap = await loadUserFavorites(candidateIds);
+    const genresMap = genreIdsFilter.length && candidateIds.length
+      ? await loadUserGenres(candidateIds)
+      : new Map();
 
     const platformNameSet = new Set(mePlatforms);
     rows.forEach((row) => parsePlatforms(row.platforms).forEach((name) => platformNameSet.add(name)));
@@ -224,8 +258,16 @@ router.get('/deck', ensureAuth, async (req, res) => {
     for (const row of rows) {
       const platformNames = parsePlatforms(row.platforms);
       const schedule = parseSchedule(row.available_times);
+      const candidateGenres = genresMap.get(row.id) || [];
+      if (genreIdsFilter.length) {
+        const hasGenre = candidateGenres.some((genre) => genreIdsFilter.includes(genre.id));
+        if (!hasGenre) continue;
+      }
       if (periodFilter) {
-        const hasPeriod = Object.values(schedule).some((periods) => Array.isArray(periods) && periods.includes(periodFilter));
+        const wanted = normalizeToken(periodFilter);
+        const hasPeriod = Object.values(schedule).some((periods) =>
+          Array.isArray(periods) && periods.some((p) => normalizeToken(p) === wanted)
+        );
         if (!hasPeriod) continue;
       }
 
@@ -268,7 +310,8 @@ router.get('/deck', ensureAuth, async (req, res) => {
           platformIds: platformIdsFilter,
           gameStyle: gameStyleFilter || null,
           period: periodFilter || null,
-          minCompatibility
+          minCompatibility,
+          genreIds: genreIdsFilter
         }
       }
     });

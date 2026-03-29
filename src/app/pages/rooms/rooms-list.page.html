@@ -1,0 +1,307 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home" text="Menu"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Salas</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="rooms-page">
+  <div class="rooms-shell">
+    <section class="surface hero-card">
+      <div class="hero-card__text">
+        <ion-chip color="primary" class="hero-card__chip">
+          <ion-icon name="chatbubbles-outline"></ion-icon>
+          <ion-label>Comunidades</ion-label>
+        </ion-chip>
+        <h1>Grupos e salas</h1>
+        <p>Organize squads como no WhatsApp: escolha um nome, uma foto e convide os participantes em segundos.</p>
+        <div class="hero-card__stats">
+          <div class="hero-stat">
+            <span class="hero-stat__value">{{ rooms.length }}</span>
+            <span class="hero-stat__label">Salas ativas</span>
+          </div>
+          <div class="hero-stat">
+            <span class="hero-stat__value">{{ totalMembers }}</span>
+            <span class="hero-stat__label">Participantes</span>
+          </div>
+        </div>
+        <div class="hero-card__actions">
+          <ion-button color="primary" (click)="openCreateModal()">
+            <ion-icon slot="start" name="add"></ion-icon>
+            Novo grupo
+          </ion-button>
+          <ion-button fill="outline" routerLink="/friends">
+            <ion-icon slot="start" name="people-outline"></ion-icon>
+            Amigos
+          </ion-button>
+        </div>
+      </div>
+    </section>
+
+    <section class="surface controls">
+      <ion-searchbar placeholder="Buscar salas ou links" [value]="searchTerm" (ionInput)="onSearchInput($event)" animated="true"></ion-searchbar>
+      <ion-button fill="clear" size="small" (click)="clearSearch()" *ngIf="searchTerm">
+        Limpar busca
+      </ion-button>
+    </section>
+
+    <section class="surface rooms-empty" *ngIf="!rooms.length">
+      <ion-icon name="chatbubbles-outline"></ion-icon>
+      <h2>Nenhuma sala cadastrada</h2>
+      <p>Crie um grupo, defina uma imagem e convide amigos para manter o time alinhado.</p>
+      <ion-button color="primary" (click)="openCreateModal()">
+        <ion-icon slot="start" name="add"></ion-icon>
+        Criar primeira sala
+      </ion-button>
+    </section>
+
+    <section class="rooms-list" *ngIf="rooms.length">
+      <article class="room-thread surface" *ngFor="let r of filteredRooms">
+        <div class="room-thread__header">
+          <ion-avatar class="room-thread__avatar">
+            <img [src]="normalizeRoomAvatar(r.avatar_url)" (error)="onAvatarError($event)" alt="Avatar da sala" />
+          </ion-avatar>
+          <div class="room-thread__info">
+            <div class="room-thread__title">
+              <h2>{{ r.name }}</h2>
+              <ion-chip color="tertiary" *ngIf="isOwner(r)">
+                <ion-icon name="shield-checkmark-outline"></ion-icon>
+                <ion-label>Host</ion-label>
+              </ion-chip>
+            </div>
+            <p class="room-thread__subtitle" *ngIf="r.description; else noDesc">{{ r.description }}</p>
+            <ng-template #noDesc>
+              <p class="room-thread__subtitle room-thread__subtitle--muted">Nenhuma descrição adicionada.</p>
+            </ng-template>
+            <div class="room-thread__meta">
+              <span>
+                <ion-icon name="people-outline"></ion-icon>
+                {{ members[r.id]?.length || r.member_count || 0 }} membro(s)
+              </span>
+              <span *ngIf="r.created_at">
+                <ion-icon name="calendar-outline"></ion-icon>
+                Criada em {{ r.created_at | date:'dd/MM/yyyy' }}
+              </span>
+            </div>
+          </div>
+          <div class="room-thread__cta">
+            <ion-button fill="outline" size="small" (click)="shareToConversation(r.id)">
+              <ion-icon slot="start" name="send-outline"></ion-icon>
+              Compartilhar
+            </ion-button>
+            <ion-button fill="clear" size="small" *ngIf="isOwner(r)" (click)="startEdit(r)">
+              <ion-icon slot="start" name="create-outline"></ion-icon>
+              Editar
+            </ion-button>
+            <ion-button fill="clear" color="danger" size="small" *ngIf="isOwner(r)" (click)="remove(r.id)">
+              <ion-icon slot="start" name="trash-outline"></ion-icon>
+              Excluir
+            </ion-button>
+          </div>
+        </div>
+
+        <div class="room-thread__body">
+          <ng-container *ngIf="editId === r.id; else readRoom">
+            <div class="room-thread__edit">
+              <ion-item class="input">
+                <ion-label position="stacked">Nome</ion-label>
+                <ion-input [(ngModel)]="editName"></ion-input>
+              </ion-item>
+              <ion-item class="input">
+                <ion-label position="stacked">Link</ion-label>
+                <ion-input [(ngModel)]="editLink"></ion-input>
+              </ion-item>
+              <ion-item class="input" lines="none">
+                <ion-label position="stacked">Descrição</ion-label>
+                <ion-textarea autoGrow="true" [(ngModel)]="editDescription"></ion-textarea>
+              </ion-item>
+              <div class="room-thread__edit-actions">
+                <ion-button size="small" color="success" (click)="saveEdit()">Salvar</ion-button>
+                <ion-button size="small" fill="clear" color="medium" (click)="cancelEdit()">Cancelar</ion-button>
+              </div>
+            </div>
+          </ng-container>
+          <ng-template #readRoom>
+            <ion-note color="primary" *ngIf="r.link" class="room-thread__link">
+              <ion-icon name="link-outline"></ion-icon>
+              {{ r.link }}
+            </ion-note>
+          </ng-template>
+        </div>
+
+        <section class="room-thread__members" *ngIf="isOwner(r)">
+          <div class="room-thread__members-header">
+            <div>
+              <h3>Participantes</h3>
+              <p>Convide por e-mail ou selecione amigos já conectados.</p>
+            </div>
+            <ion-button fill="clear" size="small" (click)="toggleFriendPicker(r.id)">
+              <ion-icon slot="start" [name]="showFriendPicker[r.id] ? 'chevron-up-outline' : 'people-outline'"></ion-icon>
+              {{ showFriendPicker[r.id] ? 'Ocultar amigos' : 'Ver amigos' }}
+            </ion-button>
+          </div>
+
+          <div class="room-thread__invite">
+            <ion-input [(ngModel)]="memberInputs[r.id]" [ngModelOptions]="{ standalone: true }" type="email" placeholder="email@exemplo.com"></ion-input>
+            <ion-button size="small" color="primary" (click)="addMember(r.id)" [disabled]="addingMember[r.id]">
+              <ion-spinner slot="start" *ngIf="addingMember[r.id]" name="crescent"></ion-spinner>
+              Convidar
+            </ion-button>
+          </div>
+
+          <div class="room-thread__friend-picker" *ngIf="showFriendPicker[r.id]">
+            <ion-spinner name="crescent" *ngIf="friendsLoading"></ion-spinner>
+            <ion-note color="medium" *ngIf="!friendsLoading && !friends.length">
+              Você ainda não adicionou amigos. Use o menu “Amigos” para começar.
+            </ion-note>
+            <div class="friend-list" *ngIf="!friendsLoading && friends.length">
+              <div class="friend-item" *ngFor="let friend of friends">
+                <div class="friend-item__info">
+                  <strong>{{ friend.nickname || friend.name || friend.email }}</strong>
+                  <span>{{ friend.email }}</span>
+                </div>
+                <ion-button size="small" fill="outline" (click)="addFriendToRoom(r.id, friend)" [disabled]="addingMember[r.id] || isMember(r.id, friend.id)">
+                  <ion-icon slot="start" name="person-add-outline"></ion-icon>
+                  {{ isMember(r.id, friend.id) ? 'Já incluso' : 'Adicionar' }}
+                </ion-button>
+              </div>
+            </div>
+          </div>
+
+          <div class="member-pills">
+            <div class="member-pill" *ngFor="let m of members[r.id]" [class.member-pill--owner]="m.role === 'owner'">
+              <ion-avatar *ngIf="m.avatar_url">
+                <img [src]="normalizeRoomAvatar(m.avatar_url)" (error)="onAvatarError($event)" alt="{{ m.nickname || m.email }}" />
+              </ion-avatar>
+              <span>{{ m.nickname || m.email }}</span>
+              <ion-button fill="clear" size="small" color="danger" *ngIf="m.role !== 'owner'" (click)="removeMember(r.id, m.user_id)">
+                <ion-icon slot="icon-only" name="close-circle-outline"></ion-icon>
+              </ion-button>
+            </div>
+            <ion-note color="medium" *ngIf="!membersLoading[r.id] && !(members[r.id]?.length)">
+              Apenas você está na sala.
+            </ion-note>
+            <ion-spinner name="crescent" *ngIf="membersLoading[r.id]"></ion-spinner>
+          </div>
+        </section>
+      </article>
+
+      <div class="surface rooms-board__empty" *ngIf="filteredRooms.length === 0">
+        <ion-icon name="search-outline"></ion-icon>
+        <h3>Nenhuma sala encontrada</h3>
+        <p>Verifique o filtro ou limpe a busca para visualizar todas as salas.</p>
+        <ion-button fill="clear" size="small" (click)="clearSearch()">
+          Limpar busca
+        </ion-button>
+      </div>
+    </section>
+  </div>
+
+  <ion-modal [isOpen]="isCreateModalOpen" (didDismiss)="closeCreateModal(true)">
+    <ng-template>
+      <ion-header>
+        <ion-toolbar>
+          <ion-title>Novo grupo</ion-title>
+          <ion-buttons slot="end">
+            <ion-button (click)="closeCreateModal(true)">
+              <ion-icon name="close"></ion-icon>
+            </ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content class="create-modal">
+        <div class="create-modal__grid">
+          <section class="create-modal__section">
+            <h3>Identidade</h3>
+            <p>Escolha um avatar e defina o nome do grupo.</p>
+            <div class="create-avatar">
+              <div class="create-avatar__preview" [class.has-image]="newAvatarPreview">
+                <img *ngIf="newAvatarPreview; else createDefaultAvatar" [src]="newAvatarPreview" alt="Avatar da sala" />
+                <ng-template #createDefaultAvatar>
+                  <ion-icon name="image-outline"></ion-icon>
+                </ng-template>
+              </div>
+              <div class="create-avatar__actions">
+                <ion-button fill="outline" size="small" (click)="modalFile.click()">
+                  <ion-icon slot="start" name="cloud-upload-outline"></ion-icon>
+                  Escolher foto
+                </ion-button>
+                <ion-button fill="clear" size="small" color="medium" *ngIf="newAvatarPreview" (click)="clearNewAvatar()">
+                  Remover
+                </ion-button>
+                <input type="file" #modalFile hidden accept="image/*" (change)="onNewRoomAvatarSelected($event)" />
+              </div>
+              <ion-note color="medium">Formatos aceitos: JPG, PNG ou WEBP.</ion-note>
+            </div>
+            <ion-item class="input">
+              <ion-label position="stacked">Nome do grupo</ion-label>
+              <ion-input [(ngModel)]="name" maxlength="200"></ion-input>
+            </ion-item>
+            <ion-item class="input">
+              <ion-label position="stacked">Link (Discord, Meet...)</ion-label>
+              <ion-input [(ngModel)]="link" maxlength="500"></ion-input>
+            </ion-item>
+            <ion-item class="input" lines="none">
+              <ion-label position="stacked">Descrição</ion-label>
+              <ion-textarea autoGrow="true" maxlength="500" [(ngModel)]="description"></ion-textarea>
+            </ion-item>
+          </section>
+
+          <section class="create-modal__section">
+            <h3>Participantes</h3>
+            <p>Selecione amigos ou adicione e-mails manualmente.</p>
+            <ion-searchbar placeholder="Buscar amigos" [value]="participantSearch" (ionInput)="onParticipantSearch($event)"></ion-searchbar>
+
+            <div class="selected-participants" *ngIf="selectedFriendsList().length || manualInvitees.length">
+              <ion-chip *ngFor="let friend of selectedFriendsList()">
+                <ion-avatar>
+                  <ion-icon name="person-circle-outline"></ion-icon>
+                </ion-avatar>
+                <ion-label>{{ displayFriendName(friend) }}</ion-label>
+                <ion-icon name="close" (click)="removeFriendSelection(friend.id)"></ion-icon>
+              </ion-chip>
+              <ion-chip color="secondary" *ngFor="let email of manualInvitees">
+                <ion-label>{{ email }}</ion-label>
+                <ion-icon name="close" (click)="removeManualInvite(email)"></ion-icon>
+              </ion-chip>
+            </div>
+
+            <div class="manual-invite">
+              <ion-input type="email" placeholder="email@exemplo.com" [(ngModel)]="manualInviteInput"></ion-input>
+              <ion-button size="small" fill="outline" (click)="addManualInvite()">Adicionar</ion-button>
+            </div>
+
+            <div class="friend-chips" *ngIf="filteredFriendsForSelection().length; else noFriendsFound">
+              <ion-chip
+                class="friend-chip"
+                *ngFor="let friend of filteredFriendsForSelection()"
+                [class.friend-chip--selected]="isFriendSelected(friend.id)"
+                (click)="toggleFriendSelection(friend.id)"
+                (keyup.enter)="toggleFriendSelection(friend.id)"
+                tabindex="0"
+              >
+                <div class="friend-chip__avatar">{{ initialsFromName(displayFriendName(friend)) }}</div>
+                <ion-label>{{ displayFriendName(friend) }}</ion-label>
+                <ion-icon name="checkmark-circle" *ngIf="isFriendSelected(friend.id)"></ion-icon>
+              </ion-chip>
+            </div>
+
+            <ng-template #noFriendsFound>
+              <ion-note color="medium">Nenhum amigo encontrado.</ion-note>
+            </ng-template>
+          </section>
+        </div>
+
+        <div class="create-modal__actions">
+          <ion-button expand="block" color="primary" (click)="create()" [disabled]="createLoading">
+            <ion-spinner slot="start" *ngIf="createLoading" name="crescent"></ion-spinner>
+            Criar grupo
+          </ion-button>
+        </div>
+      </ion-content>
+    </ng-template>
+  </ion-modal>
+</ion-content>
+

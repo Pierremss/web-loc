@@ -1,0 +1,172 @@
+<ion-card class="taxonomy">
+  <ion-card-header>
+    <ion-card-title>Taxonomias</ion-card-title>
+    <ion-card-subtitle>Gerencie plataformas, gêneros e tipos</ion-card-subtitle>
+  </ion-card-header>
+
+  <ion-card-content>
+    <ion-segment [formControl]="tabControl" value="platforms" class="taxonomy__segment">
+      <ion-segment-button value="platforms">
+        <ion-icon name="hardware-chip-outline"></ion-icon>
+        <ion-label>Plataformas</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="genres">
+        <ion-icon name="color-filter-outline"></ion-icon>
+        <ion-label>Gêneros</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="types">
+        <ion-icon name="game-controller-outline"></ion-icon>
+        <ion-label>Tipos</ion-label>
+      </ion-segment-button>
+    </ion-segment>
+
+    <ng-container [ngSwitch]="tabControl.value">
+      <section *ngSwitchCase="'platforms'" class="taxonomy__section" aria-live="polite">
+        <form [formGroup]="platformForm" (ngSubmit)="submitCreate('platforms')" class="taxonomy__form">
+          <ion-item lines="none">
+            <ion-label position="floating">Nova plataforma</ion-label>
+            <ion-input formControlName="name" autocomplete="off"></ion-input>
+          </ion-item>
+          <ion-button type="submit" expand="block" color="primary" [disabled]="processing">
+            <ion-icon name="add-circle-outline" slot="start"></ion-icon>
+            Adicionar plataforma
+          </ion-button>
+        </form>
+
+        <ng-container *ngIf="platforms?.length; else emptyPlatforms">
+          <div class="taxonomy__scroll-container">
+            <ion-list lines="none" class="taxonomy__list">
+            <ion-item *ngFor="let platform of platforms" class="taxonomy__item">
+              <ng-container *ngIf="editContext?.kind === 'platforms' && editContext?.id === platform.id; else platformView">
+                <form [formGroup]="editForm" class="taxonomy__inline-form" (ngSubmit)="submitEdit()">
+                  <ion-input formControlName="name"></ion-input>
+                  <div class="taxonomy__inline-actions">
+                    <ion-button color="success" type="submit" size="small" [disabled]="processing">
+                      <ion-icon name="checkmark-outline"></ion-icon>
+                    </ion-button>
+                    <ion-button color="medium" type="button" size="small" (click)="cancelEdit()">
+                      <ion-icon name="close-outline"></ion-icon>
+                    </ion-button>
+                  </div>
+                </form>
+              </ng-container>
+              <ng-template #platformView>
+                <ion-label>{{ platform.name }}</ion-label>
+                <ion-buttons slot="end">
+                  <ion-button fill="clear" size="small" color="secondary" (click)="startEdit('platforms', platform.id, platform.name)">
+                    <ion-icon name="create-outline"></ion-icon>
+                  </ion-button>
+                  <ion-button fill="clear" size="small" color="danger" [disabled]="processing" (click)="remove('platforms', platform.name, platform.id)">
+                    <ion-icon name="trash-outline"></ion-icon>
+                  </ion-button>
+                </ion-buttons>
+              </ng-template>
+            </ion-item>
+            </ion-list>
+          </div>
+        </ng-container>
+        <ng-template #emptyPlatforms>
+          <p class="taxonomy__empty">Nenhuma plataforma cadastrada.</p>
+        </ng-template>
+      </section>
+
+      <section *ngSwitchCase="'genres'" class="taxonomy__section" aria-live="polite">
+        <form [formGroup]="genreForm" (ngSubmit)="submitCreate('genres')" class="taxonomy__form">
+          <ion-item lines="none">
+            <ion-label position="floating">Novo gênero</ion-label>
+            <ion-input formControlName="name" autocomplete="off"></ion-input>
+          </ion-item>
+          <ion-button type="submit" expand="block" color="primary" [disabled]="processing">
+            <ion-icon name="add-circle-outline" slot="start"></ion-icon>
+            Adicionar gênero
+          </ion-button>
+        </form>
+
+        <ng-container *ngIf="genres?.length; else emptyGenres">
+          <div class="taxonomy__scroll-container">
+            <ion-list lines="none" class="taxonomy__list">
+            <ion-item *ngFor="let genre of genres" class="taxonomy__item">
+              <ng-container *ngIf="editContext?.kind === 'genres' && editContext?.id === genre.id; else genreView">
+                <form [formGroup]="editForm" class="taxonomy__inline-form" (ngSubmit)="submitEdit()">
+                  <ion-input formControlName="name"></ion-input>
+                  <div class="taxonomy__inline-actions">
+                    <ion-button color="success" type="submit" size="small" [disabled]="processing">
+                      <ion-icon name="checkmark-outline"></ion-icon>
+                    </ion-button>
+                    <ion-button color="medium" type="button" size="small" (click)="cancelEdit()">
+                      <ion-icon name="close-outline"></ion-icon>
+                    </ion-button>
+                  </div>
+                </form>
+              </ng-container>
+              <ng-template #genreView>
+                <ion-label>{{ genre.name }}</ion-label>
+                <ion-buttons slot="end">
+                  <ion-button fill="clear" size="small" color="secondary" (click)="startEdit('genres', genre.id, genre.name)">
+                    <ion-icon name="create-outline"></ion-icon>
+                  </ion-button>
+                  <ion-button fill="clear" size="small" color="danger" [disabled]="processing" (click)="remove('genres', genre.name, genre.id)">
+                    <ion-icon name="trash-outline"></ion-icon>
+                  </ion-button>
+                </ion-buttons>
+              </ng-template>
+            </ion-item>
+            </ion-list>
+          </div>
+        </ng-container>
+        <ng-template #emptyGenres>
+          <p class="taxonomy__empty">Nenhum gênero cadastrado.</p>
+        </ng-template>
+      </section>
+
+      <section *ngSwitchCase="'types'" class="taxonomy__section" aria-live="polite">
+        <form [formGroup]="typeForm" (ngSubmit)="submitCreate('types')" class="taxonomy__form">
+          <ion-item lines="none">
+            <ion-label position="floating">Novo tipo</ion-label>
+            <ion-input formControlName="name" autocomplete="off"></ion-input>
+          </ion-item>
+          <ion-button type="submit" expand="block" color="primary" [disabled]="processing">
+            <ion-icon name="add-circle-outline" slot="start"></ion-icon>
+            Adicionar tipo
+          </ion-button>
+        </form>
+
+        <ng-container *ngIf="types?.length; else emptyTypes">
+          <div class="taxonomy__scroll-container">
+            <ion-list lines="none" class="taxonomy__list">
+            <ion-item *ngFor="let type of types" class="taxonomy__item">
+              <ng-container *ngIf="editContext?.kind === 'types' && editContext?.id === type.id; else typeView">
+                <form [formGroup]="editForm" class="taxonomy__inline-form" (ngSubmit)="submitEdit()">
+                  <ion-input formControlName="name"></ion-input>
+                  <div class="taxonomy__inline-actions">
+                    <ion-button color="success" type="submit" size="small" [disabled]="processing">
+                      <ion-icon name="checkmark-outline"></ion-icon>
+                    </ion-button>
+                    <ion-button color="medium" type="button" size="small" (click)="cancelEdit()">
+                      <ion-icon name="close-outline"></ion-icon>
+                    </ion-button>
+                  </div>
+                </form>
+              </ng-container>
+              <ng-template #typeView>
+                <ion-label>{{ type.name }}</ion-label>
+                <ion-buttons slot="end">
+                  <ion-button fill="clear" size="small" color="secondary" (click)="startEdit('types', type.id, type.name)">
+                    <ion-icon name="create-outline"></ion-icon>
+                  </ion-button>
+                  <ion-button fill="clear" size="small" color="danger" [disabled]="processing" (click)="remove('types', type.name, type.id)">
+                    <ion-icon name="trash-outline"></ion-icon>
+                  </ion-button>
+                </ion-buttons>
+              </ng-template>
+            </ion-item>
+            </ion-list>
+          </div>
+        </ng-container>
+        <ng-template #emptyTypes>
+          <p class="taxonomy__empty">Nenhum tipo cadastrado.</p>
+        </ng-template>
+      </section>
+    </ng-container>
+  </ion-card-content>
+</ion-card>
